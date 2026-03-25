@@ -1262,86 +1262,37 @@ async // Auto-run when HAConn connects
   // HAConn wired above
 
 async function runAnalysis() {
-  // Addon mode: use backend proxy — works without user WS token
-  // Standalone mode: require HAConn connection as before
-  var addonMode = HAConn.addonMode;
-
-  if (!addonMode && HAConn.state !== 'connected') {
-    setStatus('err', '⚠ Configure connection via toolbar ⚙');
-    return;
-  }
-
-  if (!addonMode) {
-    HA_URL   = HAConn.url;
-    HA_TOKEN = HAConn.token;
-  }
   EXCLUDED = loadExcluded();
-
   var btn = $('btn-analyse');
   if (btn) btn.disabled = true;
   setStatus('loading', '⏳ Analysing…');
   $('results').innerHTML = '<div class="idle-state"><div class="spinner"></div><p>Fetching data from Home Assistant…</p></div>';
 
   try {
-    setStatus('loading', '⏳ Fetching registries…');
-
-    if (addonMode) {
-      // ── Addon mode: all data via backend proxy ──────────────
-      setStatus('loading', '⏳ Fetching via addon backend…');
-      var [entityReg, deviceReg, statesData, healthData, configData, backupData] =
-        await Promise.all([
-          HAConn.addonRegistry('entities').catch(function(){ return []; }),
-          HAConn.addonRegistry('devices').catch(function(){ return []; }),
-          HAConn.addonFetch('/api/states').catch(function(){ return []; }),
-          HAConn.addonFetch('/api/system_health').catch(function(){ return {}; }),
-          HAConn.addonFetch('/api/config').catch(function(){ return {}; }),
-          HAConn.addonFetch('/api/states/sensor.backup_state').catch(function(){ return null; }),
-        ]);
-
-      DATA.entityRegistry = Array.isArray(entityReg) ? entityReg : [];
-      DATA.deviceRegistry = Array.isArray(deviceReg) ? deviceReg : [];
-      DATA.states         = Array.isArray(statesData) ? statesData : [];
-      DATA.health         = healthData || {};
-      DATA.config         = configData || {};
-      DATA.backupState    = backupData;
-
-      // Fetch Supervisor hardware stats for health score hardware pillar.
-      // /api/system-stats is a HUB endpoint (not a HA Core endpoint) so it must
-      // be called directly via the hub base URL — NOT through HAConn.addonFetch()
-      // which routes via /api/proxy?path=... (HA Core proxy only).
-      try {
-        var _hubBase = (function() {
-          var p = window.location.pathname;
-          var parts = p.split('/');
-          var idx = parts.indexOf('pages');
-          return idx > 0 ? window.location.origin + parts.slice(0, idx).join('/') + '/' : '';
-        })();
-        var sysStatsR = _hubBase
-          ? await fetch(_hubBase + 'api/system-stats', { credentials: 'include' })
-              .then(function(r){ return r.json(); })
-              .catch(function(){ return null; })
-          : null;
-        DATA.systemStats = (sysStatsR && sysStatsR.ok !== false) ? sysStatsR : null;
-      } catch(e) { DATA.systemStats = null; }
-
-    } else {
-      // ── Standalone mode: use HAConn WS + REST ──────────────
-      var responses = await Promise.all([
-        HAConn.send({ type: 'config/entity_registry/list' }),
-        haFetch('/api/states').catch(function(){ return null; }),
-        haFetch('/api/system_health').catch(function(){ return null; }),
-        haFetch('/api/config').catch(function(){ return null; }),
-        haFetch('/api/states/sensor.backup_state').catch(function(){ return null; }),
-        HAConn.send({ type: 'config/device_registry/list' })
+    setStatus('loading', '⏳ Fetching via addon backend…');
+    var [entityReg, deviceReg, statesData, healthData, configData, backupData] =
+      await Promise.all([
+        HAConn.addonRegistry('entities').catch(function(){ return []; }),
+        HAConn.addonRegistry('devices').catch(function(){ return []; }),
+        HAConn.addonFetch('/api/states').catch(function(){ return []; }),
+        HAConn.addonFetch('/api/system_health').catch(function(){ return {}; }),
+        HAConn.addonFetch('/api/config').catch(function(){ return {}; }),
+        HAConn.addonFetch('/api/states/sensor.backup_state').catch(function(){ return null; }),
       ]);
 
-      DATA.entityRegistry = responses[0].ok ? responses[0].result || [] : [];
-      DATA.deviceRegistry = responses[5].ok ? responses[5].result || [] : [];
-      DATA.states      = (responses[1] && responses[1].ok) ? await responses[1].json() : [];
-      DATA.health      = (responses[2] && responses[2].ok) ? await responses[2].json() : {};
-      DATA.config      = (responses[3] && responses[3].ok) ? await responses[3].json() : {};
-      DATA.backupState = (responses[4] && responses[4].ok) ? await responses[4].json() : null;
-    } // end else (standalone mode)
+    DATA.entityRegistry = Array.isArray(entityReg) ? entityReg : [];
+    DATA.deviceRegistry = Array.isArray(deviceReg) ? deviceReg : [];
+    DATA.states         = Array.isArray(statesData) ? statesData : [];
+    DATA.health         = healthData || {};
+    DATA.config         = configData || {};
+    DATA.backupState    = backupData;
+
+    // Supervisor hardware stats — hub endpoint, not HA Core proxy
+    try {
+      var sysStatsR = await fetch(HAConn.addonBase() + 'api/system-stats', { credentials: 'include' })
+        .then(function(r){ return r.json(); }).catch(function(){ return null; });
+      DATA.systemStats = (sysStatsR && sysStatsR.ok !== false) ? sysStatsR : null;
+    } catch(e) { DATA.systemStats = null; }
 
     DATA.stateMap = {};
     DATA.states.forEach(function(s){ DATA.stateMap[s.entity_id] = s; });
@@ -2222,7 +2173,7 @@ function exportReport() {
     'HA Health Score Report',
     '======================',
     'Generated: ' + new Date().toLocaleString(),
-    'Instance:  ' + HAConn.url,
+    'Instance:  ' + location.hostname,
     '',
     'GLOBAL SCORE:  ' + s.global + '/100  (' + gradeOf(s.global).grade + ' — ' + gradeOf(s.global).label + ')',
     'Hardware:      ' + (s.hw.final !== null ? s.hw.final : 'N/A') + '/100',
@@ -2263,57 +2214,16 @@ function setupAutoRefresh() {
   if (!cb) return;
   cb.addEventListener('change', function() {
     if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-    if (cb.checked && HAConn.state === 'connected') {
-      _autoRefreshTimer = setInterval(function() {
-        if (HAConn.state === 'connected') runAnalysis();
-      }, 5 * 60 * 1000);
-    }
+    if (cb.checked) _autoRefreshTimer = setInterval(runAnalysis, 5 * 60 * 1000);
   });
 }
 
-// ══════════════════════════════════════════════════════════
-//  HAConn STATE WIRING
-// ══════════════════════════════════════════════════════════
-HAConn.onStateChange(function(s) {
-  if (s === 'connected') {
-    HA_URL   = HAConn.url;
-    HA_TOKEN = HAConn.token;
-    BrandIcon.warmToken();
-    setStatus('ok', '✅ Connected');
-    // Ensure overview tab is active before analysis renders results
-    _currentTab = 'overview';
-    document.querySelectorAll('.hs-tab').forEach(function(t){ t.classList.remove('active'); });
-    var firstTab = document.querySelector('.hs-tab');
-    if (firstTab) firstTab.classList.add('active');
-    runAnalysis();
-  } else if (s === 'connecting') {
-    setStatus('loading', '⏳ Connecting…');
-  } else {
-    setStatus('idle', '⚙ Configure via toolbar');
-  }
-});
-
-// On page load: if HAConn is already connected (stored credentials),
-// it fires onStateChange immediately — but the DOM may not be ready yet.
-// Use DOMContentLoaded to also check the current state and auto-run.
+// ── Auto-load on page ready ───────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  // In addon mode: run analysis immediately — no WS connection needed
-  if (HAConn.addonMode) {
-    _currentTab = 'overview';
-    var firstTab = document.querySelector('.hs-tab');
-    if (firstTab) firstTab.classList.add('active');
-    runAnalysis();
-    return;
-  }
-  // Standalone: only run if already connected
-  if (HAConn.state === 'connected') {
-    HA_URL   = HAConn.url;
-    HA_TOKEN = HAConn.token;
-    _currentTab = 'overview';
-    var firstTab = document.querySelector('.hs-tab');
-    if (firstTab) firstTab.classList.add('active');
-    runAnalysis();
-  }
+  _currentTab = 'overview';
+  var firstTab = document.querySelector('.hs-tab');
+  if (firstTab) firstTab.classList.add('active');
+  setTimeout(runAnalysis, 400);
 });
 
 // ─── Init ─────────────────────────────────────────────────

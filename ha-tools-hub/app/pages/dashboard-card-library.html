@@ -4409,8 +4409,8 @@ async function fetchDashboards() {
   // Read from inputs first, fall back to HAConn shared credentials
   var urlEl   = document.getElementById('ext-url');
   var tokenEl = document.getElementById('ext-token');
-  var url     = (urlEl   ? urlEl.value.trim()   : '') || HAConn.url   || '';
-  var token   = (tokenEl ? tokenEl.value.trim() : '') || HAConn.token || '';
+  var url     = (urlEl   ? urlEl.value.trim()   : '') || '';
+  var token   = (tokenEl ? tokenEl.value.trim() : '') || '';
   url = url.replace(/\/$/, '');
   if (!url || !token) { _fetchInProgress = false; setExtStatus('err', '⚠ Enter URL and token.'); return; }
 
@@ -4421,12 +4421,7 @@ async function fetchDashboards() {
     var cfg = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     cfg.url = url; cfg.token = token;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-    // Sync to HAConn shared store so other pages share these credentials
-    localStorage.setItem('ha_tools_conn', JSON.stringify({ url: url, token: token }));
-    // Also update HAConn live connection if credentials differ
-    if (HAConn.url !== url || HAConn.token !== token) {
-      HAConn.connect(url, token);
-    }
+    // Credentials stored locally for card preview use only
   } catch(e) {}
 
   var wsUrl = buildWsUrl(url);
@@ -5251,7 +5246,7 @@ async function pushCardToHaPreview(card) {
     haBase = haBase.trim().replace(/\/$/, '');
     if (!haBase) {
       // Fallback: derive from HAConn if available
-      haBase = (window.HAConn && HAConn.url) ? HAConn.url.replace(/\/$/, '') : '';
+      haBase = ''; // no fallback in addon mode — user must supply URL
     }
 
     // ── Instant update if iframe already loaded ────────────────
@@ -5788,35 +5783,11 @@ function toggleSidebar() {
   });
 })();
 
-// Sync HAConn shared credentials into extract form
-(function(){
-  function syncInputs() {
-    var urlIn = document.getElementById('ext-url');
-    var tokIn = document.getElementById('ext-token');
-    // Only fill if inputs are currently empty
-    if (urlIn && !urlIn.value && HAConn.url)   urlIn.value = HAConn.url;
-    if (tokIn && !tokIn.value && HAConn.token) tokIn.value = HAConn.token;
-  }
-  // Run once after init() has already populated from localStorage
-  syncInputs();
-  // When HAConn connects (from any page), sync and auto-load
-  HAConn.onStateChange(function(s) {
-    if (s === 'connected') {
-      window._extUrl   = HAConn.url;
-      window._extToken = HAConn.token;
-      syncInputs();
-      // Pre-warm live state cache, brand icons, and preview dashboard
-      fetchLiveStates();
-      BrandIcon.warmToken();
-      // Auto-load only if no data yet and not already loading
-      var alreadyLoaded = Object.keys(window.dashboardData || {}).length > 0;
-      if (!alreadyLoaded && !_fetchInProgress) {
-        setTimeout(fetchDashboards, 500);
-      }
-    }
-  });
-})();
-init();
+// ── Auto-load on page ready ─────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  init();
+  setTimeout(fetchLiveStates, 400);
+});
 
 
 // ════════════════════════════════════════════════════════════════
@@ -5945,23 +5916,20 @@ function mdiChar(mdiName) {
 var _entityIcons = {};
 
 async function loadEntityIcons() {
-  if (!HAConn || HAConn.state !== 'connected') return;
   try {
-    var res = await HAConn.send({ type: 'config/entity_registry/list' });
-    if (!res.ok) return;
-    (res.result || []).forEach(function(e) {
+    var [entReg, statesR] = await Promise.all([
+      HAConn.addonRegistry('entities').catch(function(){ return []; }),
+      HAConn.addonFetch('/api/states').catch(function(){ return []; })
+    ]);
+    (Array.isArray(entReg) ? entReg : []).forEach(function(e) {
       if (e.icon) _entityIcons[e.entity_id] = e.icon;
       else if (e.options && e.options.icon) _entityIcons[e.entity_id] = e.options.icon;
     });
-    // Also get state icons (from attributes.icon)
-    var stRes = await HAConn.send({ type: 'get_states' });
-    if (stRes.ok) {
-      (stRes.result || []).forEach(function(e) {
-        if (e.attributes && e.attributes.icon && !_entityIcons[e.entity_id]) {
-          _entityIcons[e.entity_id] = e.attributes.icon;
-        }
-      });
-    }
+    (Array.isArray(statesR) ? statesR : []).forEach(function(e) {
+      if (e.attributes && e.attributes.icon && !_entityIcons[e.entity_id]) {
+        _entityIcons[e.entity_id] = e.attributes.icon;
+      }
+    });
     console.log('HATools: loaded icons for', Object.keys(_entityIcons).length, 'entities');
   } catch(e) { console.warn('loadEntityIcons failed:', e); }
 }
@@ -6525,18 +6493,7 @@ function buildLiveAppliancePreview(style) {
   return buildAppliancePreview('Washing Machine', '🫧', prog, '24 min', '2100 W', style);
 }
 
-// ── Kick off state fetch when HAConn connects ──────────────────
-// This pre-warms the cache so the first card click shows live data instantly.
-(function() {
-  var _origOnState = window.HAConn && HAConn.onStateChange;
-  if (_origOnState) {
-    HAConn.onStateChange(function(s) {
-      if (s === 'connected') {
-        fetchLiveStates();
-      }
-    });
-  }
-})();
+// fetchLiveStates called from DOMContentLoaded auto-load above
 
 
 // ════════════════════════════════════════════════════════════════

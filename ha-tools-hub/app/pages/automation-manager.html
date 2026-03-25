@@ -668,7 +668,7 @@ function selectAuto(id) {
   var item = document.getElementById('ami-' + id);
   if (item) item.classList.add('active');
 
-  var connected = HAConn.state === 'connected';
+  var connected = true; // addon always connected
   var diffClass = a.difficulty === 'easy' ? 'easy' : a.difficulty === 'medium' ? 'medium' : 'advanced';
 
   var html = '';
@@ -770,7 +770,7 @@ function amApplySubs(id) {
 async function amPopulateSubs(id) {
   var a = AUTOMATIONS.find(function(x){ return x.id === id; });
   if (!a || !a.entities) return;
-  var res = await HAConn.send({ type:'get_states' });
+  var res = await HAConn.addonWsCmd('get_states');
   var states = res.ok ? (res.result || []) : [];
   a.entities.forEach(function(e, i) {
     var sel = document.getElementById('sub-' + id + '-' + i);
@@ -824,10 +824,6 @@ function amDeploy(id) {
 }
 
 async function pushAutomation(yamlStr, btn, deployId, entities) {
-  if (HAConn.state !== 'connected') {
-    _amShowError(deployId, 'Not connected to Home Assistant.');
-    return;
-  }
   _amClearError(deployId);
   if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
 
@@ -839,32 +835,25 @@ async function pushAutomation(yamlStr, btn, deployId, entities) {
     if (!config.trigger && !config.triggers) throw new Error('Automation has no trigger block.');
     if (!config.alias) config.alias = 'HA Tools Hub — ' + new Date().toISOString().slice(0,16).replace('T',' ');
 
-    // Step 1: WebSocket
-    var wsRes = await HAConn.send({ type:'config/automation/create', config: config });
-    if (wsRes.ok) { _amOnSuccess(btn, deployId, config.alias, 'WebSocket'); return; }
-
-    // Step 2: Addon file write
+    // Step 1: Addon file write
     var existing = await _addonReadFile('/config/automations.yaml');
     if (existing !== null) {
       var entry = '- ' + yamlStr.trim().split('\n').join('\n  ');
       var updated = existing.trimEnd() + (existing.trim() ? '\n\n' : '') + entry + '\n';
       var wrote = await _addonWriteFile('/config/automations.yaml', updated);
       if (wrote) {
-        await HAConn.send({ type:'call_service', domain:'automation', service:'reload' });
+        await HAConn.addonFetch('/api/services/automation/reload').catch(function(){});
         _amOnSuccess(btn, deployId, config.alias, 'File'); return;
       }
     }
 
-    // Step 3: REST
-    var resp = await fetch(HAConn.url + '/api/config/automation/config', {
-      method:'POST', headers:{ 'Authorization':'Bearer '+HAConn.token, 'Content-Type':'application/json' },
-      body: JSON.stringify(config)
-    });
-    if (resp.ok) {
-      await HAConn.send({ type:'call_service', domain:'automation', service:'reload' });
+    // Step 2: REST proxy
+    var resp = await HAConn.addonFetch('/api/config/automation/config').catch(function(){ return null; });
+    if (resp) {
+      await HAConn.addonFetch('/api/services/automation/reload').catch(function(){});
       _amOnSuccess(btn, deployId, config.alias, 'REST'); return;
     }
-    throw new Error('All deploy paths failed — HTTP ' + resp.status);
+    throw new Error('All deploy paths failed — check HA logs.');
 
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy to HA'; }
@@ -883,16 +872,15 @@ function _amOnSuccess(btn, deployId, alias, method) {
 //  LIVE HA TAB
 // ════════════════════════════════════════════════════════════════
 async function loadLiveAutos() {
-  if (HAConn.state !== 'connected') return;
   document.getElementById('tb-live').textContent = '⏳';
 
   try {
-    var statesRes = await HAConn.send({ type:'get_states' });
+    var statesRes = await HAConn.addonWsCmd('get_states');
     var states = statesRes.ok ? (statesRes.result || []) : [];
     _liveStates = {};
     states.forEach(function(s){ if (s.entity_id.startsWith('automation.')) _liveStates[s.entity_id] = s; });
 
-    var listRes = await HAConn.send({ type:'config/automation/list' });
+    var listRes = await HAConn.addonWsCmd('config/automation/list');
     if (listRes.ok && Array.isArray(listRes.result)) {
       _liveAutos = listRes.result.map(function(cfg) {
         var eid = 'automation.' + (cfg.id||cfg.alias||'').replace(/[^a-z0-9_]/gi,'_').toLowerCase();
@@ -942,11 +930,7 @@ function renderLiveList() {
   // Only touch the sidebar list when we're actually on the live tab
   if (_activeTab !== 'live') return;
 
-  if (HAConn.state !== 'connected') {
-    listEl.innerHTML = '<div class="am-no-results">Not connected.<br>Click ⚙ in the nav bar to connect.</div>';
-    panelEl.innerHTML = '<div class="am-empty"><div class="am-empty-icon">📥</div><div class="am-empty-title">Not connected</div><div class="am-empty-sub">Connect to your HA instance via the ⚙ settings icon to load your live automations.</div></div>';
-    return;
-  }
+
 
   if (!_liveFetched) {
     listEl.innerHTML = '<div class="am-no-results">⏳ Loading…</div>';
@@ -1019,12 +1003,12 @@ async function liveToggle(id) {
   var a = _liveAutos.find(function(x){ return x.id === id; });
   if (!a) return;
   var svc = a.state === 'on' ? 'turn_off' : 'turn_on';
-  await HAConn.send({ type:'call_service', domain:'automation', service:svc, service_data:{ entity_id: a.entityId } });
+  await HAConn.addonFetch('/api/services/automation/' + svc).catch(function(){});
   await loadLiveAutos();
 }
 
 async function liveTrigger(entityId) {
-  await HAConn.send({ type:'call_service', domain:'automation', service:'trigger', service_data:{ entity_id: entityId } });
+  await HAConn.addonFetch('/api/services/automation/trigger').catch(function(){});
   Toast.show('Automation triggered.', 'ok', 3000);
 }
 
@@ -1047,9 +1031,9 @@ async function liveDelete(id, entityId) {
     }
   }
 
-  // ── Path 2: WS fallback (requires connected user session) ────────
-  if (!deleted && HAConn.state === 'connected') {
-    var res = await HAConn.send({ type:'config/automation/delete', automation_id: id });
+  // Path 2: WS fallback via addon proxy
+  if (!deleted) {
+    var res = await HAConn.addonWsCmd('config/automation/delete?automation_id=' + encodeURIComponent(id));
     if (res.ok) deleted = true;
   }
 
@@ -1140,13 +1124,8 @@ async function bDeploy() {
 // ════════════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════════════
-HAConn.onStateChange(function(s) {
-  if (s === 'connected') {
-    loadLiveAutos();
-    // Refresh detail panel if one is showing
-    if (_activeTab === 'library' && _currentId) selectAuto(_currentId);
-  }
-  if (_activeTab === 'live') renderLiveList();
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(loadLiveAutos, 400);
 });
 
 var AUTOMATIONS = [

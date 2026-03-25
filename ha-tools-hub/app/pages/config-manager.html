@@ -490,9 +490,9 @@ async function _writeConfig(content) {
 
 async function _reloadHA() {
   try {
-    await HAConn.send({ type:'call_service', domain:'homeassistant', service:'reload_config_entry' });
+    await HAConn.addonFetch('/api/services/homeassistant/reload_config_entry').catch(function(){});
     for (var dom of ['template','input_text','input_boolean','input_number','input_select','sensor','recorder']) {
-      try { await HAConn.send({ type:'call_service', domain:dom, service:'reload' }); } catch(e) {}
+      try { await HAConn.addonFetch('/api/services/' + dom + '/reload'); } catch(e) {}
     }
     return true;
   } catch(e) { return false; }
@@ -1400,12 +1400,10 @@ async function cmValWithHA() {
   var val = document.getElementById('val-input').value.trim();
   var el  = document.getElementById('val-result');
   if (!val) { Toast.show('Paste some YAML first', 'warn'); return; }
-  if (HAConn.state !== 'connected') { el.innerHTML = '<div class="cm-status err">Not connected to HA — connect via the settings icon</div>'; return; }
+
   el.innerHTML = '<div class="cm-status info">⏳ Checking against HA…</div>';
   try {
-    var resp = await fetch(HAConn.url + '/api/config/core/check_config', {
-      method:'POST', headers:{ 'Authorization':'Bearer '+HAConn.token, 'Content-Type':'application/json' }
-    });
+    var resp = await HAConn.addonFetch('/api/config/core/check_config').catch(function(e){ return {error: e.message}; });
     var data = resp.ok ? await resp.json() : null;
     if (data && data.result === 'valid') {
       el.innerHTML = '<div class="cm-status ok">✅ HA reports configuration is valid.</div>';
@@ -1451,7 +1449,8 @@ async function cmSyncFromFile() {
 // ════════════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════════════
-HAConn.onStateChange(function(s, msg, ver) {
+// ── Auto-load on page ready ─────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
   if (s === 'connected') {
     setStatus('Connected · HA ' + (ver||''), 'var(--green)');
     cmSyncFromFile();
@@ -1629,14 +1628,8 @@ async function cmCheckConfig() {
       });
       data = resp.ok ? await resp.json() : null;
       data = data && data.ok ? data.data : null;
-    } else if (HAConn.state === 'connected') {
-      // Standalone — direct HA call
-      resp = await fetch(HAConn.url + '/api/config/core/check_config', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + HAConn.token, 'Content-Type': 'application/json' }
-      });
-      data = resp.ok ? await resp.json() : null;
-    }
+    } // addon path handles this above
+    
 
     if (!data) {
       checkResult.innerHTML = '<span style="color:var(--red)">❌ Config check failed — could not reach HA.</span>';
@@ -1677,12 +1670,8 @@ async function cmRestartHA() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: '/api/services/homeassistant/restart', payload: {} })
       });
-    } else if (HAConn.state === 'connected') {
-      await fetch(HAConn.url + '/api/services/homeassistant/restart', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + HAConn.token, 'Content-Type': 'application/json' }
-      });
-    }
+    } // addon path handles this above
+    
     // No further action — HA is restarting, connection will drop
   } catch(e) {
     // Expected — HA killed the connection mid-restart

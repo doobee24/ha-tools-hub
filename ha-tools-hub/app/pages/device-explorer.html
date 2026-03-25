@@ -1671,20 +1671,16 @@ function buildWsUrl(httpUrl) {
 
 // ─── Load everything ─────────────────────────────────────
 async function loadAll() {
-  if (HAConn.state !== 'connected') { setConn('err','⚠ Configure connection via toolbar ⚙'); return; }
-  HA_URL   = HAConn.url;
-  HA_TOKEN = (HAConn.url || '').replace(/\/$/, '') === HA_URL ? HAConn.token : HAConn.token;
-
   setConn('loading','⏳ Loading registries…');
   hideEmpty();
 
   try {
     var responses = await Promise.all([
-      HAConn.send({ type: 'config/device_registry/list' }),
-      HAConn.send({ type: 'config/area_registry/list' }),
-      HAConn.send({ type: 'config/entity_registry/list' }),
-      HAConn.send({ type: 'config/floor_registry/list' }),
-      HAConn.send({ type: 'system_health/info' })
+      HAConn.addonWsCmd('config/device_registry/list'),
+      HAConn.addonWsCmd('config/area_registry/list'),
+      HAConn.addonWsCmd('config/entity_registry/list'),
+      HAConn.addonWsCmd('config/floor_registry/list'),
+      HAConn.addonWsCmd('system_health/info')
     ]);
 
     if (responses[0].ok) REG.devices  = responses[0].result || [];
@@ -1695,18 +1691,13 @@ async function loadAll() {
 
     // ── Step 2: REST — states, repairs, error log ──
     setConn('loading','⏳ Fetching states and diagnostics...');
-    var [statesR, repairR, logR] = await Promise.all([
-      haFetch('/api/states').catch(()=>null),
-      haFetch('/api/repairs/issues').catch(()=>null),
-      haFetch('/api/error_log').catch(()=>null)
+    var [statesR, repairR] = await Promise.all([
+      HAConn.addonFetch('/api/states').catch(function(){ return null; }),
+      HAConn.addonFetch('/api/repairs/issues').catch(function(){ return null; })
     ]);
 
-    if (statesR && statesR.ok) REG.states = await statesR.json();
-    if (repairR && repairR.ok) {
-      var rd = await repairR.json();
-      REG.repairs = Array.isArray(rd) ? rd : (rd.issues || []);
-    }
-    if (logR && logR.ok) REG.errorLog = await logR.text();
+    if (Array.isArray(statesR)) REG.states = statesR;
+    if (repairR) REG.repairs = Array.isArray(repairR) ? repairR : (repairR.issues || []);
 
     buildMaps();
     populateFilters();
@@ -2390,48 +2381,26 @@ function filterDisabledAfterToggle() {
 // Sends config/entity_registry/update via WebSocket.
 // disable=true  → disabled_by: "user"
 // disable=false → disabled_by: null  (re-enable)
-function toggleEntityDisabled(entityId, disable) {
-  if (!HA_URL || !HA_TOKEN) {
-    alert('Connect to Home Assistant first.');
-    return;
-  }
+async function toggleEntityDisabled(entityId, disable) {
   var btn = event && event.target;
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
-
-  var wsUrl = buildWsUrl(HA_URL);
-  var cmd = {
-    type: 'config/entity_registry/update',
-    entity_id: entityId,
-    disabled_by: disable ? 'user' : null
-  };
-
-  wsCommand(wsUrl, HA_TOKEN, [cmd]).then(function(cmds) {
-    if (cmds._authError) {
-      alert('Auth error: ' + cmds._authError);
+  try {
+    var res = await HAConn.addonWsCmd('config/entity_registry/update?entity_id='
+      + encodeURIComponent(entityId) + '&disabled_by=' + (disable ? 'user' : ''));
+    if (!res.ok) {
+      alert('Could not update entity — check HA logs.');
       if (btn) { btn.disabled = false; btn.textContent = disable ? '⏸ Disable' : '▶ Enable'; }
       return;
     }
-    if (cmds._wsError) {
-      alert('WebSocket error — could not reach HA. Check URL and token.');
-      if (btn) { btn.disabled = false; btn.textContent = disable ? '⏸ Disable' : '▶ Enable'; }
-      return;
-    }
-    var result = cmds[0];
-    if (result && result._error) {
-      alert('HA error: ' + result._error + '\n\nNote: some entities (e.g. platform-required) cannot be disabled by users.');
-      if (btn) { btn.disabled = false; btn.textContent = disable ? '⏸ Disable' : '▶ Enable'; }
-      return;
-    }
-    // Update local REG data so re-renders reflect the change immediately
     REG.entities.forEach(function(e) {
-      if (e.entity_id === entityId) {
-        e.disabled_by = disable ? 'user' : null;
-      }
+      if (e.entity_id === entityId) e.disabled_by = disable ? 'user' : null;
     });
-    // Re-render both panels — re-apply active filters so search/filter state persists
     filterEntityReg();
     filterDisabledAfterToggle();
-  });
+  } catch(e) {
+    alert('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = disable ? '⏸ Disable' : '▶ Enable'; }
+  }
 }
 
 // ─── Panel navigation ─────────────────────────────────────
@@ -2589,7 +2558,7 @@ async function refreshTimeline() {
   var btn = document.querySelector('[onclick="refreshTimeline()"]');
   if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
   try {
-    var res = await HAConn.send({ type: 'get_states' });
+    var res = await HAConn.addonWsCmd('get_states');
     if (res.ok) {
       _tlStates = (res.result || []).filter(function(s){ return s.last_changed; });
       _tlLastFetch = Date.now();
@@ -2762,7 +2731,6 @@ function populateBatchEntities() {
 }
 
 async function runBatchAction() {
-  if (HAConn.state !== 'connected') return;
   var service = (document.getElementById('batch-service') || {}).value || 'turn_on';
   var domain  = service.includes('.') ? service.split('.')[0] : null;
   var svc     = service.includes('.') ? service.split('.')[1] : service;
@@ -2777,12 +2745,9 @@ async function runBatchAction() {
   for (var i = 0; i < eids.length; i++) {
     var eid    = eids[i];
     var eDomain = eid.split('.')[0];
-    var res = await HAConn.send({
-      type: 'call_service',
-      domain: domain || eDomain,
-      service: svc,
-      service_data: { entity_id: eid }
-    });
+    var res = await HAConn.addonFetch('/api/services/' + (domain || eDomain) + '/' + svc)
+      .then(function(){ return { ok: true }; })
+      .catch(function(){ return { ok: false }; });
     if (res.ok) ok++; else err++;
   }
   resEl.textContent = '✅ ' + ok + ' succeeded' + (err ? ' · ❌ ' + err + ' failed' : '');
@@ -3317,7 +3282,7 @@ function renderPowerMap() {
 function exportData() {
   var data = {
     exported: new Date().toISOString(),
-    url: HAConn.url,
+    url: location.hostname,
     counts: {
       devices:  REG.devices.length,
       entities: REG.entities.length,
@@ -3349,19 +3314,10 @@ function escHtml(s) {
 function escAttr(s) { return escHtml(s).replace(/'/g,'&#39;'); }
 function escJs(s) { return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
-// ─── Auto-load credentials ────────────────────────────────
-(function init() {
-  // Auto-load when shared connection is ready
-  HAConn.onStateChange(function(s) {
-    if (s === 'connected') {
-      HA_URL   = HAConn.url;
-      HA_TOKEN = HAConn.token;
-      BrandIcon.warmToken(HAConn.version);
-      loadAll();
-    }
-  });
-  // Credentials managed by HAConn
-})();
+// ─── Auto-load on page ready ──────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(loadAll, 400);
+});
 
 (function(){
   var p = location.pathname.split('/').pop() || 'index.html';

@@ -577,70 +577,48 @@
   // ── Populate HA stats ────────────────────────────────────────
   async function ixFetchStats() {
     try {
-      var results = await Promise.all([
-        HAConn.send({ type: 'get_states' }),
-        HAConn.send({ type: 'config/device_registry/list' }),
-        HAConn.send({ type: 'config/config_entries/list' })
+      var base = HAConn.addonBase();
+      var [statesR, devicesR, entriesR, infoR] = await Promise.all([
+        fetch(base + 'api/entity-states', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+        HAConn.addonWsCmd('config/device_registry/list'),
+        HAConn.addonWsCmd('config_entries/list'),
+        fetch(base + 'api/ha-info', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {}; })
       ]);
 
-      // Entities — bare array or { entity_entries: [] } (HA 2024+)
-      if (results[0].ok && results[0].result) {
-        var entRaw = results[0].result;
-        var ents = Array.isArray(entRaw) ? entRaw
-                 : Array.isArray(entRaw.entity_entries) ? entRaw.entity_entries : [];
-        var entCount = ents.length;
+      if (statesR.ok && Array.isArray(statesR.states)) {
+        var entCount = statesR.states.length;
         document.getElementById('stat-entities').textContent = entCount;
         document.getElementById('stat-entities').classList.remove('ix-loading');
         document.getElementById('ix-sb-ents').textContent = entCount;
       }
 
-      // Devices — bare array or { devices: [] } (HA 2024+)
-      if (results[1].ok && results[1].result) {
-        var devRaw = results[1].result;
-        var devs = Array.isArray(devRaw) ? devRaw
-                 : Array.isArray(devRaw.devices) ? devRaw.devices : [];
+      if (devicesR.ok && devicesR.result) {
+        var devs = Array.isArray(devicesR.result) ? devicesR.result : (devicesR.result.devices || []);
         document.getElementById('stat-devices').textContent = devs.length;
         document.getElementById('stat-devices').classList.remove('ix-loading');
         document.getElementById('ix-sb-devs').textContent = devs.length;
       }
 
-      // Integrations — bare array or { entries: [] } (HA 2023.6+)
-      if (results[2].ok && results[2].result) {
-        var raw = results[2].result;
-        var entries = Array.isArray(raw) ? raw
-                    : Array.isArray(raw.entries) ? raw.entries : [];
+      if (entriesR.ok && entriesR.result) {
+        var raw = Array.isArray(entriesR.result) ? entriesR.result : (entriesR.result.entries || []);
         var domains = {};
-        entries.forEach(function(e) { if (e.domain) domains[e.domain] = true; });
-        var intCount = Object.keys(domains).length;
-        document.getElementById('stat-integrations').textContent = intCount;
+        raw.forEach(function(e) { if (e.domain) domains[e.domain] = true; });
+        document.getElementById('stat-integrations').textContent = Object.keys(domains).length;
         document.getElementById('stat-integrations').classList.remove('ix-loading');
       }
 
-    } catch(e) {
-      // Silently fail — stats will remain at —
-    }
+      var ver = infoR.version || '';
+      var connEl  = document.getElementById('ix-sb-conn');
+      var verEl   = document.getElementById('ix-sb-ver');
+      var headVer = document.getElementById('ix-ha-version');
+      if (connEl)  { connEl.textContent = 'Connected'; connEl.style.color = 'var(--green)'; }
+      if (verEl)   verEl.textContent = ver || '—';
+      if (headVer) headVer.textContent = ver ? 'HA ' + ver : '';
+
+    } catch(e) { /* Silently fail — stats remain at — */ }
   }
 
-  // ── HA connection wiring ─────────────────────────────────────
-  HAConn.onStateChange(function(s, msg, ver) {
-    var connEl  = document.getElementById('ix-sb-conn');
-    var verEl   = document.getElementById('ix-sb-ver');
-    var headVer = document.getElementById('ix-ha-version');
-
-    if (s === 'connected') {
-      if (connEl)  { connEl.textContent = 'Connected'; connEl.style.color = 'var(--green)'; }
-      if (verEl)   { verEl.textContent = ver || '—'; }
-      if (headVer) { headVer.textContent = ver ? 'HA ' + ver : ''; }
-      ixFetchStats();
-    } else if (s === 'connecting') {
-      if (connEl)  { connEl.textContent = 'Connecting…'; connEl.style.color = 'var(--orange)'; }
-    } else if (s === 'error') {
-      if (connEl)  { connEl.textContent = 'Error'; connEl.style.color = 'var(--red)'; }
-    } else {
-      if (connEl)  { connEl.textContent = 'Not connected'; connEl.style.color = 'var(--text3)'; }
-      if (headVer) { headVer.textContent = '— Not connected'; }
-    }
-  });
+  document.addEventListener('DOMContentLoaded', function() { setTimeout(ixFetchStats, 400); });
 
 </script>
 

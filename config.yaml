@@ -1,0 +1,31 @@
+# ════════════════════════════════════════════════════════════════
+#  HA Tools Hub — config.yaml
+#  HA addon manifest — slug, version, ingress config, API permissions.
+#  Copyright © 2026 HA Tools Hub. All rights reserved.
+#  https://ha-tools-hub.com
+# ════════════════════════════════════════════════════════════════
+name: "HA Tools Hub"
+description: "Tool Companion Hub for HA"
+version: "0.02d"
+slug: "ha_tools_hub"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: manual
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:home-analytics
+panel_title: "HA Tools Hub"
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+map:
+  - type: config
+    read_only: false
+options: {}
+schema: {}

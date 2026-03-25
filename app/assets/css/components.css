@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════════
+   HA TOOLS HUB — COMPONENTS.CSS
+   Cards, buttons, badges, tables, inputs, status indicators.
+   No layout rules. No theme colours (use CSS variables only).
+═══════════════════════════════════════════════════════════════════
+   Copyright © 2026 HA Tools Hub. All rights reserved.
+   https://ha-tools-hub.com
+ */
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.btn { padding:9px 20px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; border:none; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { filter:brightness(1.15); }
+.btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--accent); }
+.btn-danger { background:transparent; color:var(--red); border:1px solid var(--red); }
+.btn-danger:hover { background:rgba(224,82,82,0.1); }
+.btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+/* ── Hub card (generic panel) ─────────────────────────────────── */
+.hub-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.hub-card-body { padding:18px 20px; }
+.hub-card-title { font-size:14px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+
+/* ── Tool card (index/overview grid) ─────────────────────────── */
+.hub-tool-card { background:var(--surface); border:2px solid var(--border); border-radius:14px; padding:18px 16px; cursor:pointer; transition:transform 0.15s, border-color 0.2s, box-shadow 0.15s; display:flex; flex-direction:column; gap:10px; text-decoration:none; color:inherit; position:relative; overflow:hidden; }
+.hub-tool-card::before { content:''; position:absolute; inset:0; background:var(--card-color, var(--accent)); opacity:0; transition:opacity 0.2s; }
+.hub-tool-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.3); }
+.hub-tool-card:hover::before { opacity:0.06; }
+.hub-tool-card-icon { font-size:32px; line-height:1; position:relative; z-index:1; }
+.hub-tool-card-title { font-size:14px; font-weight:700; position:relative; z-index:1; }
+.hub-tool-card-sub { font-size:10px; color:var(--text2); position:relative; z-index:1; }
+.hub-tool-card-desc { font-size:11px; color:var(--text2); line-height:1.7; position:relative; z-index:1; }
+.hub-tool-card-tags { display:flex; flex-wrap:wrap; gap:4px; position:relative; z-index:1; }
+.hub-tag { font-size:9px; font-weight:700; padding:2px 7px; border-radius:5px; background:rgba(255,255,255,0.06); color:var(--text2); border:1px solid var(--border); }
+
+/* ── Notice cards ─────────────────────────────────────────────── */
+.hub-card-warning { background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:flex-start; gap:10px; font-size:12px; color:var(--text2); line-height:1.7; }
+.hub-card-warning-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.hub-card-warning-msg { font-weight:600; color:var(--orange); }
+.hub-card-warning-detail { margin-top:2px; }
+.hub-card-info { background:rgba(74,144,217,0.06); border:1px solid rgba(74,144,217,0.2); border-radius:10px; padding:12px 16px; display:flex; align-items:flex-start; gap:10px; font-size:12px; color:var(--text2); line-height:1.7; }
+.hub-card-info-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.hub-card-info-body { flex:1; }
+.hub-card-info-msg { font-weight:600; color:var(--accent2); }
+.hub-card-info-detail { margin-top:2px; }
+
+/* ── Stat card ────────────────────────────────────────────────── */
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; text-align:center; }
+.stat-card .sv { font-size:26px; font-weight:800; color:var(--accent2); line-height:1; margin-bottom:4px; }
+.stat-card .sl { font-size:11px; color:var(--text2); font-weight:600; }
+
+/* ── Badges ───────────────────────────────────────────────────── */
+.badge { display:inline-block; font-size:9px; font-weight:700; padding:2px 7px; border-radius:8px; }
+.badge-green  { background:rgba(76,175,135,0.15); color:var(--green); }
+.badge-orange { background:rgba(245,166,35,0.15); color:var(--orange); }
+.badge-red    { background:rgba(224,82,82,0.12); color:var(--red); }
+.badge-blue   { background:rgba(74,144,217,0.12); color:var(--accent2); }
+.badge-purple { background:rgba(155,114,232,0.12); color:var(--purple); }
+
+/* ── Status dot ───────────────────────────────────────────────── */
+.status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.status-dot.ok      { background:var(--green); }
+.status-dot.warn    { background:var(--orange); }
+.status-dot.bad     { background:var(--red); }
+.status-dot.offline { background:var(--text3); }
+
+/* ── Form inputs ──────────────────────────────────────────────── */
+.hub-input { width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:8px 11px; font-size:13px; outline:none; transition:border-color 0.15s; }
+.hub-input:focus { border-color:var(--accent); }
+.hub-select { width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:8px 11px; font-size:13px; outline:none; cursor:pointer; }
+.hub-label { display:block; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:5px; }
+
+/* ── Tab bars ─────────────────────────────────────────────────── */
+.hub-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.hub-tab { padding:8px 16px; font-size:12px; font-weight:600; cursor:pointer; color:var(--text2); border-bottom:2px solid transparent; transition:all 0.15s; }
+.hub-tab:hover { color:var(--text); }
+.hub-tab.active { color:var(--accent2); border-bottom-color:var(--accent); }
+.hub-tab-panel { display:none; }
+.hub-tab-panel.active { display:block; }
+
+/* ── Sidebar section ──────────────────────────────────────────── */
+.sa-sidebar-section { padding:12px 14px; border-bottom:1px solid var(--border); }
+.sa-sidebar-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:var(--text2); margin-bottom:8px; }
+.sa-stat-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; border-bottom:1px solid var(--border); font-size:11px; }
+.sa-stat-row:last-child { border-bottom:none; }
+.sa-stat-label { color:var(--text2); }
+.sa-stat-val { font-weight:700; color:var(--text); font-family:monospace; }
+.sa-ctrl-btn { width:100%; padding:7px 10px; border-radius:7px; font-size:11px; font-weight:700; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer; transition:all 0.15s; text-align:left; }
+.sa-ctrl-btn:hover { background:var(--surface3); }
+.sa-ctrl-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.sa-ctrl-primary:hover { filter:brightness(1.1); }
+.sa-ctrl-warn { border-color:var(--orange); color:var(--orange); }
+.sa-ctrl-warn:hover { background:rgba(245,166,35,0.1); }
+.sa-ctrl-danger { border-color:var(--red); color:var(--red); }
+.sa-ctrl-danger:hover { background:rgba(224,82,82,0.1); }

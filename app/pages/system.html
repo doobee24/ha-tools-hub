@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║                        HA Tools Hub                             ║
+  ║              https://ha-tools-hub.com                           ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Copyright © 2026 HA Tools Hub. All rights reserved.            ║
+  ║                                                                  ║
+  ║  Unauthorised copying, redistribution, modification or          ║
+  ║  commercial use of this software, in whole or in part,          ║
+  ║  without express written permission is strictly prohibited.     ║
+  ║                                                                  ║
+  ║  This software is provided for personal, non-commercial use     ║
+  ║  only. For licensing enquiries contact: info@ha-tools-hub.com   ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+  <script>(function(){var t=localStorage.getItem('ha_tools_theme')||'dark-space',m=localStorage.getItem('ha_tools_mode')||'system';var light=['light-clean','light-warm','arctic'],dark=['dark-space','midnight-blue','forest','volcanic','purple-haze','solarized','rose-gold','neon-cyber','molten-gold','aurora','deep-crimson','holographic','steel-forge'];if(m==='light'){if(dark.indexOf(t)!==-1)t='light-clean';}else if(m==='dark'){if(light.indexOf(t)!==-1)t='dark-space';}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){if(dark.indexOf(t)!==-1)t='light-clean';}document.documentElement.setAttribute('data-theme',t);})();</script>
+
+  <meta charset="UTF-8">
+  <!-- ② Security headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com data: blob:; connect-src 'self' ws: wss: http: https:; frame-src 'self' http: https:; img-src 'self' data: blob: http: https:;">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ③ Title -->
+  <title>System — HA Tools Hub</title>
+
+  <!-- ④ Shared styles -->
+  <link rel="stylesheet" href="../assets/css/main.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/layout.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.03">
+
+  <!-- ⑤ Shared scripts -->
+  <script src="../assets/js/main.js?v=0.03"></script>
+  <script src="../assets/js/components.js?v=0.03"></script>
+
+  <!-- ⑥ Page-specific styles -->
+  <style>
+
+    /* Tab strip hidden — navigation handled by Jump to Section sidebar */
+    #sa-tabs { display: none; }
+
+    /* ── Sidebar jump list ── */
+    .sa-jump-list { display: flex; flex-direction: column; gap: 4px; }
+    .sa-jump-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 6px 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; cursor: pointer; color: var(--text1);
+      font-size: 12px; text-align: left; transition: background 0.15s, border-color 0.15s;
+    }
+    .sa-jump-btn:hover { background: var(--surface3); border-color: var(--accent); }
+    .sa-jump-btn--soon { opacity: 0.45; cursor: not-allowed; }
+    .sa-jump-btn--soon:hover { background: var(--surface2); border-color: var(--border); }
+    .sa-jump-label { font-weight: 600; }
+    .sa-jump-count { font-family: monospace; font-size: 11px; color: var(--text2); background: var(--surface); padding: 1px 6px; border-radius: 10px; }
+    .sa-version-row { margin-top: 8px; font-size: 10px; color: var(--text2); text-align: right; }
+    .sa-version-row span { font-family: monospace; font-weight: 700; color: var(--text1); }
+
+    /* ── Entity panel ── */
+    .sa-ent-domain-group { margin-bottom: 5px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .sa-ent-domain-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; background: var(--surface2); user-select: none; transition: background 0.15s; }
+    .sa-ent-domain-header:hover { background: var(--surface3); }
+    .sa-ent-domain-icon { font-size: 14px; flex-shrink: 0; }
+    .sa-ent-domain-name { flex: 1; font-size: 12px; font-weight: 700; text-transform: capitalize; }
+    .sa-ent-domain-count { font-size: 11px; font-family: monospace; color: var(--text2); background: var(--surface); padding: 1px 7px; border-radius: 10px; }
+    .sa-ent-domain-chevron { font-size: 9px; color: var(--text2); flex-shrink: 0; }
+    .sa-ent-domain-rows { border-top: 1px solid var(--border); }
+    .sa-ent-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid var(--border); gap: 10px; }
+    .sa-ent-row:last-child { border-bottom: none; }
+    .sa-ent-row-name { font-size: 12px; font-weight: 500; flex: 1; min-width: 0; }
+    .sa-ent-row-id { display: block; font-size: 10px; font-family: monospace; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-ent-row-state { font-size: 11px; font-family: monospace; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
+    .sa-ent-state--unavail { color: var(--red, #e05252); font-weight: 700; }
+    .sa-ent-state--on { color: var(--green, #4caf87); font-weight: 700; }
+
+    /* ── Device detail strip ── */
+    .sa-dev-detail-strip { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 14px 6px; background: var(--surface2); border-top: 1px solid var(--border); }
+    .sa-dev-detail-chip { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text2); white-space: nowrap; }
+    a.sa-dev-detail-link { color: var(--accent); text-decoration: none; }
+    a.sa-dev-detail-link:hover { text-decoration: underline; }
+
+
+    /* ── Expandable device rows ── */
+    .sa-dev-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px; overflow: hidden; }
+    .sa-dev-row-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.15s; user-select: none; }
+    .sa-dev-row-header:hover { background: var(--surface2); }
+    .sa-dev-chevron { font-size: 10px; color: var(--text2); transition: transform 0.2s; flex-shrink: 0; width: 14px; text-align: center; }
+    .sa-dev-row.open .sa-dev-chevron { transform: rotate(90deg); }
+    .sa-dev-icon  { font-size: 20px; flex-shrink: 0; }
+    .sa-dev-name  { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-dev-meta  { font-size: 10px; color: var(--text2); flex-shrink: 0; white-space: nowrap; }
+    .sa-dev-count { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(74,144,217,0.12); color: var(--accent2); flex-shrink: 0; }
+    .sa-dev-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .sa-dev-dot.sa-ok   { background: var(--green); }
+    .sa-dev-dot.sa-warn { background: var(--orange); }
+    .sa-dev-dot.sa-bad  { background: var(--red); }
+
+    .sa-dev-ent-list { display: none; border-top: 1px solid var(--border); padding: 8px 12px; background: var(--surface2); }
+    .sa-dev-row.open .sa-dev-ent-list { display: block; }
+    .sa-dev-ent-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font-size: 11px; transition: background 0.1s; }
+    .sa-dev-ent-row:hover { background: var(--surface3); }
+    .sa-dev-ent-id   { font-family: monospace; color: var(--text2); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-dev-ent-name { color: var(--text); flex-shrink: 0; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-dev-ent-state { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+    .sa-dev-ent-state.sa-on          { background: rgba(76,175,135,0.15); color: var(--green); }
+    .sa-dev-ent-state.sa-off         { background: rgba(255,255,255,0.05); color: var(--text2); }
+    .sa-dev-ent-state.sa-unavailable { background: rgba(224,82,82,0.1);   color: var(--red); }
+    .sa-dev-ent-state.sa-other       { background: rgba(255,255,255,0.05); color: var(--text2); }
+
+    .sa-dev-search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .sa-dev-search-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 11px; font-size: 12px; outline: none; transition: border-color 0.15s; }
+    .sa-dev-search-row input:focus { border-color: var(--accent); }
+    .sa-dev-search-count { font-size: 11px; color: var(--text2); flex-shrink: 0; }
+
+    /* ── Integration list ── */
+    .sa-int-list { display: flex; flex-direction: column; gap: 6px; }
+
+    /* Expandable integration row — mirrors sa-dev-row pattern */
+    .sa-int-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .sa-int-row-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; cursor: pointer; user-select: none;
+      transition: background 0.12s;
+    }
+    .sa-int-row-header:hover { background: var(--surface2); }
+    .sa-int-chevron { font-size: 10px; color: var(--text3); transition: transform 0.18s; flex-shrink: 0; width: 14px; text-align: center; }
+    .sa-int-row.open .sa-int-chevron { transform: rotate(90deg); }
+    .sa-int-icon   { font-size: 20px; flex-shrink: 0; line-height: 1; }
+    .sa-int-titles { flex: 1; min-width: 0; }
+    .sa-int-name   { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-int-title-sub { font-size: 10px; color: var(--text2); font-family: monospace; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-int-badges { display: flex; gap: 5px; align-items: center; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+    .sa-ir-state { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .sa-ir-state.sa-loaded   { background: rgba(76,175,135,0.12);  color: var(--green); }
+    .sa-ir-state.sa-setup    { background: rgba(74,144,217,0.12);  color: var(--accent2); }
+    .sa-ir-state.sa-failed   { background: rgba(224,82,82,0.12);   color: var(--red); }
+    .sa-ir-state.sa-disabled { background: rgba(255,255,255,0.06); color: var(--text3); }
+    .sa-ir-count { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(74,144,217,0.1); color: var(--accent2); }
+    .sa-ir-count.sa-devices  { background: rgba(155,114,232,0.1); color: var(--purple); }
+    .sa-ir-source { font-size: 9px; color: var(--text3); font-family: monospace; }
+
+    /* Integration detail panel */
+    .sa-int-detail {
+      display: none; border-top: 1px solid var(--border);
+      padding: 10px 14px 12px; background: var(--surface2);
+      font-size: 11px;
+    }
+    .sa-int-row.open .sa-int-detail { display: block; }
+    .sa-int-detail-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 6px 14px; margin-bottom: 10px;
+    }
+    .sa-int-detail-field .sa-idl  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); margin-bottom: 2px; }
+    .sa-int-detail-field .sa-idv  { font-size: 11px; color: var(--text2); font-family: monospace; word-break: break-all; }
+    .sa-int-detail-field .sa-idv.sa-ok  { color: var(--green); }
+    .sa-int-detail-field .sa-idv.sa-err { color: var(--red); }
+
+    /* Entity list inside integration detail */
+    .sa-int-ent-section { margin-top: 8px; }
+    .sa-int-ent-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); margin-bottom: 5px; }
+    .sa-int-ent-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sa-int-ent-chip {
+      font-size: 10px; padding: 2px 8px; border-radius: 5px;
+      background: var(--surface3); color: var(--text2);
+      border: 1px solid var(--border); font-family: monospace;
+      white-space: nowrap;
+    }
+    .sa-int-ent-chip.sa-unavailable { border-color: rgba(224,82,82,0.3); color: var(--red); }
+    .sa-int-dev-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .sa-int-dev-chip {
+      font-size: 10px; padding: 2px 8px; border-radius: 5px;
+      background: rgba(155,114,232,0.08); color: var(--purple);
+      border: 1px solid rgba(155,114,232,0.2);
+      white-space: nowrap;
+    }
+    .sa-int-more { font-size: 10px; color: var(--text3); font-style: italic; margin-top: 4px; }
+
+    /* Search row */
+    .sa-int-search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .sa-int-search-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 11px; font-size: 12px; outline: none; transition: border-color 0.15s; }
+    .sa-int-search-row input:focus { border-color: var(--accent); }
+    .sa-int-search-count { font-size: 11px; color: var(--text2); flex-shrink: 0; }
+
+    /* ── Domain grid ── */
+    .sa-domain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .sa-domain-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .sa-domain-card .sa-dc-name  { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .sa-domain-card .sa-dc-count { font-size: 10px; color: var(--text2); margin-bottom: 6px; }
+    .sa-dc-state { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+    .sa-dc-state.sa-on          { background: rgba(76,175,135,0.15); color: var(--green); }
+    .sa-dc-state.sa-off         { background: rgba(255,255,255,0.05); color: var(--text2); }
+    .sa-dc-state.sa-unavailable { background: rgba(224,82,82,0.1);   color: var(--red); }
+
+
+    /* ── Banner (connect result) ── */
+    .sa-banner { display: none; padding: 9px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-bottom: 14px; }
+    .sa-banner.sa-ok   { display: block; background: rgba(76,175,135,0.1);  color: var(--green);   border: 1px solid rgba(76,175,135,0.25); }
+    .sa-banner.sa-err  { display: block; background: rgba(224,82,82,0.1);   color: var(--red);     border: 1px solid rgba(224,82,82,0.25); }
+    .sa-banner.sa-info { display: block; background: rgba(74,144,217,0.08); color: var(--accent2); border: 1px solid rgba(74,144,217,0.2); }
+
+    /* ── Welcome state ── */
+    .sa-welcome { text-align: center; padding: 64px 24px; color: var(--text2); }
+    .sa-welcome-icon { font-size: 56px; margin-bottom: 16px; }
+    .sa-welcome-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .sa-welcome-desc  { font-size: 13px; max-width: 400px; margin: 0 auto; line-height: 1.8; }
+
+
+    /* ── Source filter bar ── */
+    .sa-int-source-bar {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 12px; align-items: center;
+    }
+    .sa-int-source-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text3); flex-shrink: 0;
+      margin-right: 2px;
+    }
+    .sa-int-source-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text2);
+      cursor: pointer; transition: all 0.13s; user-select: none;
+    }
+    .sa-int-source-pill:hover { border-color: var(--accent); color: var(--text); }
+    .sa-int-source-pill.sa-active {
+      background: rgba(74,144,217,0.12);
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+    .sa-int-source-pill .sa-isp-count {
+      font-size: 10px; font-weight: 800;
+      padding: 0px 5px; border-radius: 8px;
+      background: var(--surface3); color: var(--text3);
+    }
+    .sa-int-source-pill.sa-active .sa-isp-count {
+      background: rgba(74,144,217,0.2); color: var(--accent2);
+    }
+    .sa-int-source-pill.sa-sp-show-all {
+      border-color: var(--green); color: var(--green);
+      background: rgba(76,175,135,0.08);
+    }
+    .sa-int-source-pill.sa-sp-show-all:hover { background: rgba(76,175,135,0.15); }
+    .sa-int-source-pill.sa-sp-hide-all {
+      border-color: var(--text3); color: var(--text3);
+      background: transparent;
+    }
+    .sa-int-source-pill.sa-sp-hide-all:hover { background: var(--surface3); color: var(--text2); }
+    .sa-int-count-label { font-size: 11px; color: var(--text2); margin-left: auto; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ⑦ Nav -->
+  <nav class="hub-nav"></nav>
+
+  <!-- ⑧ Page header -->
+  <div class="page-header">
+    <span class="page-header-icon">🧠</span>
+    <div class="page-header-text">
+      <div class="page-header-title">System</div>
+      <div class="page-header-desc">Home Assistant system overview — devices, integrations, domains and availability</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
+        <span>💡</span>
+        <span>Best viewed with HA's sidebar hidden — in your HA profile, enable <strong>Advanced Mode</strong> then toggle <em>Always hide the sidebar</em> for more space.</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <a href="device-explorer.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:filter 0.15s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+        🔭 Device Explorer
+      </a>
+    </div>
+  </div>
+
+  <!-- ⑨ Shell: sidebar + main -->
+  <div class="hub-shell">
+
+    <!-- ══ Sidebar ══ -->\
+    <aside class="sa-sidebar hub-sidebar">
+
+      <!-- Section jump links (visible after analysis) -->
+      <div class="sa-sidebar-section" id="sa-quick-stats" style="display:none;">
+        <div class="sa-sidebar-title">📊 Jump to Section</div>
+        <div class="sa-jump-list">
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-devices')">      <span class="sa-jump-label">Devices</span>      <span class="sa-jump-count" id="qs-devices">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-integrations')"> <span class="sa-jump-label">Integrations</span> <span class="sa-jump-count" id="qs-integrations">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-domains')">      <span class="sa-jump-label">Domains</span>      <span class="sa-jump-count" id="qs-domains">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-unavailable')">  <span class="sa-jump-label">Unavailable</span>  <span class="sa-jump-count" id="qs-unavailable">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-entities')">     <span class="sa-jump-label">Entities</span>     <span class="sa-jump-count" id="qs-entities">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-helpers')">     <span class="sa-jump-label">Helpers</span>     <span class="sa-jump-count" id="qs-helpers">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-scenes')">      <span class="sa-jump-label">Scenes</span>      <span class="sa-jump-count" id="qs-scenes">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-scripts')">     <span class="sa-jump-label">Scripts</span>     <span class="sa-jump-count" id="qs-scripts">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-blueprints')">  <span class="sa-jump-label">Blueprints</span>  <span class="sa-jump-count" id="qs-blueprints">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-people')">      <span class="sa-jump-label">People</span>      <span class="sa-jump-count" id="qs-people">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-automations')"> <span class="sa-jump-label">Automations</span> <span class="sa-jump-count" id="qs-automations">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-updates')">     <span class="sa-jump-label">Updates</span>     <span class="sa-jump-count" id="qs-updates">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-zones')">       <span class="sa-jump-label">Zones</span>       <span class="sa-jump-count" id="qs-zones">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-calendars')">   <span class="sa-jump-label">Calendars</span>   <span class="sa-jump-count" id="qs-calendars">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-areas')">       <span class="sa-jump-label">Areas</span>       <span class="sa-jump-count" id="qs-areas">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-repairs')">     <span class="sa-jump-label">Repairs</span>     <span class="sa-jump-count" id="qs-repairs">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-syshealth')">   <span class="sa-jump-label">Sys Health</span>  <span class="sa-jump-count" id="qs-syshealth">—</span></button>
+          <button class="sa-jump-btn" onclick="saJumpTo('tab-dashboards')">  <span class="sa-jump-label">Dashboards</span>  <span class="sa-jump-count" id="qs-dashboards">—</span></button>
+        </div>
+        <div class="sa-version-row">HA <span id="qs-version">—</span></div>
+      </div>
+
+      <!-- Connection controls -->
+      <div class="sa-sidebar-section" id="sa-conn-panel">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <button class="sa-ctrl-btn sa-ctrl-primary" id="sa-btn-analyse" onclick="runAnalysis()">&#128269; Refresh</button>
+          <div style="display:flex;gap:5px;">
+            <button class="sa-ctrl-btn sa-ctrl-warn"   id="sa-btn-disconnect" onclick="saDisconnect()" style="display:none;flex:1">&#9167; Disconnect</button>
+            <button class="sa-ctrl-btn sa-ctrl-danger" id="sa-btn-forget"     onclick="saForget()" style="flex:1">&#128465; Forget</button>
+          </div>
+        </div>
+        <div id="sa-ctrl-msg" style="font-size:10px;margin-top:6px;color:var(--text2);min-height:14px;"></div>
+      </div>
+
+    </aside>
+
+    <!-- ══ Main content ══ -->
+    <main class="hub-main">
+
+      <!-- Connection / status banner -->
+      <div class="sa-banner" id="sa-banner"></div>
+
+
+      <!-- Analysis area (hidden until data loads) -->
+      <div id="sa-analysis" style="display:none;">
+
+        <!-- Tabs -->
+        <div class="hub-tabs" id="sa-tabs" role="tablist"></div>
+
+        <!-- Tab panels -->
+        <div id="sa-panels"></div>
+      </div>
+
+      <!-- Welcome state (shown until a platform is selected & analysed) -->
+      <div class="sa-welcome" id="sa-welcome">
+        <div class="sa-welcome-icon">🏠</div>
+        <div class="sa-welcome-title">Connect to Home Assistant</div>
+        <div class="sa-welcome-desc">
+          Click <strong>⚙ Connect</strong> in the toolbar to configure your Home Assistant URL and token, then and your system data will load automatically of your system.
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /.hub-shell -->
+
+
+  <!-- ⑩ Page script -->
+  <script>
+  // ================================================================
+  //  System Analyser — page logic
+  //  Depends on: HAConn, HubSettings, Toast (all from shared assets)
+  // ================================================================
+
+
+  // ── State ──────────────────────────────────────────────────────
+  // Project is HA-only (BUG-006 resolved — sa-other platforms removed)
+  var _devRegistry = [];
+  var _entRegistry = [];
+  var _intAllEntries  = [];
+  var _intUserEntries = [];
+  var _activeSourceFilters = null; // null = show all; Set = only show these sources
+
+  var BUILTIN_DOMAINS = new Set([
+    // ── Core HA infrastructure ─────────────────────────────────────
+    'homeassistant','homeassistant_alerts','homeassistant_sky_connect',
+    'hassio','supervisor','hardware','update','repairs',
+    'config','default_config','onboarding',
+    'cloud','nabu_casa','my',
+
+    // ── Frontend / UI ──────────────────────────────────────────────
+    'frontend','lovelace','dashboard',
+    'map','energy',
+
+    // ── Data / History ────────────────────────────────────────────
+    'recorder','history','logbook','logger',
+    'analytics','statistics',
+
+    // ── Automation / Scripting ────────────────────────────────────
+    'automation','blueprint','script','scene','group','template',
+
+    // ── Helpers (all input_* types) ───────────────────────────────
+    'input_boolean','input_button','input_datetime','input_number',
+    'input_select','input_text','counter','timer','schedule',
+    'tag','todo','calendar',
+
+    // ── Entities / Persons ────────────────────────────────────────
+    'person','zone','sun','moon',
+
+    // ── Notifications / Alerts ────────────────────────────────────
+    'persistent_notification','notify','alert',
+
+    // ── Media / Audio ────────────────────────────────────────────
+    'tts','stt','media_source','stream','ffmpeg',
+    'wake_word','voice_assistant','assist_pipeline','conversation',
+
+    // ── Network / Discovery ───────────────────────────────────────
+    'network','dhcp','ssdp','zeroconf','usb','bluetooth',
+    'bluetooth_adapters','websocket_api','http','webhook',
+    'search','auth',
+
+    // ── Device / Entity registries ────────────────────────────────
+    'device_tracker','mobile_app',
+
+    // ── System utilities ──────────────────────────────────────────
+    'system_health','safe_mode',
+    'backup','file_upload','image_upload','image',
+    'shopping_list','intent_script','rest_command',
+    'command_line','local_calendar','local_todo',
+    'repairs','profiler',
+
+    // ── Integration infrastructure ────────────────────────────────
+    'hacs',  // intentionally NOT filtered — HACS is user-installed
+  ].filter(function(d) { return d !== 'hacs'; }));
+  // Note: hacs is intentionally kept visible — it is user-installed,
+  // not a HA system component, even though it ships as a config entry.
+
+  // ── HAConn state listener ──────────────────────────────────────
+  HAConn.onStateChange(function(s, msg, ver) {
+    var btnDisc = document.getElementById('sa-btn-disconnect');
+    if (s === 'connected') {
+      BrandIcon.warmToken(ver);
+      if (btnDisc) btnDisc.style.display = '';
+      setTimeout(runAnalysis, 300);
+    } else {
+      if (btnDisc) btnDisc.style.display = 'none';
+    }
+  });
+
+  // ── Platform selection ─────────────────────────────────────────
+  // ── Sidebar toggle (mobile) ────────────────────────────────────
+
+  // ── Jump to tab from sidebar ────────────────────────────────────
+  function saJumpTo(tabId) {
+    var tab = document.querySelector('#sa-tabs .hub-tab[data-tab="' + tabId + '"]');
+    if (tab) {
+      tab.click();
+      var analysis = document.getElementById('sa-analysis');
+      if (analysis) analysis.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // ── Sidebar controls ───────────────────────────────────────────
+  function saDisconnect() {
+    HAConn.disconnect();
+    clearAnalysis();
+    document.getElementById('sa-quick-stats').style.display = 'none';
+    ctrlMsg('Disconnected', 'var(--orange)');
+  }
+
+  function saForget() {
+    HubModal.show({
+      title: 'Forget credentials?',
+      body: 'This will clear your saved HA URL and token from browser storage. You will need to reconnect.',
+      confirmLabel: 'Forget',
+      onConfirm: function() {
+        localStorage.removeItem('ha_tools_conn');
+        localStorage.removeItem('ha_tools_oauth');
+        localStorage.removeItem('ha_tools_pkce');
+        HAConn.disconnect();
+        clearAnalysis();
+        document.getElementById('sa-quick-stats').style.display = 'none';
+        ctrlMsg('✅ Credentials cleared', 'var(--green)');
+      }
+    });
+  }
+
+  function ctrlMsg(msg, colour) {
+    var el = document.getElementById('sa-ctrl-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = colour || 'var(--text2)';
+    setTimeout(function() { el.textContent = ''; }, 3000);
+  }
+
+  // ── Banner helpers ─────────────────────────────────────────────
+  function showBanner(type, msg) {
+    var el = document.getElementById('sa-banner');
+    if (!el) return;
+    el.className = 'sa-banner ' + type;
+    el.textContent = msg;
+  }
+
+  function hideBanner() {
+    var el = document.getElementById('sa-banner');
+    if (el) el.className = 'sa-banner';
+  }
+
+  // ── Main HA analysis ──────────────────────────────────────────
+  async function runAnalysis() {
+    if (HAConn.state !== 'connected') {
+      showBanner('sa-err', '⚠ Not connected — click ⚙ in the toolbar to configure.');
+      return;
+    }
+
+    showBanner('sa-info', '⏳ Analysing Home Assistant…');
+
+    try {
+      var responses = await Promise.all([
+        HAConn.send({ type: 'get_states' }),
+        HAConn.send({ type: 'config_entries/list' }),
+        HAConn.send({ type: 'get_config' }),
+        HAConn.send({ type: 'config/device_registry/list' }),
+        HAConn.send({ type: 'config/entity_registry/list' }),
+        HAConn.send({ type: 'blueprint/list' }),
+        HAConn.send({ type: 'config/area_registry/list' }),
+        HAConn.send({ type: 'config/floor_registry/list' }),
+        HAConn.send({ type: 'repairs/list/issues' }),
+        HAConn.send({ type: 'lovelace/dashboards/list' })
+      ]);
+
+      var states  = responses[0].ok ? (responses[0].result || []) : [];
+      // config_entries/list: try all known response shapes.
+      // If the WS command returns nothing useful, fall back to the HA REST API.
+      var rawEnt  = responses[1].ok ? responses[1].result : null;
+      var entries = [];
+      if (Array.isArray(rawEnt))                         entries = rawEnt;
+      else if (rawEnt && Array.isArray(rawEnt.entries))  entries = rawEnt.entries;
+
+      // Fallback: WS gave us nothing — try REST (two known endpoint paths)
+      if (!entries.length) {
+        var restPaths = [
+          '/api/config/config_entries/entry',
+          '/api/config/config_entries'
+        ];
+        for (var _rpi = 0; _rpi < restPaths.length && !entries.length; _rpi++) {
+          try {
+            var restResp = await fetch(HAConn.url + restPaths[_rpi], {
+              headers: { 'Authorization': 'Bearer ' + HAConn.token, 'Content-Type': 'application/json' }
+            });
+            if (restResp.ok) {
+              var restData = await restResp.json();
+              if (Array.isArray(restData))                        entries = restData;
+              else if (restData && Array.isArray(restData.entries)) entries = restData.entries;
+            }
+          } catch(ignored) {}
+        }
+      }
+      var config  = responses[2].ok ? (responses[2].result || {}) : {};
+      _devRegistry = responses[3].ok ? (Array.isArray(responses[3].result) ? responses[3].result : (responses[3].result && Array.isArray(responses[3].result.devices) ? responses[3].result.devices : [])) : [];
+      _entRegistry = responses[4].ok ? (Array.isArray(responses[4].result) ? responses[4].result : (responses[4].result && Array.isArray(responses[4].result.entity_entries) ? responses[4].result.entity_entries : [])) : [];
+
+      // blueprint/list returns { domain: { name, ... }, ... } — flatten to array
+      var _bpRaw = responses[5].ok ? (responses[5].result || {}) : {};
+      var blueprintList = [];
+      Object.keys(_bpRaw).forEach(function(domain) {
+        Object.keys(_bpRaw[domain]).forEach(function(path) {
+          blueprintList.push(Object.assign({ _domain: domain, _path: path }, _bpRaw[domain][path]));
+        });
+      });
+
+      // Areas: bare array
+      var areaRegistry = responses[6].ok ? (responses[6].result || []) : [];
+
+      // Floors: bare array (HA 2024.4+ only — graceful empty if unsupported)
+      var floorRegistry = responses[7].ok ? (responses[7].result || []) : [];
+
+      // Repairs: { issues: [] }
+      var repairsRaw = responses[8].ok ? (responses[8].result || {}) : {};
+      var repairIssues = Array.isArray(repairsRaw) ? repairsRaw
+                       : Array.isArray(repairsRaw.issues) ? repairsRaw.issues : [];
+
+      // Dashboards: bare array
+      var dashboards = responses[9].ok ? (responses[9].result || []) : [];
+
+      // System health — sequential fetch (different response shape, one sub-call per domain)
+      var systemHealth = {};
+      try {
+        var shResp = await HAConn.send({ type: 'system_health/info' });
+        if (shResp.ok && shResp.result) systemHealth = shResp.result;
+      } catch(ignored) {}
+
+      if (!states.length && !entries.length) {
+        showBanner('sa-err', '❌ No data returned — check token permissions.');
+        return;
+      }
+
+      var version = config.version || '';
+      if (!version) {
+        var updateEnt = states.find(function(s) { return s.entity_id === 'update.home_assistant_core_update'; });
+        if (updateEnt) version = (updateEnt.attributes || {}).installed_version || '';
+      }
+
+      var autos = states.filter(function(s) { return s.entity_id.startsWith('automation.'); }).length;
+      showBanner('sa-ok', '✅ HA ' + (version || 'online') + ' · ' + states.length + ' entities · ' + entries.length + ' integrations');
+      // Clear the banner after a short delay — version/counts live in the sidebar now
+      setTimeout(hideBanner, 2000);
+
+      // Jump-list counts
+      var helpers     = states.filter(function(s) { return ['input_boolean','input_number','input_select','input_text','input_datetime','input_button','counter','timer','schedule','todo'].indexOf(s.entity_id.split('.')[0]) !== -1; }).length;
+      var scenes      = states.filter(function(s) { return s.entity_id.startsWith('scene.'); }).length;
+      var scripts     = states.filter(function(s) { return s.entity_id.startsWith('script.'); }).length;
+      var people      = states.filter(function(s) { return s.entity_id.startsWith('person.'); }).length;
+      var unavail     = states.filter(function(s) { return s.state === 'unavailable' || s.state === 'unknown'; }).length;
+      var domainCount = Object.keys((function(){ var d={}; states.forEach(function(s){ d[s.entity_id.split('.')[0]]=1; }); return d; })()).length;
+      var updates     = states.filter(function(s) { return s.entity_id.startsWith('update.') && s.state === 'on'; }).length;
+      var zones       = states.filter(function(s) { return s.entity_id.startsWith('zone.'); }).length;
+      var calendars   = states.filter(function(s) { return s.entity_id.startsWith('calendar.'); }).length;
+
+      setStat('qs-entities',     states.length);
+      setStat('qs-devices',      _devRegistry.length);
+      setStat('qs-integrations', entries.length);
+      setStat('qs-domains',      domainCount);
+      setStat('qs-unavailable',  unavail);
+      setStat('qs-helpers',      helpers);
+      setStat('qs-scenes',       scenes);
+      setStat('qs-scripts',      scripts);
+      setStat('qs-blueprints',   blueprintList.length || '—');
+      setStat('qs-people',       people);
+      setStat('qs-automations',  autos);
+      setStat('qs-updates',      updates || '✓');
+      setStat('qs-zones',        zones);
+      setStat('qs-calendars',    calendars);
+      setStat('qs-areas',        areaRegistry.length);
+      setStat('qs-repairs',      repairIssues.length || '✓');
+      setStat('qs-syshealth',    Object.keys(systemHealth).length || '—');
+      setStat('qs-dashboards',   dashboards.length);
+      setStat('qs-version',      version || '?');
+      document.getElementById('sa-quick-stats').style.display = '';
+
+      renderAnalysis(states, entries, config, version, blueprintList, areaRegistry, floorRegistry, repairIssues, dashboards, systemHealth);
+
+
+    } catch (e) {
+      showBanner('sa-err', '❌ Analysis failed: ' + (e.message || String(e)) + (e.stack ? ' — ' + e.stack.split('\n')[1] : ''));
+      console.error('runAnalysis error:', e);
+    }
+  }
+
+  // ── Render full analysis ───────────────────────────────────────
+  function renderAnalysis(states, entries, config, version, blueprintList, areaRegistry, floorRegistry, repairIssues, dashboards, systemHealth) {
+    blueprintList = blueprintList || [];
+    areaRegistry  = areaRegistry  || [];
+    floorRegistry = floorRegistry || [];
+    repairIssues  = repairIssues  || [];
+    dashboards    = dashboards    || [];
+    systemHealth  = systemHealth  || {};
+    var domains = {};
+    var onCount = 0, unavailCount = 0;
+    states.forEach(function(s) {
+      var d = s.entity_id.split('.')[0];
+      if (!domains[d]) domains[d] = [];
+      domains[d].push(s);
+      if (s.state === 'on') onCount++;
+      if (s.state === 'unavailable' || s.state === 'unknown') unavailCount++;
+    });
+
+    // Build state map for device panel
+    var stateMap = {};
+    states.forEach(function(s) { stateMap[s.entity_id] = s; });
+
+    // Tabs
+    var tabs = [
+      { label: 'Devices',       id: 'tab-devices' },
+      { label: 'Integrations',  id: 'tab-integrations' },
+      { label: 'Domains',       id: 'tab-domains' },
+      { label: 'Unavailable',   id: 'tab-unavailable' },
+      { label: 'Entities',      id: 'tab-entities' },
+      { label: 'Helpers',       id: 'tab-helpers' },
+      { label: 'Scenes',        id: 'tab-scenes' },
+      { label: 'Scripts',       id: 'tab-scripts' },
+      { label: 'Blueprints',    id: 'tab-blueprints' },
+      { label: 'People',        id: 'tab-people' },
+      { label: 'Automations',   id: 'tab-automations' },
+      { label: 'Updates',       id: 'tab-updates' },
+      { label: 'Zones',         id: 'tab-zones' },
+      { label: 'Calendars',     id: 'tab-calendars' },
+      { label: 'Areas',         id: 'tab-areas' },
+      { label: 'Repairs',       id: 'tab-repairs' },
+      { label: 'Sys Health',    id: 'tab-syshealth' },
+      { label: 'Dashboards',    id: 'tab-dashboards' }
+    ];
+
+    document.getElementById('sa-tabs').innerHTML = tabs.map(function(t, i) {
+      return '<div class="hub-tab' + (i === 0 ? ' active' : '') + '" data-tab="' + t.id + '">' + escHtml(t.label) + '</div>';
+    }).join('');
+
+    // Sort entries for integration panel — reset source filters for fresh analysis
+    _activeSourceFilters = null;
+    _intAllEntries  = entries.slice().sort(function(a, b) { return (a.domain || '').localeCompare(b.domain || ''); });
+    _intUserEntries = _intAllEntries.filter(function(e) { return !BUILTIN_DOMAINS.has(e.domain || ''); });
+
+    // Pre-build cross-reference maps once here — passed into buildIntegrationPanel
+    var entsByEntry = {}, devsByEntry = {};
+    _entRegistry.forEach(function(e) {
+      var ceid = e.config_entry_id || (e.config_entries && e.config_entries[0]);
+      if (!ceid) return;
+      if (!entsByEntry[ceid]) entsByEntry[ceid] = [];
+      entsByEntry[ceid].push(e);
+    });
+    _devRegistry.forEach(function(d) {
+      (d.config_entries || []).forEach(function(ceid) {
+        if (!devsByEntry[ceid]) devsByEntry[ceid] = [];
+        devsByEntry[ceid].push(d);
+      });
+    });
+
+    // Panels
+    document.getElementById('sa-panels').innerHTML =
+      '<div class="hub-tab-panel active" id="tab-devices">'      + buildDevicePanel(stateMap)                              + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-integrations">' + buildIntegrationPanel(entsByEntry, devsByEntry)          + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-domains">'      + buildDomainPanel(domains)                               + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-unavailable">'  + buildUnavailablePanel(states)                           + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-entities">'     + buildEntityPanel(states)                                + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-helpers">'      + buildHelpersPanel(states)                               + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-scenes">'       + buildScenesPanel(states)                                + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-scripts">'      + buildScriptsPanel(states)                               + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-blueprints">'   + buildBlueprintsPanel(blueprintList)                     + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-people">'       + buildPeoplePanel(states)                                + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-automations">'  + buildAutomationsPanel(states)                           + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-updates">'      + buildUpdatesPanel(states)                               + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-zones">'        + buildZonesPanel(states)                                 + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-calendars">'    + buildCalendarsPanel(states)                             + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-areas">'        + buildAreasPanel(areaRegistry, floorRegistry, states, _devRegistry) + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-repairs">'      + buildRepairsPanel(repairIssues)                         + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-syshealth">'    + buildSysHealthPanel(systemHealth)                       + '</div>' +
+      '<div class="hub-tab-panel"        id="tab-dashboards">'   + buildDashboardsPanel(dashboards)                        + '</div>';
+
+    document.getElementById('sa-analysis').style.display = '';
+    document.getElementById('sa-welcome').style.display  = 'none';
+
+    // Wire tabs via HubTabs
+    HubTabs.init('sa-tabs', 'sa-panels');
+  }
+
+  // ── Panel builders ─────────────────────────────────────────────
+  function buildDevicePanel(stateMap) {
+    if (!_devRegistry.length) return buildDomainFallback(stateMap);
+
+    var entsByDevice = {};
+    _entRegistry.forEach(function(e) {
+      if (e.device_id) {
+        if (!entsByDevice[e.device_id]) entsByDevice[e.device_id] = [];
+        entsByDevice[e.device_id].push(e);
+      }
+    });
+
+    // Build area name map
+    var areaNames = {};
+    if (typeof areaRegistry !== 'undefined') {
+      areaRegistry.forEach(function(a) { areaNames[a.area_id] = a.name; });
+    }
+
+    var sorted = _devRegistry.slice().sort(function(a, b) {
+      return (a.name_by_user || a.name || '').localeCompare(b.name_by_user || b.name || '');
+    });
+
+    var html = '<div class="sa-dev-search-row">' +
+      '<input type="text" id="dev-search" placeholder="🔍 Search devices…" oninput="filterDevices()">' +
+      '<span class="sa-dev-search-count" id="dev-count">' + sorted.length + ' devices</span>' +
+      '</div><div id="dev-list">';
+
+    sorted.forEach(function(dev) {
+      var devId   = dev.id || dev.device_id;
+      var devName = escHtml(dev.name_by_user || dev.name || devId);
+      var meta    = [dev.manufacturer, dev.model].filter(Boolean).map(escHtml).join(' · ');
+      var ents    = entsByDevice[devId] || [];
+      var unavail = ents.filter(function(e) { var s = stateMap[e.entity_id]; return s && (s.state === 'unavailable' || s.state === 'unknown'); }).length;
+      var dotCls  = unavail === 0 ? 'ok' : unavail === ents.length ? 'bad' : 'warn';
+
+      // Extra device detail
+      var swVer    = dev.sw_version   || '';
+      var hwVer    = dev.hw_version   || '';
+      var areaName = dev.area_id ? (areaNames[dev.area_id] || dev.area_id) : '';
+      var cfgUrl   = dev.configuration_url || '';
+      var viaId    = dev.via_device_id || '';
+      var viaName  = '';
+      if (viaId) {
+        var viaDev = _devRegistry.find(function(d){ return (d.id||d.device_id) === viaId; });
+        viaName = viaDev ? (viaDev.name_by_user || viaDev.name || viaId) : viaId;
+      }
+      var disabledBy = dev.disabled_by || '';
+
+      var entRows = ents.sort(function(a, b) { return a.entity_id.localeCompare(b.entity_id); }).map(function(e) {
+        var s   = stateMap[e.entity_id];
+        var st  = s ? s.state : (e.disabled_by ? 'disabled' : '—');
+        var cls = st === 'on' ? 'on' : st === 'off' ? 'off' : (st === 'unavailable' || st === 'unknown') ? 'unavailable' : 'other';
+        var nm  = escHtml(e.name || e.original_name || '');
+        var unit = s && s.attributes && s.attributes.unit_of_measurement ? ' ' + s.attributes.unit_of_measurement : '';
+        var devClass = e.device_class ? ' <span style="font-size:9px;color:var(--text2);background:var(--surface2);padding:1px 5px;border-radius:8px;">' + escHtml(e.device_class) + '</span>' : '';
+        return '<div class="sa-dev-ent-row">' +
+          '<span class="sa-dev-ent-id">'   + escHtml(e.entity_id) + devClass + '</span>' +
+          (nm ? '<span class="sa-dev-ent-name">' + nm + '</span>' : '') +
+          '<span class="sa-dev-ent-state ' + cls + '">' + escHtml(st) + escHtml(unit) + '</span>' +
+          '</div>';
+      }).join('') || '<div style="font-size:11px;color:var(--text2);padding:4px 6px">No entities in registry</div>';
+
+      // Detail metadata strip
+      var detailMeta = '';
+      if (swVer)    detailMeta += '<span class="sa-dev-detail-chip">FW: ' + escHtml(swVer) + '</span>';
+      if (hwVer)    detailMeta += '<span class="sa-dev-detail-chip">HW: ' + escHtml(hwVer) + '</span>';
+      if (areaName) detailMeta += '<span class="sa-dev-detail-chip">📍 ' + escHtml(areaName) + '</span>';
+      if (viaName)  detailMeta += '<span class="sa-dev-detail-chip">via: ' + escHtml(viaName) + '</span>';
+      if (cfgUrl)   detailMeta += '<a class="sa-dev-detail-chip sa-dev-detail-link" href="' + escHtml(cfgUrl) + '" target="_blank">⚙ Configure ↗</a>';
+      if (disabledBy) detailMeta += '<span class="sa-dev-detail-chip" style="color:var(--red,#e05252);">disabled: ' + escHtml(disabledBy) + '</span>';
+
+      html += '<div class="sa-dev-row" id="dr-' + escHtml(devId) + '" data-name="' + devName.toLowerCase() + '">' +
+        '<div class="sa-dev-row-header" onclick="toggleDev(\'' + escHtml(devId) + '\')">' +
+          '<span class="sa-dev-chevron">▶</span>' +
+          '<span class="sa-dev-icon">'  + deviceIcon(dev) + '</span>' +
+          '<span class="sa-dev-name">'  + devName + '</span>' +
+          (meta ? '<span class="sa-dev-meta">' + meta + '</span>' : '') +
+          '<span class="sa-dev-count">' + ents.length + ' ' + (ents.length === 1 ? 'entity' : 'entities') + '</span>' +
+          '<span class="sa-dev-dot '   + dotCls + '"></span>' +
+        '</div>' +
+        (detailMeta ? '<div class="sa-dev-detail-strip">' + detailMeta + '</div>' : '') +
+        '<div class="sa-dev-ent-list">' + entRows + '</div>' +
+        '</div>';
+    });
+
+    return html + '</div>';
+  }
+
+  function buildDomainFallback(stateMap) {
+    var grouped = {};
+    Object.values(stateMap).forEach(function(s) {
+      var d = s.entity_id.split('.')[0];
+      if (['automation','script','scene','persistent_notification','zone','person','sun'].indexOf(d) !== -1) return;
+      if (!grouped[d]) grouped[d] = [];
+      grouped[d].push(s);
+    });
+    var html = '<div class="hub-card-warning" style="margin-bottom:12px;"><span class="hub-card-warning-icon">⚠</span><div><div class="hub-card-warning-msg">Device registry unavailable</div><div class="hub-card-warning-detail">Showing domain groups instead. Ensure your HA token has admin access.</div></div></div>';
+    html += '<div class="sa-int-list">';
+    Object.keys(grouped).sort().forEach(function(d) {
+      var ents = grouped[d];
+      html += '<div class="sa-int-row"><div class="ir-name">' + BrandIcon.img(d, 16, domainIcon(d), 'margin-right:4px;') + escHtml(d) + '</div>' +
+        '<div class="ir-domain">' + ents.length + ' entities</div>' +
+        '<span class="sa-ir-state sa-loaded">' + ents.filter(function(e) { return e.state === 'on' || e.state === 'home'; }).length + ' active</span></div>';
+    });
+    return html + '</div>';
+  }
+
+  function buildIntegrationPanel(entsByEntry, devsByEntry) {
+    entsByEntry = entsByEntry || {};
+    devsByEntry = devsByEntry || {};
+
+    // Count entries per source value from the full list
+    var sourceCounts = {};
+    _intAllEntries.forEach(function(e) {
+      var s = e.source || 'unknown';
+      sourceCounts[s] = (sourceCounts[s] || 0) + 1;
+    });
+
+    // Friendly labels and icons for all known source values
+    var SOURCE_META = {
+      user:                  { label: 'Manual',         icon: '👤' },
+      system:                { label: 'System',         icon: '🏠' },
+      hassio:                { label: 'Supervisor',     icon: '🔧' },
+      import:                { label: 'Imported',       icon: '📥' },
+      zeroconf:              { label: 'Zeroconf',       icon: '🔍' },
+      ssdp:                  { label: 'SSDP',           icon: '🔍' },
+      dhcp:                  { label: 'DHCP',           icon: '🔍' },
+      homekit:               { label: 'HomeKit',        icon: '🍎' },
+      bluetooth:             { label: 'Bluetooth',      icon: '📶' },
+      usb:                   { label: 'USB',            icon: '🔌' },
+      integration_discovery: { label: 'Integration',   icon: '🔗' },
+      ignore:                { label: 'Ignored',        icon: '🚫' },
+      unignore:              { label: 'Unignored',      icon: '✅' },
+      reauth:                { label: 'Re-auth',        icon: '🔑' },
+      unknown:               { label: 'Unknown',        icon: '❓' },
+    };
+
+    // Build pills — only for sources that actually exist in the data
+    var pillsHtml = Object.keys(sourceCounts).sort().map(function(src) {
+      var meta  = SOURCE_META[src] || { label: src, icon: '🔧' };
+      var count = sourceCounts[src];
+      var isActive = _activeSourceFilters === null || _activeSourceFilters.has(src);
+      return '<span class="int-source-pill' + (isActive ? ' active' : '') +
+        '" onclick="toggleSourceFilter(\'' + escHtml(src) + '\')" title="Toggle: ' + escHtml(meta.label) + '">' +
+        meta.icon + ' ' + escHtml(meta.label) +
+        ' <span class="sa-isp-count">' + count + '</span>' +
+        '</span>';
+    }).join('');
+
+    var html =
+      '<div class="sa-int-search-row">' +
+        '<input type="text" id="int-search" placeholder="🔍 Search integrations…" oninput="filterIntList()">' +
+        '<span class="sa-int-search-count" id="int-search-count">' + _intAllEntries.length + ' integrations</span>' +
+      '</div>' +
+      '<div class="sa-int-source-bar">' +
+        '<span class="sa-int-source-label">Added via</span>' +
+        '<span class="sa-int-source-pill sa-sp-show-all" onclick="intShowAll()" title="Show all sources">✓ Show All</span>' +
+        '<span class="sa-int-source-pill sa-sp-hide-all" onclick="intHideAll()" title="Hide all sources">✕ Hide All</span>' +
+        pillsHtml +
+        '<span class="sa-int-count-label" id="int-count">' + _intAllEntries.length + ' integrations</span>' +
+      '</div>' +
+      '<div id="int-list-container">' + renderIntList(_intAllEntries, entsByEntry, devsByEntry) + '</div>';
+    return html;
+  }
+
+  // Domain → readable name map for common integrations
+  var DOMAIN_NAMES = {
+    hue:'Philips Hue', zha:'Zigbee Home Automation', zwave_js:'Z-Wave JS',
+    mqtt:'MQTT', tuya:'Tuya', google_generative_ai_conversation:'Google AI',
+    openai_conversation:'OpenAI', anthropic:'Anthropic', ollama:'Ollama',
+    hassio:'Home Assistant Supervisor', homeassistant:'Home Assistant Core',
+    mobile_app:'Mobile App', cast:'Google Cast', spotify:'Spotify',
+    plex:'Plex Media Server', sonos:'Sonos', androidtv:'Android TV',
+    apple_tv:'Apple TV', roku:'Roku', samsungtv:'Samsung TV',
+    nest:'Google Nest', ecobee:'Ecobee', honeywell_home:'Honeywell Home',
+    climacell:'Tomorrow.io', met:'Met.no Weather', openweathermap:'OpenWeatherMap',
+    accuweather:'AccuWeather', darksky:'Dark Sky',
+    ping:'Network Ping', nmap_tracker:'Nmap Network Scan',
+    unifi:'UniFi Network', asuswrt:'ASUS Router', fritz:'FRITZ!Box',
+    esphome:'ESPHome', shelly:'Shelly', tasmota:'Tasmota',
+    deconz:'deCONZ', lutron_caseta:'Lutron Caséta', insteon:'Insteon',
+    lifx:'LIFX', wiz:'WiZ', yeelight:'Yeelight', switchbot:'SwitchBot',
+    meross:'Meross', tplink:'TP-Link Kasa', konnected:'Konnected',
+    ring:'Ring', arlo:'Arlo', eufy_security:'Eufy Security',
+    axis:'Axis Camera', frigate:'Frigate NVR', amcrest:'Amcrest',
+    homekit:'HomeKit Bridge', homekit_controller:'HomeKit Controller',
+    google_assistant:'Google Assistant', alexa:'Amazon Alexa',
+    tesla:'Tesla', bmw_connected_drive:'BMW', volkswagen:'Volkswagen',
+    smartthings:'SmartThings', wemo:'Belkin WeMo', zigbee2mqtt:'Zigbee2MQTT',
+    influxdb:'InfluxDB', recorder:'Recorder', logbook:'Logbook',
+    google_drive:'Google Drive', onedrive:'OneDrive', dropbox:'Dropbox',
+    notify:'Notifications', telegram_bot:'Telegram', slack:'Slack',
+    smtp:'Email (SMTP)', pushbullet:'Pushbullet', pushover:'Pushover',
+    ios:'iOS Companion', companion:'Companion App',
+    sun:'Sun', moon:'Moon', worldclock:'World Clock',
+    weather:'Weather', sensor:'Sensors', binary_sensor:'Binary Sensors',
+    input_boolean:'Input Boolean', input_number:'Input Number',
+    input_text:'Input Text', input_select:'Input Select',
+    script:'Scripts', automation:'Automations', scene:'Scenes',
+    group:'Groups', template:'Template',
+    energy:'Energy Dashboard', utility_meter:'Utility Meter',
+    counter:'Counter', timer:'Timer', schedule:'Schedule',
+    calendar:'Calendar', todo:'To-do Lists',
+    lovelace:'Lovelace Dashboards', frontend:'Frontend',
+    config:'Configuration', cloud:'Nabu Casa Cloud',
+    default_config:'Default Config', dhcp:'DHCP Discovery',
+    ssdp:'SSDP Discovery', zeroconf:'Zeroconf Discovery',
+    bluetooth:'Bluetooth', usb:'USB', hardware:'Hardware',
+    hassio:'Supervisor', update:'Updates', repairs:'Repairs',
+  };
+
+  var DOMAIN_ICONS = {
+    // ── Lighting ──────────────────────────────────────────────────
+    hue:'💡', lifx:'💡', wiz:'💡', yeelight:'💡', lutron_caseta:'💡',
+    insteon:'💡', konnected:'💡', flux_led:'💡', elgato:'💡',
+    govee_light:'💡', nanoleaf:'💡', hyperion:'💡',
+
+    // ── Switches / Plugs ──────────────────────────────────────────
+    tuya:'🔌', shelly:'🔌', tasmota:'🔧', meross:'🔌', tplink:'🔌',
+    wemo:'🔌', switchbot:'🤖', tp_link:'🔌', kasa:'🔌',
+
+    // ── Zigbee / Z-Wave / RF ──────────────────────────────────────
+    zha:'📡', zwave_js:'📡', zigbee2mqtt:'📡', deconz:'📡',
+    rflink:'📡', z_wave:'📡', ozw:'📡',
+
+    // ── MQTT / IoT protocols ──────────────────────────────────────
+    mqtt:'📨', esphome:'🔧', matter:'🔮', thread:'🔮',
+
+    // ── Climate / HVAC ────────────────────────────────────────────
+    nest:'🌡️', ecobee:'🌡️', honeywell_home:'🌡️', nest_protect:'🌡️',
+    climate:'🌡️', generic_thermostat:'🌡️', sensibo:'🌡️',
+    daikin:'🌡️', mitsubishi:'🌡️', tado:'🌡️', overkiz:'🌡️',
+    vallox:'💨', modbus:'⚙️',
+
+    // ── Weather ───────────────────────────────────────────────────
+    met:'⛅', openweathermap:'⛅', accuweather:'⛅', climacell:'⛅',
+    darksky:'⛅', buienradar:'⛅', yr:'⛅', weather:'⛅',
+    pirateweather:'⛅', nws:'⛅',
+
+    // ── Cameras / Security ────────────────────────────────────────
+    ring:'🔔', arlo:'📷', eufy_security:'📷', frigate:'📷',
+    axis:'📷', amcrest:'📷', hikvision:'📷', reolink:'📷',
+    onvif:'📷', nest_doorbell:'🔔', doorbird:'🔔', unifiprotect:'📷',
+    wyze:'📷', camera:'📷',
+
+    // ── Lock / Alarm ──────────────────────────────────────────────
+    lock:'🔒', august:'🔒', yale_home:'🔒', nuki:'🔒',
+    schlage:'🔒', alarm_control_panel:'🚨', simplisafe:'🚨',
+    totalconnect:'🚨', alarmdotcom:'🚨',
+
+    // ── Cover / Blinds ────────────────────────────────────────────
+    cover:'🪟', somfy:'🪟', somfy_mylink:'🪟', velux:'🪟',
+    bond:'🪟', nice_go:'🪟',
+
+    // ── Media ─────────────────────────────────────────────────────
+    cast:'📺', spotify:'🎵', plex:'🎬', sonos:'🔊',
+    androidtv:'📺', apple_tv:'📺', roku:'📺', samsungtv:'📺',
+    media_player:'📺', kodi:'🎬', vlc:'🎵', jellyfin:'🎬',
+    emby:'🎬', squeezebox:'🔊', dlna_dmr:'📺', webostv:'📺',
+    vizio:'📺', panasonic_viera:'📺', yamaha:'🔊', yamaha_musiccast:'🔊',
+    denon:'🔊', onkyo:'🔊', harman_kardon:'🔊', bose:'🔊',
+    soundtouch:'🔊', tidal:'🎵', deezer:'🎵',
+
+    // ── Voice / Assistants ────────────────────────────────────────
+    homekit:'🍎', homekit_controller:'🍎', google_assistant:'🔵',
+    alexa:'🔵', siri:'🍎',
+
+    // ── Mobile / Presence ─────────────────────────────────────────
+    mobile_app:'📱', ios:'📱', companion:'📱',
+    owntracks:'📍', gpstracker:'📍', mqtt_room:'📍',
+    device_tracker:'📍', google_maps:'📍', find_my:'📍',
+    life360:'📍', traccar:'📍',
+
+    // ── Network / Infrastructure ──────────────────────────────────
+    ping:'📡', nmap_tracker:'📡', unifi:'📡', fritz:'📡',
+    asuswrt:'📡', openwrt:'📡', mikrotik:'📡', netgear:'📡',
+    meraki:'📡', ubiquiti:'📡', ddwrt:'📡', xiaomi_miio:'📡',
+    unifi_direct:'📡', gl_inet:'📡', firewalla:'📡',
+
+    // ── Vehicles ──────────────────────────────────────────────────
+    tesla:'🚗', bmw_connected_drive:'🚗', volkswagen:'🚗',
+    hyundai_kia_connect:'🚗', ford:'🚗', toyota:'🚗',
+    renault:'🚗', volvo:'🚗', subaru:'🚗', nissan:'🚗',
+    polestar:'🚗', rivian:'🚗', kia:'🚗', audi:'🚗',
+
+    // ── Energy / Power ────────────────────────────────────────────
+    energy:'⚡', utility_meter:'⚡', tibber:'⚡', octopus_energy:'⚡',
+    iotawatt:'⚡', sense:'⚡', emporia_vue:'⚡', efergy:'⚡',
+    smappee:'⚡', powerwall:'⚡', fronius:'☀️', solaredge:'☀️',
+    solarlog:'☀️', enphase_envoy:'☀️', goodwe:'☀️', sma:'☀️',
+
+    // ── Cloud / Storage / Backup ──────────────────────────────────
+    google_drive:'☁', onedrive:'☁', dropbox:'☁',
+    backup:'☁', cloud:'☁', nabu_casa:'☁',
+
+    // ── Notifications ─────────────────────────────────────────────
+    telegram_bot:'💬', slack:'💬', smtp:'📧', notify:'🔔',
+    pushbullet:'🔔', pushover:'🔔', ntfy:'🔔', gotify:'🔔',
+    discord:'💬', signal_messenger:'💬', matrix:'💬',
+    twilio:'📱', clicksend:'📱',
+
+    // ── Home Assistant internals ──────────────────────────────────
+    hassio:'🏠', homeassistant:'🏠', supervisor:'🏠',
+    config:'⚙️', default_config:'⚙️', frontend:'🖥️', lovelace:'🖥️',
+    recorder:'💾', history:'💾', logbook:'📋', logger:'📋',
+    automation:'⚡', script:'📝', scene:'🎭', group:'👥',
+    template:'📝', input_boolean:'☑️', input_number:'🔢',
+    input_text:'🔤', input_select:'🔽', input_button:'🔘',
+    input_datetime:'📅', counter:'🔢', timer:'⏱️', schedule:'📅',
+    tag:'🏷️', todo:'✅', calendar:'📅', conversation:'💬',
+    tts:'🔊', stt:'🎤', wake_word:'🎤', voice_assistant:'🎤',
+    shopping_list:'🛒', shopping_list_google:'🛒',
+
+    // ── Discovery / System ────────────────────────────────────────
+    dhcp:'🔍', ssdp:'🔍', zeroconf:'🔍', bluetooth:'📶',
+    bluetooth_le_tracker:'📶', usb:'🔌', hardware:'🖥️',
+    network:'📡', system_health:'❤️', repairs:'🔧',
+    homeassistant_alerts:'⚠️', update:'🔄',
+    analytics:'📊', influxdb:'📊', prometheus:'📊',
+    grafana:'📊', elasticsearch:'📊',
+
+    // ── Weather / Environment sensors ─────────────────────────────
+    sun:'☀️', moon:'🌙', season:'🍂', astral:'🌙',
+    airly:'🌬️', airvisual:'🌬️', waqi:'🌬️', openaq:'🌬️',
+    environment_canada:'⛅',
+
+    // ── Smart home hubs / bridges ─────────────────────────────────
+    homematic:'🏠', vera:'🏠', wink:'🏠', iris:'🏠',
+    smartthings:'💠', hubitat:'🟠', loxone:'🏠',
+    control4:'🏠', crestron:'🏠', savant:'🏠',
+    elkm1:'🏠', isy994:'🏠',
+
+    // ── Water / Irrigation ────────────────────────────────────────
+    rachio:'💧', rainbird:'💧', orbit_bhyve:'💧',
+    hydrawise:'💧', water_heater:'🚿',
+
+    // ── Vacuum ────────────────────────────────────────────────────
+    roborock:'🤖', roomba:'🤖', dreame:'🤖', ecovacs:'🤖',
+    xiaomi_vacuum:'🤖', vacuum:'🤖', neato:'🤖', shark_iq:'🤖',
+
+    // ── Sensors & monitors ────────────────────────────────────────
+    nut:'🔋', apc_ups:'🔋', cyberpower:'🔋',
+    rfxtrx:'📡', tellstick:'📡',
+    withings:'🩺', fitbit:'🏃', garmin:'🏃',
+    health_check:'❤️', hacs:'🧩',
+  };
+
+  function intDomainLabel(domain) {
+    return DOMAIN_NAMES[domain] || domain.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+  }
+
+  // Smarter icon fallback — infer from domain suffix/prefix before giving up
+  function intDomainIcon(domain) {
+    if (DOMAIN_ICONS[domain]) return DOMAIN_ICONS[domain];
+    var d = domain.toLowerCase();
+    if (d.includes('light') || d.includes('lamp'))    return '💡';
+    if (d.includes('plug') || d.includes('switch'))   return '🔌';
+    if (d.includes('camera') || d.includes('cam'))    return '📷';
+    if (d.includes('lock'))                           return '🔒';
+    if (d.includes('climate') || d.includes('therm')) return '🌡️';
+    if (d.includes('sensor'))                         return '📊';
+    if (d.includes('weather'))                        return '⛅';
+    if (d.includes('media') || d.includes('player'))  return '📺';
+    if (d.includes('vacuum'))                         return '🤖';
+    if (d.includes('cover') || d.includes('blind'))   return '🪟';
+    if (d.includes('alarm') || d.includes('security'))return '🚨';
+    if (d.includes('energy') || d.includes('power'))  return '⚡';
+    if (d.includes('solar'))                          return '☀️';
+    if (d.includes('car') || d.includes('vehicle'))   return '🚗';
+    if (d.includes('water') || d.includes('irrigation'))return '💧';
+    if (d.includes('notify') || d.includes('alert'))  return '🔔';
+    if (d.includes('cloud') || d.includes('backup'))  return '☁';
+    if (d.includes('network') || d.includes('wifi'))  return '📡';
+    if (d.includes('bluetooth') || d.includes('ble')) return '📶';
+    if (d.includes('calendar') || d.includes('todo')) return '📅';
+    if (d.includes('voice') || d.includes('tts'))     return '🔊';
+    if (d.includes('tracker') || d.includes('gps'))   return '📍';
+    return '🔧';
+  }
+  function intStateClass(e) {
+    if (e.disabled_by) return 'disabled';
+    var s = (e.state || '').toLowerCase();
+    if (s === 'loaded') return 'loaded';
+    if (s === 'setup' || s === 'not_loaded') return 'setup';
+    return 'failed';
+  }
+  function intStateLabel(e) {
+    if (e.disabled_by) return 'Disabled';
+    var s = (e.state || '').toLowerCase();
+    if (s === 'loaded') return 'Loaded';
+    if (s === 'setup')  return 'Setting up';
+    if (s === 'not_loaded') return 'Not loaded';
+    if (s === 'failed') return 'Failed';
+    return s || '—';
+  }
+  function sourceLabel(src) {
+    var m = { user:'Manual', zeroconf:'Auto-discovered', ssdp:'Auto-discovered',
+              homekit:'HomeKit', dhcp:'DHCP', import:'Imported',
+              hassio:'Supervisor', system:'System' };
+    return m[src] || src || '';
+  }
+
+  function renderIntList(list, entsByEntry, devsByEntry) {
+    // Accept pre-built maps or build empty ones if called without them
+    entsByEntry = entsByEntry || {};
+    devsByEntry = devsByEntry || {};
+
+    if (!list.length) return '<div style="text-align:center;padding:20px;color:var(--text2)">No integrations to show.</div>';
+
+    return '<div class="sa-int-list">' + list.map(function(e) {
+      var eid    = e.entry_id || '';
+      var domain = e.domain || '';
+      var ents   = entsByEntry[eid] || [];
+      var devs   = devsByEntry[eid] || [];
+      var stCls  = intStateClass(e);
+      var stLbl  = intStateLabel(e);
+
+      // Entity domain breakdown: e.g. "3 light · 2 sensor"
+      var domainCounts = {};
+      ents.forEach(function(ent) {
+        var d = (ent.entity_id || '').split('.')[0];
+        domainCounts[d] = (domainCounts[d] || 0) + 1;
+      });
+      var domainSummary = Object.keys(domainCounts).sort()
+        .map(function(d){ return domainCounts[d] + ' ' + d; }).join(' · ');
+
+      // Title: use friendly domain name, subtitle: original HA title
+      var friendlyName = intDomainLabel(domain);
+      var haTitle      = (e.title || '').trim();
+      // If haTitle is same as domain or empty, don't show it as subtitle
+      var showSub = haTitle && haTitle.toLowerCase() !== domain.toLowerCase() && haTitle !== friendlyName;
+
+      // Build entity chips (first 8 then "and N more")
+      var unavailEnts = ents.filter(function(ent) {
+        return ent.state === 'unavailable' || ent.state === 'unknown';
+      });
+      var MAX_CHIPS = 8;
+      var entChips = ents.slice(0, MAX_CHIPS).map(function(ent) {
+        var isUnavail = ent.state === 'unavailable' || ent.state === 'unknown';
+        return '<span class="int-ent-chip' + (isUnavail ? ' unavailable' : '') + '" title="' + escHtml(ent.entity_id) + '">' +
+          escHtml(ent.name || ent.original_name || ent.entity_id) + '</span>';
+      }).join('');
+      if (ents.length > MAX_CHIPS) {
+        entChips += '<span class="sa-int-more">+' + (ents.length - MAX_CHIPS) + ' more</span>';
+      }
+
+      // Device chips (first 5)
+      var MAX_DEVS = 5;
+      var devChips = devs.slice(0, MAX_DEVS).map(function(d) {
+        return '<span class="sa-int-dev-chip">' + escHtml(d.name_by_user || d.name || d.id) + '</span>';
+      }).join('');
+      if (devs.length > MAX_DEVS) {
+        devChips += '<span class="sa-int-more">+' + (devs.length - MAX_DEVS) + ' more</span>';
+      }
+
+      // Detail fields
+      var reason = e.reason || e.error_reason_translation_key || '';
+      var detailGrid =
+        '<div class="int-detail-field"><div class="sa-idl">Entry ID</div><div class="sa-idv">' + escHtml(eid) + '</div></div>' +
+        '<div class="int-detail-field"><div class="sa-idl">Domain</div><div class="sa-idv">' + escHtml(domain) + '</div></div>' +
+        '<div class="int-detail-field"><div class="sa-idl">State</div><div class="sa-idv ' + (stCls === 'loaded' ? 'ok' : stCls === 'failed' ? 'err' : '') + '">' + escHtml(stLbl) + '</div></div>' +
+        '<div class="int-detail-field"><div class="sa-idl">Added via</div><div class="sa-idv">' + escHtml(sourceLabel(e.source)) + '</div></div>' +
+        (e.disabled_by ? '<div class="int-detail-field"><div class="sa-idl">Disabled by</div><div class="sa-idv sa-err">' + escHtml(e.disabled_by) + '</div></div>' : '') +
+        (reason ? '<div class="int-detail-field" style="grid-column:1/-1"><div class="sa-idl">Error reason</div><div class="sa-idv sa-err">' + escHtml(reason) + '</div></div>' : '') +
+        '<div class="int-detail-field"><div class="sa-idl">Entities</div><div class="sa-idv">' + ents.length + (domainSummary ? ' (' + escHtml(domainSummary) + ')' : '') + '</div></div>' +
+        '<div class="int-detail-field"><div class="sa-idl">Devices</div><div class="sa-idv">' + devs.length + '</div></div>' +
+        (unavailEnts.length ? '<div class="int-detail-field"><div class="sa-idl">Unavailable</div><div class="sa-idv sa-err">' + unavailEnts.length + ' entities</div></div>' : '') +
+        (e.supports_options ? '<div class="int-detail-field"><div class="sa-idl">Has options</div><div class="sa-idv sa-ok">Yes</div></div>' : '');
+
+      return '<div class="int-row' + (e.disabled_by ? ' disabled' : '') + '" id="ir-' + escHtml(eid) + '" data-name="' + escHtml((friendlyName + ' ' + haTitle + ' ' + domain).toLowerCase()) + '">' +
+        // Header row
+        '<div class="sa-int-row-header" onclick="toggleInt(\'' + escHtml(eid) + '\')">' +
+          '<span class="sa-int-chevron">▶</span>' +
+          '<span class="sa-int-icon">' + intDomainIcon(domain) + '</span>' +
+          '<div class="sa-int-titles">' +
+            '<div class="sa-int-name">' + escHtml(friendlyName) + '</div>' +
+            (showSub ? '<div class="sa-int-title-sub">' + escHtml(haTitle) + '</div>' : '') +
+          '</div>' +
+          '<div class="sa-int-badges">' +
+            (devs.length  ? '<span class="sa-ir-count sa-devices">' + devs.length  + ' ' + (devs.length  === 1 ? 'device' : 'devices')    + '</span>' : '') +
+            (ents.length  ? '<span class="sa-ir-count">'         + ents.length  + ' ' + (ents.length  === 1 ? 'entity' : 'entities')   + '</span>' : '') +
+            '<span class="sa-ir-state ' + stCls + '">' + stLbl + '</span>' +
+          '</div>' +
+        '</div>' +
+        // Detail panel
+        '<div class="sa-int-detail">' +
+          '<div class="sa-int-detail-grid">' + detailGrid + '</div>' +
+          (ents.length ? '<div class="sa-int-ent-section"><div class="sa-int-ent-section-title">Entities</div><div class="sa-int-ent-chips">' + entChips + '</div></div>' : '') +
+          (devs.length ? '<div class="sa-int-ent-section" style="margin-top:8px"><div class="sa-int-ent-section-title">Devices</div><div class="sa-int-dev-chips">' + devChips + '</div></div>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function toggleInt(eid) {
+    var el = document.getElementById('ir-' + eid);
+    if (el) el.classList.toggle('open');
+  }
+
+  function filterIntList() {
+    var q    = (document.getElementById('int-search').value || '').toLowerCase();
+    var rows = document.querySelectorAll('#int-list-container .sa-int-row');
+    var v = 0;
+    rows.forEach(function(row) {
+      var nameMatch   = !q || (row.getAttribute('data-name') || '').indexOf(q) !== -1;
+      // Source filter already applied at list level — rows in container already match source
+      var show = nameMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) v++;
+    });
+    var cnt = document.getElementById('int-search-count');
+    if (cnt) cnt.textContent = v + ' integration' + (v !== 1 ? 's' : '');
+  }
+
+  // ── Source filter helpers ──────────────────────────────────────
+  // _activeSourceFilters === null  → show all (no filter)
+  // _activeSourceFilters = Set     → show only sources in the set
+
+  function intShowAll() {
+    _activeSourceFilters = null;
+    _applySourceFilter();
+  }
+
+  function intHideAll() {
+    _activeSourceFilters = new Set(); // empty set = show nothing
+    _applySourceFilter();
+  }
+
+  function toggleSourceFilter(src) {
+    if (_activeSourceFilters === null) {
+      // Currently showing all — first toggle switches to explicit mode
+      // showing only this source
+      _activeSourceFilters = new Set([src]);
+    } else if (_activeSourceFilters.has(src)) {
+      _activeSourceFilters.delete(src);
+    } else {
+      _activeSourceFilters.add(src);
+    }
+    _applySourceFilter();
+  }
+
+  function _applySourceFilter() {
+    var list = _activeSourceFilters === null
+      ? _intAllEntries
+      : _intAllEntries.filter(function(e) {
+          return _activeSourceFilters.has(e.source || 'unknown');
+        });
+
+    rebuildIntMaps(function(entsByEntry, devsByEntry) {
+      document.getElementById('int-list-container').innerHTML = renderIntList(list, entsByEntry, devsByEntry);
+      var label = list.length + ' integration' + (list.length !== 1 ? 's' : '');
+      document.getElementById('int-count').textContent = label;
+      document.getElementById('int-search-count').textContent = label;
+      // Update source pill active states
+      document.querySelectorAll('.sa-int-source-pill:not(.sa-sp-show-all):not(.sa-sp-hide-all)').forEach(function(pill) {
+        var m = pill.getAttribute('onclick').match(/'([^']+)'/);
+        if (!m) return;
+        var pillSrc = m[1];
+        var isActive = _activeSourceFilters === null || _activeSourceFilters.has(pillSrc);
+        pill.classList.toggle('sa-active', isActive);
+      });
+    });
+  }
+
+  // Shared helper — rebuilds cross-reference maps and passes them to a callback
+  function rebuildIntMaps(cb) {
+    var entsByEntry = {}, devsByEntry = {};
+    _entRegistry.forEach(function(e) {
+      var ceid = e.config_entry_id || (e.config_entries && e.config_entries[0]);
+      if (!ceid) return;
+      if (!entsByEntry[ceid]) entsByEntry[ceid] = [];
+      entsByEntry[ceid].push(e);
+    });
+    _devRegistry.forEach(function(d) {
+      (d.config_entries || []).forEach(function(ceid) {
+        if (!devsByEntry[ceid]) devsByEntry[ceid] = [];
+        devsByEntry[ceid].push(d);
+      });
+    });
+    cb(entsByEntry, devsByEntry);
+  }
+
+  function buildDomainPanel(domains) {
+    var SKIP = ['automation','script','scene','persistent_notification','zone','person','sun'];
+    var sorted = Object.keys(domains).filter(function(d) { return SKIP.indexOf(d) === -1; })
+      .sort(function(a, b) { return domains[b].length - domains[a].length; });
+
+    return '<div class="sa-domain-grid">' + sorted.map(function(d) {
+      var ents = domains[d];
+      var states = ['on','off','unavailable'].map(function(st) {
+        var cnt = ents.filter(function(e) { return e.state === st; }).length;
+        return cnt ? '<span class="sa-dc-state ' + st + '">' + cnt + ' ' + escHtml(st) + '</span>' : '';
+      }).join('');
+      return '<div class="sa-domain-card">' +
+        '<div class="sa-dc-name">' + domainIcon(d) + ' ' + escHtml(d) + '</div>' +
+        '<div class="sa-dc-count">' + ents.length + ' entities</div>' +
+        '<div>' + states + '</div>' +
+        '</div>';
+    }).join('') + '</div>';
+  }
+
+  function buildUnavailablePanel(states) {
+    var unavail = states.filter(function(s) { return s.state === 'unavailable' || s.state === 'unknown'; });
+    if (!unavail.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">✅ No sa-unavailable entities</div>';
+
+    // Build device + area lookup maps
+    var devNameById = {};
+    _devRegistry.forEach(function(d){ devNameById[d.id||d.device_id] = d.name_by_user||d.name||''; });
+    var areaNames = {};
+    if (typeof areaRegistry !== 'undefined') areaRegistry.forEach(function(a){ areaNames[a.area_id]=a.name; });
+    var regByEntityId = {};
+    _entRegistry.forEach(function(e){ regByEntityId[e.entity_id]=e; });
+
+    // Sort by domain then entity_id
+    unavail.sort(function(a,b){ return a.entity_id.localeCompare(b.entity_id); });
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">' + unavail.length + ' sa-unavailable or unknown entities</div>' +
+      '<div id="unav-list">';
+
+    unavail.forEach(function(e) {
+      var name     = (e.attributes && e.attributes.friendly_name) || e.entity_id;
+      var reg      = regByEntityId[e.entity_id] || {};
+      var devName  = reg.device_id ? (devNameById[reg.device_id] || '') : '';
+      var areaId   = reg.area_id   || (reg.device_id && _devRegistry.find(function(d){ return (d.id||d.device_id)===reg.device_id; }) || {}).area_id || '';
+      var areaName = areaId ? (areaNames[areaId] || '') : '';
+      var lastChg  = e.last_changed ? new Date(e.last_changed).toLocaleString() : '';
+      var disBy    = reg.disabled_by || '';
+      var devClass = e.attributes && e.attributes.device_class ? e.attributes.device_class : '';
+      var stateCls = e.state === 'unavailable' ? 'ent-state--unavail' : 'ent-row-state';
+
+      html += '<div class="sa-ent-row" style="flex-direction:column;align-items:flex-start;gap:3px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+          '<div>' +
+            '<span style="font-size:12px;font-weight:600;">' + escHtml(name) + '</span>' +
+            (devClass ? ' <span style="font-size:9px;color:var(--text2);background:var(--surface2);padding:1px 5px;border-radius:8px;">' + escHtml(devClass) + '</span>' : '') +
+          '</div>' +
+          '<span class="sa-ent-row-state sa-ent-state--unavail">' + escHtml(e.state) + '</span>' +
+        '</div>' +
+        '<span class="sa-ent-row-id">' + escHtml(e.entity_id) + '</span>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;">' +
+          (devName  ? '<span style="font-size:10px;color:var(--text2);">📦 ' + escHtml(devName) + '</span>' : '') +
+          (areaName ? '<span style="font-size:10px;color:var(--text2);">📍 ' + escHtml(areaName) + '</span>' : '') +
+          (lastChg  ? '<span style="font-size:10px;color:var(--text2);">⏱ since ' + escHtml(lastChg) + '</span>' : '') +
+          (disBy    ? '<span style="font-size:10px;color:var(--red,#e05252);">disabled: ' + escHtml(disBy) + '</span>' : '') +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '</div></div>';
+    return html;
+  }
+
+  // ── Entity panel ───────────────────────────────────────────────
+  function buildEntityPanel(states) {
+    if (!states || !states.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No entities found</div>';
+
+    // Group by domain
+    var byDomain = {};
+    states.forEach(function(s) {
+      var d = s.entity_id.split('.')[0];
+      if (!byDomain[d]) byDomain[d] = [];
+      byDomain[d].push(s);
+    });
+    var domainKeys = Object.keys(byDomain).sort();
+
+    var domainIcons = {
+      automation:'⚡', binary_sensor:'🔲', button:'🔘', calendar:'📅',
+      camera:'📷', climate:'🌡️', cover:'🪟', device_tracker:'📍',
+      fan:'🌀', group:'👥', image:'🖼️', input_boolean:'🔘',
+      input_button:'🔳', input_datetime:'📅', input_number:'🔢',
+      input_select:'📋', input_text:'✏️', light:'💡', lock:'🔒',
+      media_player:'📺', number:'🔢', person:'👤', scene:'🎭',
+      script:'📜', select:'📋', sensor:'🌡', switch:'🔌',
+      timer:'⏱️', todo:'📝', update:'🔄', vacuum:'🤖',
+      weather:'🌤️', zone:'🗺️'
+    };
+
+    var totalShown = 0;
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="ent-search" placeholder="🔍 Search entities…" ' +
+          'oninput="filterEntities()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="ent-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + states.length + ' entities</span>' +
+      '</div>' +
+      '<div id="ent-domain-list">';
+
+    domainKeys.forEach(function(domain) {
+      var ents = byDomain[domain];
+      var icon = domainIcons[domain] || '📦';
+      var groupId = 'ent-grp-' + domain;
+      html += '<div class="sa-ent-domain-group" id="' + groupId + '" data-domain="' + escHtml(domain) + '">' +
+        '<div class="sa-ent-domain-header" onclick="toggleEntDomain(\'' + domain + '\')">' +
+          '<span class="sa-ent-domain-icon">' + icon + '</span>' +
+          '<span class="sa-ent-domain-name">' + escHtml(domain) + '</span>' +
+          '<span class="sa-ent-domain-count">' + ents.length + '</span>' +
+          '<span class="sa-ent-domain-chevron" id="ent-chev-' + domain + '">▶</span>' +
+        '</div>' +
+        '<div class="sa-ent-domain-rows" id="ent-rows-' + domain + '" style="display:none;">';
+
+      ents.sort(function(a,b){ return (a.attributes && a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes && b.attributes.friendly_name || b.entity_id); })
+        .forEach(function(e) {
+          var name     = (e.attributes && e.attributes.friendly_name) || e.entity_id;
+          var unavail  = e.state === 'unavailable' || e.state === 'unknown';
+          var stCls    = unavail ? ' ent-state--unavail' : '';
+          var unit     = e.attributes && e.attributes.unit_of_measurement ? ' ' + e.attributes.unit_of_measurement : '';
+          var devClass = e.attributes && e.attributes.device_class ? e.attributes.device_class : '';
+          var lastChg  = e.last_changed ? new Date(e.last_changed).toLocaleString() : '';
+          // Collect notable attributes beyond the basics
+          var skip = new Set(['friendly_name','unit_of_measurement','device_class','icon','entity_picture','supported_features','attribution','restored','assumed_state']);
+          var attrs = e.attributes ? Object.keys(e.attributes).filter(function(k){ return !skip.has(k); }) : [];
+          var attrHtml = attrs.slice(0,8).map(function(k){
+            var v = e.attributes[k];
+            var vs = Array.isArray(v) ? '[' + v.length + ']' : (typeof v === 'object' && v !== null ? '{…}' : String(v).slice(0,60));
+            return '<span style="font-size:10px;color:var(--text2);">' + escHtml(k) + ': <strong style="color:var(--text1);">' + escHtml(vs) + '</strong></span>';
+          }).join(' · ');
+
+          html += '<div class="sa-ent-row" data-name="' + escHtml((name + ' ' + e.entity_id).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:2px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+              '<div>' +
+                '<span style="font-size:12px;font-weight:500;">' + escHtml(name) + '</span>' +
+                (devClass ? ' <span style="font-size:9px;color:var(--text2);background:var(--surface2);padding:1px 5px;border-radius:8px;">' + escHtml(devClass) + '</span>' : '') +
+              '</div>' +
+              '<span class="ent-row-state' + stCls + '">' + escHtml(e.state) + escHtml(unit) + '</span>' +
+            '</div>' +
+            '<span class="sa-ent-row-id">' + escHtml(e.entity_id) + '</span>' +
+            (lastChg ? '<span style="font-size:10px;color:var(--text2);">⏱ ' + escHtml(lastChg) + '</span>' : '') +
+            (attrHtml ? '<div style="margin-top:2px;line-height:1.6;">' + attrHtml + '</div>' : '') +
+          '</div>';
+        });
+
+      html += '</div></div>';
+      totalShown++;
+    });
+
+    html += '</div></div>';
+    return html;
+  }
+
+  function toggleEntDomain(domain) {
+    var rows  = document.getElementById('ent-rows-' + domain);
+    var chev  = document.getElementById('ent-chev-' + domain);
+    if (!rows) return;
+    var open = rows.style.display !== 'none';
+    rows.style.display = open ? 'none' : '';
+    if (chev) chev.textContent = open ? '▶' : '▼';
+  }
+
+  function filterEntities() {
+    var q = document.getElementById('ent-search').value.toLowerCase().trim();
+    var groups = document.querySelectorAll('#ent-domain-list .sa-ent-domain-group');
+    var total = 0;
+    groups.forEach(function(grp) {
+      var rows = grp.querySelectorAll('.sa-ent-row');
+      var grpVisible = 0;
+      rows.forEach(function(row) {
+        var match = !q || (row.getAttribute('data-name') || '').indexOf(q) !== -1;
+        row.style.display = match ? '' : 'none';
+        if (match) grpVisible++;
+      });
+      grp.style.display = grpVisible === 0 && q ? 'none' : '';
+      // Auto-expand groups when searching
+      if (q && grpVisible > 0) {
+        var rowsEl = grp.querySelector('.sa-ent-domain-rows');
+        var chevEl = grp.querySelector('.sa-ent-domain-chevron');
+        if (rowsEl) rowsEl.style.display = '';
+        if (chevEl) chevEl.textContent = '▼';
+      } else if (!q) {
+        var rowsEl = grp.querySelector('.sa-ent-domain-rows');
+        var chevEl = grp.querySelector('.sa-ent-domain-chevron');
+        if (rowsEl) rowsEl.style.display = 'none';
+        if (chevEl) chevEl.textContent = '▶';
+      }
+      total += grpVisible;
+    });
+    var countEl = document.getElementById('ent-count');
+    if (countEl) countEl.textContent = (q ? total : document.querySelectorAll('#ent-domain-list .sa-ent-row').length) + ' entities';
+  }
+
+  // ── Helpers panel ──────────────────────────────────────────────
+  var HELPER_DOMAINS = ['input_boolean','input_number','input_select','input_text',
+                        'input_datetime','input_button','counter','timer','schedule','todo'];
+  function buildHelpersPanel(states) {
+    var helpers = states.filter(function(s) {
+      return HELPER_DOMAINS.indexOf(s.entity_id.split('.')[0]) !== -1;
+    });
+    if (!helpers.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No helpers found</div>';
+
+    var domainLabels = {
+      input_boolean:'Input Boolean', input_number:'Input Number', input_select:'Input Select',
+      input_text:'Input Text', input_datetime:'Input DateTime', input_button:'Input Button',
+      counter:'Counter', timer:'Timer', schedule:'Schedule', todo:'To-do'
+    };
+    var domainIcons = {
+      input_boolean:'☑️', input_number:'🔢', input_select:'📋', input_text:'✏️',
+      input_datetime:'📅', input_button:'🔘', counter:'🔢', timer:'⏱️', schedule:'📅', todo:'📝'
+    };
+
+    // Group by domain
+    var byDomain = {};
+    helpers.forEach(function(s) {
+      var d = s.entity_id.split('.')[0];
+      if (!byDomain[d]) byDomain[d] = [];
+      byDomain[d].push(s);
+    });
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="hlp-search" placeholder="🔍 Search helpers…" oninput="filterHelpers()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="hlp-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + helpers.length + ' helpers</span>' +
+      '</div><div id="hlp-domain-list">';
+
+    HELPER_DOMAINS.forEach(function(domain) {
+      var ents = byDomain[domain];
+      if (!ents || !ents.length) return;
+      var icon  = domainIcons[domain]  || '📦';
+      var label = domainLabels[domain] || domain;
+      html += '<div class="sa-ent-domain-group" id="hlp-grp-' + domain + '" data-domain="' + escHtml(domain) + '">' +
+        '<div class="sa-ent-domain-header" onclick="toggleHlpDomain(\'' + domain + '\')">' +
+          '<span class="sa-ent-domain-icon">' + icon + '</span>' +
+          '<span class="sa-ent-domain-name">' + escHtml(label) + '</span>' +
+          '<span class="sa-ent-domain-count">' + ents.length + '</span>' +
+          '<span class="sa-ent-domain-chevron" id="hlp-chev-' + domain + '">▶</span>' +
+        '</div>' +
+        '<div class="sa-ent-domain-rows" id="hlp-rows-' + domain + '" style="display:none;">';
+      ents.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); })
+        .forEach(function(e) {
+          var name = (e.attributes && e.attributes.friendly_name) || e.entity_id;
+          var val  = e.state;
+          var detail = '';
+          var attrs = e.attributes || {};
+          // Type-specific extra info
+          if (domain === 'input_number' || domain === 'number') {
+            var min = attrs.min !== undefined ? attrs.min : '';
+            var max = attrs.max !== undefined ? attrs.max : '';
+            var step = attrs.step !== undefined ? attrs.step : '';
+            var unit = attrs.unit_of_measurement || '';
+            detail = [min!==''?'min:'+min:'', max!==''?'max:'+max:'', step!==''?'step:'+step:'', unit?'unit:'+unit:''].filter(Boolean).join(' · ');
+          } else if (domain === 'input_select' || domain === 'select') {
+            var opts = attrs.options || [];
+            detail = opts.length ? opts.slice(0,5).join(', ') + (opts.length>5?' +'+( opts.length-5)+' more':'') : '';
+          } else if (domain === 'input_datetime') {
+            detail = [attrs.has_date?'date':'', attrs.has_time?'time':''].filter(Boolean).join(' + ');
+          } else if (domain === 'timer') {
+            detail = [attrs.duration?'duration: '+attrs.duration:'', attrs.remaining?'remaining: '+attrs.remaining:''].filter(Boolean).join(' · ');
+          } else if (domain === 'counter') {
+            var cmin = attrs.minimum !== undefined ? 'min:'+attrs.minimum : '';
+            var cmax = attrs.maximum !== undefined ? 'max:'+attrs.maximum : '';
+            var cstep = attrs.step !== undefined ? 'step:'+attrs.step : '';
+            detail = [cmin,cmax,cstep].filter(Boolean).join(' · ');
+          } else if (domain === 'schedule') {
+            var days = attrs.next_event ? 'next: '+new Date(attrs.next_event).toLocaleString() : '';
+            detail = days;
+          }
+          html += '<div class="sa-ent-row" data-name="' + escHtml((name+' '+e.entity_id).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:2px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+              '<span style="font-size:12px;font-weight:500;">' + escHtml(name) + '</span>' +
+              '<span class="sa-ent-row-state">' + escHtml(val) + (attrs.unit_of_measurement?' '+escHtml(attrs.unit_of_measurement):'') + '</span>' +
+            '</div>' +
+            '<span class="sa-ent-row-id">' + escHtml(e.entity_id) + '</span>' +
+            (detail ? '<span style="font-size:10px;color:var(--text2);">' + escHtml(detail) + '</span>' : '') +
+          '</div>';
+        });
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+    return html;
+  }
+
+  function toggleHlpDomain(domain) {
+    var rows = document.getElementById('hlp-rows-' + domain);
+    var chev = document.getElementById('hlp-chev-' + domain);
+    if (!rows) return;
+    var open = rows.style.display !== 'none';
+    rows.style.display = open ? 'none' : '';
+    if (chev) chev.textContent = open ? '▶' : '▼';
+  }
+
+  function filterHelpers() {
+    var q = document.getElementById('hlp-search').value.toLowerCase().trim();
+    var groups = document.querySelectorAll('#hlp-domain-list .sa-ent-domain-group');
+    var total = 0;
+    groups.forEach(function(grp) {
+      var rows = grp.querySelectorAll('.sa-ent-row');
+      var vis = 0;
+      rows.forEach(function(row) {
+        var m = !q || (row.getAttribute('data-name')||'').indexOf(q) !== -1;
+        row.style.display = m ? '' : 'none';
+        if (m) vis++;
+      });
+      grp.style.display = (vis === 0 && q) ? 'none' : '';
+      var rowsEl = grp.querySelector('.sa-ent-domain-rows');
+      var chevEl = grp.querySelector('.sa-ent-domain-chevron');
+      if (q && vis > 0) { if (rowsEl) rowsEl.style.display = ''; if (chevEl) chevEl.textContent = '▼'; }
+      else if (!q)       { if (rowsEl) rowsEl.style.display = 'none'; if (chevEl) chevEl.textContent = '▶'; }
+      total += vis;
+    });
+    var c = document.getElementById('hlp-count');
+    if (c) c.textContent = (q ? total : document.querySelectorAll('#hlp-domain-list .sa-ent-row').length) + ' helpers';
+  }
+
+  // ── Scenes panel ───────────────────────────────────────────────
+  function buildScenesPanel(states) {
+    var scenes = states.filter(function(s) { return s.entity_id.startsWith('scene.'); });
+    if (!scenes.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No scenes found</div>';
+    scenes.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="scn-search" placeholder="🔍 Search scenes…" oninput="filterScenes()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="scn-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + scenes.length + ' scenes</span>' +
+      '</div><div id="scn-list">';
+
+    scenes.forEach(function(s) {
+      var name = (s.attributes && s.attributes.friendly_name) || s.entity_id;
+      var last = s.attributes && s.attributes.last_activated ? new Date(s.attributes.last_activated).toLocaleString() : (s.state && s.state !== 'scening' ? s.state : 'Never activated');
+      var entityIds  = s.attributes && s.attributes.entity_id ? s.attributes.entity_id : [];
+      var entityCount = entityIds.length;
+      var entityList = entityIds.length ? entityIds.slice(0,10).map(function(eid){ return '<span style="font-size:10px;font-family:monospace;color:var(--text2);">' + escHtml(eid) + '</span>'; }).join(' ') + (entityIds.length>10 ? ' <span style="font-size:10px;color:var(--text2);">+' + (entityIds.length-10) + ' more</span>' : '') : '';
+      html += '<div class="sa-ent-row" data-name="' + escHtml((name+' '+s.entity_id).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:3px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+          '<span style="font-size:12px;font-weight:600;">' + escHtml(name) + '</span>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+            (entityCount ? '<span style="font-size:10px;color:var(--text2);">' + entityCount + ' entities</span><br>' : '') +
+            '<span class="sa-ent-row-state">' + escHtml(last) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="sa-ent-row-id">' + escHtml(s.entity_id) + '</span>' +
+        (entityList ? '<div style="margin-top:3px;line-height:1.8;flex-wrap:wrap;display:flex;gap:4px;">' + entityList + '</div>' : '') +
+      '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function filterScenes() {
+    var q = document.getElementById('scn-search').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('#scn-list .sa-ent-row');
+    var vis = 0;
+    rows.forEach(function(r) { var m = !q||(r.getAttribute('data-name')||'').indexOf(q)!==-1; r.style.display=m?'':'none'; if(m)vis++; });
+    var c = document.getElementById('scn-count');
+    if (c) c.textContent = (q ? vis : rows.length) + ' scenes';
+  }
+
+  // ── Scripts panel ──────────────────────────────────────────────
+  function buildScriptsPanel(states) {
+    var scripts = states.filter(function(s) { return s.entity_id.startsWith('script.'); });
+    if (!scripts.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No scripts found</div>';
+    scripts.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="sct-search" placeholder="🔍 Search scripts…" oninput="filterScripts()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="sct-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + scripts.length + ' scripts</span>' +
+      '</div><div id="sct-list">';
+
+    scripts.forEach(function(s) {
+      var name    = (s.attributes && s.attributes.friendly_name) || s.entity_id;
+      var mode    = s.attributes && s.attributes.mode            ? s.attributes.mode : '—';
+      var last    = s.attributes && s.attributes.last_triggered  ? new Date(s.attributes.last_triggered).toLocaleString() : 'Never';
+      var running = s.state === 'on';
+      var maxRuns = s.attributes && s.attributes.max    !== undefined ? s.attributes.max    : null;
+      var current = s.attributes && s.attributes.current !== undefined ? s.attributes.current : null;
+      var fields  = s.attributes && s.attributes.fields ? Object.keys(s.attributes.fields) : [];
+      var fieldStr = fields.length ? fields.slice(0,5).join(', ') + (fields.length>5 ? ' +' + (fields.length-5) + ' more' : '') : '';
+      html += '<div class="sa-ent-row" data-name="' + escHtml((name+' '+s.entity_id).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:2px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+          '<span style="font-size:12px;font-weight:500;">' + escHtml(name) + '</span>' +
+          '<div style="text-align:right;">' +
+            '<span style="font-size:10px;color:var(--text2);">mode: ' + escHtml(mode) + (maxRuns!==null?' · max:'+maxRuns:'') + (current!==null?' · running:'+current:'') + '</span><br>' +
+            '<span class="ent-row-state' + (running ? ' ent-state--on' : '') + '">' + escHtml(last) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="sa-ent-row-id">' + escHtml(s.entity_id) + '</span>' +
+        (fieldStr ? '<span style="font-size:10px;color:var(--text2);">fields: ' + escHtml(fieldStr) + '</span>' : '') +
+      '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function filterScripts() {
+    var q = document.getElementById('sct-search').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('#sct-list .sa-ent-row');
+    var vis = 0;
+    rows.forEach(function(r) { var m = !q||(r.getAttribute('data-name')||'').indexOf(q)!==-1; r.style.display=m?'':'none'; if(m)vis++; });
+    var c = document.getElementById('sct-count');
+    if (c) c.textContent = (q ? vis : rows.length) + ' scripts';
+  }
+
+  // ── Blueprints panel ───────────────────────────────────────────
+  function buildBlueprintsPanel(blueprintList) {
+    if (!blueprintList || !blueprintList.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No blueprints found — or blueprint/list not available sa-on this HA version</div>';
+
+    // Group by domain (automation / script)
+    var byDomain = {};
+    blueprintList.forEach(function(bp) {
+      var d = bp._domain || 'automation';
+      if (!byDomain[d]) byDomain[d] = [];
+      byDomain[d].push(bp);
+    });
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="bp-search" placeholder="🔍 Search blueprints…" oninput="filterBlueprints()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="bp-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + blueprintList.length + ' blueprints</span>' +
+      '</div><div id="bp-list">';
+
+    Object.keys(byDomain).sort().forEach(function(domain) {
+      var bps = byDomain[domain];
+      var icon = domain === 'script' ? '📜' : '⚡';
+      html += '<div style="margin-bottom:4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--text2);padding:4px 2px;">' + icon + ' ' + escHtml(domain) + ' (' + bps.length + ')</div>';
+      bps.forEach(function(bp) {
+        var name = (bp.metadata && bp.metadata.name) || bp.name || bp._path || '(unnamed)';
+        var desc = (bp.metadata && bp.metadata.description) || bp.description || '';
+        var author = bp.metadata && bp.metadata.author ? bp.metadata.author : '';
+        html += '<div class="sa-ent-row" data-name="' + escHtml((name+' '+(desc||'')+' '+bp._path).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:2px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+            '<span style="font-size:12px;font-weight:600;">' + escHtml(name) + '</span>' +
+            (author ? '<span style="font-size:10px;color:var(--text2);">by ' + escHtml(author) + '</span>' : '') +
+          '</div>' +
+          '<span class="sa-ent-row-id">' + escHtml(bp._path) + '</span>' +
+          (desc ? '<span style="font-size:11px;color:var(--text2);margin-top:2px;">' + escHtml(desc.slice(0,120)) + (desc.length>120?'…':'') + '</span>' : '') +
+        '</div>';
+      });
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function filterBlueprints() {
+    var q = document.getElementById('bp-search').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('#bp-list .sa-ent-row');
+    var vis = 0;
+    rows.forEach(function(r) { var m = !q||(r.getAttribute('data-name')||'').indexOf(q)!==-1; r.style.display=m?'':'none'; if(m)vis++; });
+    var c = document.getElementById('bp-count');
+    if (c) c.textContent = (q ? vis : rows.length) + ' blueprints';
+  }
+
+  // ── People panel ───────────────────────────────────────────────
+  function buildPeoplePanel(states) {
+    var people = states.filter(function(s) { return s.entity_id.startsWith('person.'); });
+    if (!people.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No people found</div>';
+    people.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    var html = '<div style="padding:4px 0 8px;">';
+    people.forEach(function(p) {
+      var name      = (p.attributes && p.attributes.friendly_name) || p.entity_id;
+      var state     = p.state || '—';
+      var home      = state === 'home';
+      var source    = p.attributes && p.attributes.source     ? p.attributes.source     : '';
+      var userId    = p.attributes && p.attributes.user_id    ? p.attributes.user_id    : '';
+      var editable  = p.attributes && p.attributes.editable   !== undefined ? p.attributes.editable : null;
+      var gpsLat    = p.attributes && p.attributes.latitude   ? parseFloat(p.attributes.latitude).toFixed(5)  : '';
+      var gpsLng    = p.attributes && p.attributes.longitude  ? parseFloat(p.attributes.longitude).toFixed(5) : '';
+      var gpsAcc    = p.attributes && p.attributes.gps_accuracy ? p.attributes.gps_accuracy + 'm' : '';
+      var altitude  = p.attributes && p.attributes.altitude   ? p.attributes.altitude + 'm alt'   : '';
+      var speed     = p.attributes && p.attributes.speed      ? p.attributes.speed + ' km/h'       : '';
+      var trackers  = p.attributes && Array.isArray(p.attributes.device_trackers) ? p.attributes.device_trackers : [];
+      var changed   = p.last_changed ? new Date(p.last_changed).toLocaleString() : '';
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+          '<span style="font-size:22px;">' + (home ? '🏠' : '🚶') + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;">' + escHtml(name) + '</div>' +
+            '<div style="font-size:10px;font-family:monospace;color:var(--text2);">' + escHtml(p.entity_id) + '</div>' +
+          '</div>' +
+          '<span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:' + (home ? 'var(--green,#4caf87)' : 'var(--surface2)') + ';color:' + (home ? '#fff' : 'var(--text2)') + ';">' + escHtml(state) + '</span>' +
+        '</div>' +
+        (source   ? '<div style="font-size:11px;color:var(--text2);margin-top:3px;">📡 Source: <span style="color:var(--text1);">' + escHtml(source) + '</span></div>' : '') +
+        (gpsLat   ? '<div style="font-size:11px;color:var(--text2);margin-top:3px;">📍 ' + gpsLat + ', ' + gpsLng + (gpsAcc?' ±'+gpsAcc:'') + (altitude?' · '+altitude:'') + (speed?' · '+speed:'') + '</div>' : '') +
+        (trackers.length ? '<div style="font-size:11px;color:var(--text2);margin-top:3px;">🔗 Trackers: ' + trackers.map(function(t){ return '<span style="font-family:monospace;font-size:10px;">' + escHtml(t) + '</span>'; }).join(', ') + '</div>' : '') +
+        (userId   ? '<div style="font-size:10px;color:var(--text2);margin-top:2px;">👤 user_id: ' + escHtml(userId) + '</div>' : '') +
+        (changed  ? '<div style="font-size:10px;color:var(--text2);margin-top:3px;">⏱ Updated: ' + escHtml(changed) + '</div>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── Automations panel ──────────────────────────────────────────
+  function buildAutomationsPanel(states) {
+    var autos = states.filter(function(s) { return s.entity_id.startsWith('automation.'); });
+    if (!autos.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No automations found</div>';
+    autos.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    var enabled  = autos.filter(function(a){ return a.state !== 'off'; }).length;
+    var disabledCount = autos.length - enabled;
+
+    var html = '<div style="padding:4px 0 8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<input type="text" id="aut-search" placeholder="🔍 Search automations…" oninput="filterAutomations()" ' +
+          'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text1);font-size:12px;">' +
+        '<span id="aut-count" style="font-size:11px;color:var(--text2);white-space:nowrap;">' + autos.length + ' total</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
+        '<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);">✅ ' + enabled + ' enabled</span>' +
+        (disabledCount ? '<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);">⏸ ' + disabledCount + ' disabled</span>' : '') +
+      '</div>' +
+      '<div id="aut-list">';
+
+    autos.forEach(function(a) {
+      var name     = (a.attributes && a.attributes.friendly_name) || a.entity_id;
+      var enabled  = a.state !== 'off';
+      var last     = a.attributes && a.attributes.last_triggered ? new Date(a.attributes.last_triggered).toLocaleString() : 'Never triggered';
+      var mode     = a.attributes && a.attributes.mode ? a.attributes.mode : '';
+      var desc     = a.attributes && a.attributes.description ? a.attributes.description : '';
+      var trigCnt  = a.attributes && a.attributes.trigger_variables ? Object.keys(a.attributes.trigger_variables).length : null;
+      // HA doesn't expose trigger/action count directly in state — show id for now
+      var autoId   = a.attributes && a.attributes.id ? a.attributes.id : '';
+      var lastChg  = a.last_changed ? new Date(a.last_changed).toLocaleString() : '';
+      html += '<div class="sa-ent-row" data-name="' + escHtml((name+' '+a.entity_id).toLowerCase()) + '" style="flex-direction:column;align-items:flex-start;gap:2px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">' +
+          '<span style="font-size:12px;font-weight:600;">' + escHtml(name) + '</span>' +
+          '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+            (mode ? '<span style="font-size:10px;color:var(--text2);">mode: ' + escHtml(mode) + '</span>' : '') +
+            '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:' + (enabled ? 'var(--green,#4caf87)' : 'var(--surface2)') + ';color:' + (enabled ? '#fff' : 'var(--text2)') + ';">' + (enabled ? 'on' : 'off') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="sa-ent-row-id">' + escHtml(a.entity_id) + (autoId ? ' · id: ' + escHtml(autoId) : '') + '</span>' +
+        (desc ? '<span style="font-size:11px;color:var(--text2);margin-top:1px;">' + escHtml(desc.slice(0,100)) + (desc.length>100?'…':'') + '</span>' : '') +
+        '<span style="font-size:10px;color:var(--text2);">⏱ last triggered: ' + escHtml(last) + '</span>' +
+      '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function filterAutomations() {
+    var q = document.getElementById('aut-search').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('#aut-list .sa-ent-row');
+    var vis = 0;
+    rows.forEach(function(r) { var m = !q||(r.getAttribute('data-name')||'').indexOf(q)!==-1; r.style.display=m?'':'none'; if(m)vis++; });
+    var c = document.getElementById('aut-count');
+    if (c) c.textContent = (q ? vis : rows.length) + ' total';
+  }
+
+  // ── Updates panel ──────────────────────────────────────────────
+  function buildUpdatesPanel(states) {
+    var allUpdates = states.filter(function(s) { return s.entity_id.startsWith('update.'); });
+    var pending    = allUpdates.filter(function(s) { return s.state === 'on'; });
+    var upToDate   = allUpdates.filter(function(s) { return s.state === 'off'; });
+
+    if (!allUpdates.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No update entities found</div>';
+
+    var html = '<div style="padding:4px 0 8px;">';
+
+    // Summary bar
+    html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:' + (pending.length ? 'rgba(224,82,82,0.15)' : 'rgba(76,175,135,0.15)') + ';color:' + (pending.length ? 'var(--red,#e05252)' : 'var(--green,#4caf87)') + ';">' +
+        (pending.length ? '⬆ ' + pending.length + ' update' + (pending.length > 1 ? 's' : '') + ' available' : '✅ All up to date') +
+      '</span>' +
+      (upToDate.length ? '<span style="padding:4px 12px;border-radius:20px;font-size:12px;background:var(--surface2);color:var(--text2);">✓ ' + upToDate.length + ' current</span>' : '') +
+    '</div>';
+
+    // Pending first
+    if (pending.length) {
+      html += '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--red,#e05252);margin-bottom:6px;">⬆ Pending Updates</div>';
+      pending.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); })
+        .forEach(function(s) {
+          var name       = (s.attributes && s.attributes.friendly_name) || s.entity_id;
+          var installed  = s.attributes && s.attributes.installed_version  ? s.attributes.installed_version  : '?';
+          var latest     = s.attributes && s.attributes.latest_version     ? s.attributes.latest_version     : '?';
+          var releaseUrl = s.attributes && s.attributes.release_url        ? s.attributes.release_url        : '';
+          var autoUpdate = s.attributes && s.attributes.auto_update;
+          html += '<div style="background:rgba(224,82,82,0.07);border:1px solid rgba(224,82,82,0.25);border-radius:9px;padding:10px 14px;margin-bottom:6px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+              '<span style="font-size:12px;font-weight:700;">' + escHtml(name) + '</span>' +
+              (autoUpdate ? '<span style="font-size:10px;color:var(--text2);">🤖 auto</span>' : '') +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text2);margin-top:4px;">' +
+              escHtml(installed) + ' → <strong style="color:var(--text1);">' + escHtml(latest) + '</strong>' +
+              (releaseUrl ? ' <a href="' + escHtml(releaseUrl) + '" target="_blank" style="color:var(--accent);font-size:10px;margin-left:4px;">release notes ↗</a>' : '') +
+            '</div>' +
+            '<div style="font-size:10px;font-family:monospace;color:var(--text2);margin-top:2px;">' + escHtml(s.entity_id) + '</div>' +
+          '</div>';
+        });
+    }
+
+    // Up to date
+    if (upToDate.length) {
+      html += '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--text2);margin:10px 0 6px;">✓ Up to Date</div>';
+      upToDate.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); })
+        .forEach(function(s) {
+          var name      = (s.attributes && s.attributes.friendly_name) || s.entity_id;
+          var installed = s.attributes && s.attributes.installed_version ? s.attributes.installed_version : s.attributes && s.attributes.latest_version ? s.attributes.latest_version : '?';
+          html += '<div class="sa-ent-row">' +
+            '<div class="sa-ent-row-name">' + escHtml(name) + '<span class="sa-ent-row-id">' + escHtml(s.entity_id) + '</span></div>' +
+            '<span class="sa-ent-row-state" style="color:var(--green,#4caf87);">' + escHtml(installed) + '</span>' +
+          '</div>';
+        });
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── Zones panel ────────────────────────────────────────────────
+  function buildZonesPanel(states) {
+    var zones = states.filter(function(s) { return s.entity_id.startsWith('zone.'); });
+    if (!zones.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No zones found</div>';
+    zones.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    // Build person-in-zone map from person states
+    var personsInZone = {};
+    states.filter(function(s){ return s.entity_id.startsWith('person.'); }).forEach(function(p){
+      var zone = p.state;
+      if (!zone || zone === 'home' || zone === 'not_home' || zone === 'unknown' || zone === 'unavailable') {
+        if (zone === 'home') { if (!personsInZone['zone.home']) personsInZone['zone.home'] = []; personsInZone['zone.home'].push(p); }
+        return;
+      }
+      var zid = 'zone.' + zone;
+      if (!personsInZone[zid]) personsInZone[zid] = [];
+      personsInZone[zid].push(p);
+    });
+
+    var html = '<div style="padding:4px 0 8px;">';
+    zones.forEach(function(z) {
+      var name      = (z.attributes && z.attributes.friendly_name) || z.entity_id;
+      var lat       = z.attributes && z.attributes.latitude   ? parseFloat(z.attributes.latitude).toFixed(5)  : null;
+      var lng       = z.attributes && z.attributes.longitude  ? parseFloat(z.attributes.longitude).toFixed(5) : null;
+      var radius    = z.attributes && z.attributes.radius     ? z.attributes.radius + ' m'                    : null;
+      var passive   = z.attributes && z.attributes.passive;
+      var mdiIcon   = z.attributes && z.attributes.icon       ? z.attributes.icon                             : '';
+      var emoji     = z.entity_id === 'zone.home' ? '🏠' : passive ? '👻' : '📍';
+      var persons   = personsInZone[z.entity_id] || [];
+      var stateCount = parseInt(z.state, 10);
+      var personCount = isNaN(stateCount) ? persons.length : stateCount;
+
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+          '<span style="font-size:20px;">' + emoji + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;">' + escHtml(name) + '</div>' +
+            '<div style="font-size:10px;font-family:monospace;color:var(--text2);">' + escHtml(z.entity_id) + (mdiIcon ? ' · ' + escHtml(mdiIcon) : '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            (personCount > 0 ? '<div style="font-size:13px;font-weight:700;color:var(--green,#4caf87);">👤 ' + personCount + '</div>' : '<div style="font-size:12px;color:var(--text2);">empty</div>') +
+            (passive ? '<div style="font-size:10px;color:var(--text2);">passive</div>' : '') +
+          '</div>' +
+        '</div>' +
+        (lat && lng ? '<div style="font-size:11px;color:var(--text2);">📡 ' + lat + ', ' + lng + (radius ? ' · radius: ' + escHtml(radius) : '') + '</div>' : '') +
+        (persons.length ? '<div style="font-size:11px;color:var(--text2);margin-top:4px;">👤 ' + persons.map(function(p){ return escHtml((p.attributes&&p.attributes.friendly_name)||p.entity_id); }).join(', ') + '</div>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── Calendars panel ────────────────────────────────────────────
+  function buildCalendarsPanel(states) {
+    var cals = states.filter(function(s) { return s.entity_id.startsWith('calendar.'); });
+    if (!cals.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No calendars found</div>';
+    cals.sort(function(a,b){ return ((a.attributes&&a.attributes.friendly_name)||a.entity_id).localeCompare((b.attributes&&b.attributes.friendly_name)||b.entity_id); });
+
+    var html = '<div style="padding:4px 0 8px;">';
+    cals.forEach(function(c) {
+      var name    = (c.attributes && c.attributes.friendly_name) || c.entity_id;
+      var active  = c.state === 'on';
+      var message = c.attributes && c.attributes.message       ? c.attributes.message       : null;
+      var startAt = c.attributes && c.attributes.start_time    ? c.attributes.start_time    : null;
+      var endAt   = c.attributes && c.attributes.end_time      ? c.attributes.end_time      : null;
+      var allDay  = c.attributes && c.attributes.all_day;
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:20px;">📅</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;">' + escHtml(name) + '</div>' +
+            '<div style="font-size:10px;font-family:monospace;color:var(--text2);">' + escHtml(c.entity_id) + '</div>' +
+          '</div>' +
+          '<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:' + (active ? 'rgba(76,175,135,0.15)' : 'var(--surface2)') + ';color:' + (active ? 'var(--green,#4caf87)' : 'var(--text2)') + ';font-weight:700;">' + (active ? 'event now' : 'idle') + '</span>' +
+        '</div>' +
+        (active && message ? '<div style="font-size:12px;margin-top:6px;font-weight:600;">' + escHtml(message) + (allDay ? ' <span style="font-size:10px;color:var(--text2);">(all day)</span>' : '') + '</div>' : '') +
+        (active && startAt ? '<div style="font-size:11px;color:var(--text2);margin-top:2px;">⏰ ' + escHtml(startAt) + (endAt ? ' → ' + escHtml(endAt) : '') + '</div>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── Areas panel ────────────────────────────────────────────────
+  function buildAreasPanel(areaRegistry, floorRegistry, states, devRegistry) {
+    if (!areaRegistry.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No areas found — or area_registry not available</div>';
+
+    // Build floor name map
+    var floorMap = {};
+    floorRegistry.forEach(function(f) { floorMap[f.floor_id] = f.name || f.floor_id; });
+
+    // Count entities per area from entity registry
+    var entsByArea = {};
+    states.forEach(function(s) {
+      var areaId = null;
+      // entity registry has area_id per entity
+      var reg = _entRegistry.find(function(e){ return e.entity_id === s.entity_id; });
+      if (reg) areaId = reg.area_id;
+      if (!areaId) return;
+      if (!entsByArea[areaId]) entsByArea[areaId] = { total:0, unavail:0 };
+      entsByArea[areaId].total++;
+      if (s.state === 'unavailable' || s.state === 'unknown') entsByArea[areaId].unavail++;
+    });
+
+    // Count sa-devices per area
+    var devsByArea = {};
+    devRegistry.forEach(function(d) {
+      if (!d.area_id) return;
+      devsByArea[d.area_id] = (devsByArea[d.area_id] || 0) + 1;
+    });
+
+    // Group by floor
+    var byFloor = {};
+    areaRegistry.forEach(function(a) {
+      var fid = a.floor_id || '_none';
+      if (!byFloor[fid]) byFloor[fid] = [];
+      byFloor[fid].push(a);
+    });
+
+    var html = '<div style="padding:4px 0 8px;">';
+
+    Object.keys(byFloor).sort(function(a,b){
+      if (a === '_none') return 1;
+      if (b === '_none') return -1;
+      return (floorMap[a]||a).localeCompare(floorMap[b]||b);
+    }).forEach(function(fid) {
+      var floorName = fid === '_none' ? 'No Floor Assigned' : (floorMap[fid] || fid);
+      html += '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--text2);padding:6px 2px 4px;">🏢 ' + escHtml(floorName) + '</div>';
+
+      byFloor[fid].sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); })
+        .forEach(function(area) {
+          var ec  = entsByArea[area.area_id] || { total:0, unavail:0 };
+          var dc  = devsByArea[area.area_id] || 0;
+          var aliases = area.aliases && area.aliases.length ? area.aliases.join(', ') : null;
+          html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+              '<div>' +
+                '<div style="font-size:13px;font-weight:700;">' + escHtml(area.name || area.area_id) + '</div>' +
+                '<div style="font-size:10px;font-family:monospace;color:var(--text2);">' + escHtml(area.area_id) + '</div>' +
+                (aliases ? '<div style="font-size:10px;color:var(--text2);margin-top:2px;">aka: ' + escHtml(aliases) + '</div>' : '') +
+              '</div>' +
+              '<div style="text-align:right;font-size:11px;color:var(--text2);">' +
+                (dc  ? '<div>📦 ' + dc + ' device' + (dc>1?'s':'') + '</div>' : '') +
+                (ec.total ? '<div>🔌 ' + ec.total + ' entit' + (ec.total>1?'ies':'y') + (ec.unavail ? ' <span style="color:var(--red,#e05252);">(' + ec.unavail + ' unavail)</span>' : '') + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        });
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── Repairs panel ──────────────────────────────────────────────
+  function buildRepairsPanel(issues) {
+    if (!issues.length) return '<div style="text-align:center;padding:40px 20px;color:var(--green,#4caf87);font-size:14px;font-weight:700;">✅ No repair issues found</div>';
+
+    var bySeverity = { critical:[], error:[], warning:[], information:[] };
+    issues.forEach(function(i) {
+      var sev = (i.severity || 'information').toLowerCase();
+      if (!bySeverity[sev]) bySeverity[sev] = [];
+      bySeverity[sev].push(i);
+    });
+
+    var sevMeta = {
+      critical:    { label:'Critical',    color:'var(--red,#e05252)',     bg:'rgba(224,82,82,0.1)',    icon:'🔴' },
+      error:       { label:'Error',       color:'var(--red,#e05252)',     bg:'rgba(224,82,82,0.07)',   icon:'🟠' },
+      warning:     { label:'Warning',     color:'var(--orange,#f5a623)',  bg:'rgba(245,166,35,0.1)',   icon:'🟡' },
+      information: { label:'Information', color:'var(--text2)',           bg:'var(--surface2)',         icon:'🔵' }
+    };
+
+    var html = '<div style="padding:4px 0 8px;">';
+    ['critical','error','warning','information'].forEach(function(sev) {
+      var group = bySeverity[sev];
+      if (!group.length) return;
+      var m = sevMeta[sev];
+      html += '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:' + m.color + ';margin-bottom:6px;">' + m.icon + ' ' + escHtml(m.label) + ' (' + group.length + ')</div>';
+      group.forEach(function(issue) {
+        var title   = issue.title       || issue.translation_key || issue.issue_id || 'Unknown issue';
+        var desc    = issue.description || '';
+        var domain  = issue.domain      || '';
+        var learn   = issue.learn_more_url || '';
+        html += '<div style="background:' + m.bg + ';border:1px solid rgba(128,128,128,0.2);border-radius:9px;padding:10px 14px;margin-bottom:8px;">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
+            '<span style="font-size:12px;font-weight:700;flex:1;">' + escHtml(title) + '</span>' +
+            (domain ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--text2);flex-shrink:0;">' + escHtml(domain) + '</span>' : '') +
+          '</div>' +
+          (desc ? '<div style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.4;">' + escHtml(desc.slice(0,200)) + (desc.length>200?'…':'') + '</div>' : '') +
+          (learn ? '<div style="margin-top:6px;"><a href="' + escHtml(learn) + '" target="_blank" style="font-size:11px;color:var(--accent);">Learn more ↗</a></div>' : '') +
+        '</div>';
+      });
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── System Health panel ────────────────────────────────────────
+  function buildSysHealthPanel(systemHealth) {
+    var domains = Object.keys(systemHealth);
+    if (!domains.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">System health data not available — requires HA 2023.6+</div>';
+
+    // Count overall pass/fail
+    var totalPass = 0, totalFail = 0, totalWarn = 0;
+
+    var html = '<div style="padding:4px 0 8px;">';
+
+    domains.sort().forEach(function(domain) {
+      var section = systemHealth[domain];
+      var checks  = section.info || section.checks || section;
+      if (typeof checks !== 'object') return;
+
+      var checkKeys = Object.keys(checks);
+      var sectionPass = 0, sectionFail = 0;
+      checkKeys.forEach(function(k) {
+        var v = checks[k];
+        if (v && typeof v === 'object' && v.type === 'failed') { sectionFail++; totalFail++; }
+        else if (v && typeof v === 'object' && v.type === 'warning') { totalWarn++; }
+        else { sectionPass++; totalPass++; }
+      });
+
+      var sectionOk = sectionFail === 0;
+      html += '<div style="background:var(--surface);border:1px solid ' + (sectionOk ? 'var(--border)' : 'rgba(224,82,82,0.3)') + ';border-radius:10px;padding:10px 14px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+          '<span style="font-size:12px;font-weight:700;text-transform:capitalize;">' + escHtml(domain.replace(/_/g,' ')) + '</span>' +
+          '<span style="font-size:11px;color:' + (sectionOk ? 'var(--green,#4caf87)' : 'var(--red,#e05252)') + ';">' + (sectionOk ? '✅ OK' : '❌ ' + sectionFail + ' failed') + '</span>' +
+        '</div>';
+
+      checkKeys.forEach(function(k) {
+        var v = checks[k];
+        var isFailed  = v && typeof v === 'object' && v.type === 'failed';
+        var isWarn    = v && typeof v === 'object' && v.type === 'warning';
+        var valStr    = isFailed ? (v.error || 'failed') : isWarn ? (v.value || 'warning') : (typeof v === 'object' ? (v.value || JSON.stringify(v)) : String(v));
+        var icon      = isFailed ? '❌' : isWarn ? '⚠️' : '✅';
+        var color     = isFailed ? 'var(--red,#e05252)' : isWarn ? 'var(--orange,#f5a623)' : 'var(--text2)';
+        html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px solid var(--border);font-size:11px;">' +
+          '<span style="color:var(--text2);">' + icon + ' ' + escHtml(k.replace(/_/g,' ')) + '</span>' +
+          '<span style="color:' + color + ';text-align:right;font-family:monospace;max-width:55%;word-break:break-all;">' + escHtml(String(valStr).slice(0,120)) + '</span>' +
+        '</div>';
+      });
+
+      html += '</div>';
+    });
+
+    // Summary row at top — prepend
+    var summaryHtml = '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<span style="padding:4px 12px;border-radius:20px;font-size:12px;background:rgba(76,175,135,0.15);color:var(--green,#4caf87);font-weight:700;">✅ ' + totalPass + ' passing</span>' +
+      (totalWarn ? '<span style="padding:4px 12px;border-radius:20px;font-size:12px;background:rgba(245,166,35,0.15);color:var(--orange,#f5a623);font-weight:700;">⚠️ ' + totalWarn + ' warnings</span>' : '') +
+      (totalFail ? '<span style="padding:4px 12px;border-radius:20px;font-size:12px;background:rgba(224,82,82,0.15);color:var(--red,#e05252);font-weight:700;">❌ ' + totalFail + ' failed</span>' : '') +
+    '</div>';
+
+    html = '<div style="padding:4px 0 8px;">' + summaryHtml + html.slice('<div style="padding:4px 0 8px;">'.length);
+    return html;
+  }
+
+  // ── Dashboards panel ───────────────────────────────────────────
+  function buildDashboardsPanel(dashboards) {
+    if (!dashboards.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">No dashboards found</div>';
+
+    dashboards.sort(function(a,b){ return (a.title||'').localeCompare(b.title||''); });
+    var html = '<div style="padding:4px 0 8px;">';
+
+    dashboards.forEach(function(d) {
+      var title      = d.title || d.url_path || '(untitled)';
+      var urlPath    = d.url_path || '';
+      var mode       = d.mode    || 'storage';
+      var isDefault  = d.is_default;
+      var showSidebar= d.show_in_sidebar !== false;
+      var icon       = d.icon   || '';
+      var modeColor  = mode === 'yaml' ? 'var(--accent2,#7c6fcd)' : 'var(--text2)';
+
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:20px;">' + (icon ? escHtml(icon.replace('mdi:','')) : '🖥️') + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+              '<span style="font-size:13px;font-weight:700;">' + escHtml(title) + '</span>' +
+              (isDefault ? '<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(76,175,135,0.15);color:var(--green,#4caf87);">default</span>' : '') +
+            '</div>' +
+            '<div style="font-size:10px;font-family:monospace;color:var(--text2);margin-top:2px;">/' + escHtml(urlPath) + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;font-size:11px;">' +
+            '<div style="color:' + modeColor + ';font-weight:700;">' + escHtml(mode) + '</div>' +
+            '<div style="color:var(--text2);margin-top:2px;">' + (showSidebar ? '📌 sidebar' : '🔒 hidden') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  // ── Device search / toggle ─────────────────────────────────────
+  function toggleDev(devId) {
+    var el = document.getElementById('dr-' + devId);
+    if (el) el.classList.toggle('open');
+  }
+
+  function filterDevices() {
+    var q    = document.getElementById('dev-search').value.toLowerCase();
+    var rows = document.querySelectorAll('#dev-list .sa-dev-row');
+    var v = 0;
+    rows.forEach(function(row) {
+      var show = !q || (row.getAttribute('data-name') || '').indexOf(q) !== -1;
+      row.style.display = show ? '' : 'none';
+      if (show) v++;
+    });
+    var cnt = document.getElementById('dev-count');
+    if (cnt) cnt.textContent = v + ' device' + (v !== 1 ? 's' : '');
+  }
+
+  // ── Utility: clear analysis area ──────────────────────────────
+  function clearAnalysis() {
+    document.getElementById('sa-analysis').style.display = 'none';
+    document.getElementById('sa-tabs').innerHTML         = '';
+    document.getElementById('sa-panels').innerHTML       = '';
+    _devRegistry = [];
+    _entRegistry = [];
+  }
+
+  // ── Utility: stat updater ──────────────────────────────────────
+  function setStat(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = typeof val === 'number' ? val.toLocaleString() : val;
+  }
+
+  // ── Utility: device icon ───────────────────────────────────────
+  function deviceIcon(dev) {
+    var n = ((dev.name_by_user || dev.name || '') + ' ' + (dev.model || '')).toLowerCase();
+    var m = (dev.manufacturer || '').toLowerCase();
+    if (/iphone|ipad|ios|apple/.test(n + m))      return '📱';
+    if (/samsung|galaxy|android/.test(n + m))      return '📱';
+    if (/windows|pc|laptop|intel|amd/.test(n + m)) return '🖥️';
+    if (/plug|socket|tuya/.test(n + m))            return '🔌';
+    if (/xbox|microsoft/.test(n + m))              return '🎮';
+    if (/light|bulb|lamp/.test(n))                 return '💡';
+    if (/lock/.test(n))                            return '🔒';
+    if (/camera|doorbell/.test(n))                 return '📷';
+    if (/sensor|temp|humidity/.test(n))            return '🌡️';
+    if (/switch/.test(n))                          return '🔘';
+    if (/cover|blind|shutter/.test(n))             return '🪟';
+    if (/thermostat|climate/.test(n))              return '🌡️';
+    if (/router|network|wifi/.test(n + m))         return '📡';
+    if (/hub|bridge/.test(n))                      return '🌐';
+    return '📦';
+  }
+
+  // ── Utility: domain icon ───────────────────────────────────────
+  function domainIcon(d) {
+    var icons = {
+      sensor:'📊', binary_sensor:'🔘', switch:'🔲', light:'💡', media_player:'📺',
+      climate:'🌡️', lock:'🔒', camera:'📷', cover:'🪟', device_tracker:'📍',
+      input_boolean:'☑️', automation:'⚡', script:'📝', scene:'🎭', weather:'⛅',
+      update:'🔄', person:'👤', vacuum:'🤖', fan:'🌀', alarm_control_panel:'🚨',
+      number:'🔢', select:'🔽', text:'🔤', button:'🔔', image:'🖼️'
+    };
+    return icons[d] || '📡';
+  }
+
+
+  // ── Init ─────────────────────────────────────────────────────
+  // Nothing to initialise sa-on load — analysis runs sa-on connect or button press.
+
+  </script>
+
+</body>
+</html>

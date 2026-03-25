@@ -1,0 +1,2330 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║                        HA Tools Hub                             ║
+  ║              https://ha-tools-hub.com                           ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Copyright © 2026 HA Tools Hub. All rights reserved.            ║
+  ║                                                                  ║
+  ║  Unauthorised copying, redistribution, modification or          ║
+  ║  commercial use of this software, in whole or in part,          ║
+  ║  without express written permission is strictly prohibited.     ║
+  ║                                                                  ║
+  ║  This software is provided for personal, non-commercial use     ║
+  ║  only. For licensing enquiries contact: info@ha-tools-hub.com   ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+<script>
+(function(){
+  var t = localStorage.getItem('ha_tools_theme') || 'dark-space';
+  var m = localStorage.getItem('ha_tools_mode')  || 'system';
+  var light = ['light-clean','light-warm','arctic'];
+  var dark  = ['dark-space','midnight-blue','forest','volcanic','purple-haze',
+               'solarized','rose-gold','neon-cyber','molten-gold','aurora',
+               'deep-crimson','holographic','steel-forge'];
+  if (m === 'light') { if (dark.indexOf(t) !== -1) t = 'light-clean'; }
+  else if (m === 'dark') { if (light.indexOf(t) !== -1) t = 'dark-space'; }
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    if (dark.indexOf(t) !== -1) t = 'light-clean';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=0.03">
+<link rel="stylesheet" href="../assets/css/layout.css?v=0.03">
+<link rel="stylesheet" href="../assets/css/components.css?v=0.03">
+<script src="../assets/js/main.js?v=0.03"></script>
+<script src="../assets/js/components.js?v=0.03"></script>
+
+
+<meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <!-- HA Tools Hub — Security headers (file-level) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com data: blob:; connect-src 'self' ws: wss: http: https:; frame-src 'self' http: https:; img-src 'self' data: blob: http: https:;">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HA Health Score — HA Tools Hub</title>
+<style>
+  /* ── Theme definitions (applied via data-theme on <html>) ── */
+
+  /* ═══════════════════════════════════════════════════════════════════
+   HA TOOLS HUB — SHARED BASE STYLESHEET + THEME SYSTEM
+   Paste this block into every page, replacing all existing :root
+   and [data-theme] blocks plus the .hub-nav / .hub-page-header rules.
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Core tokens (dark-space default) ───────────────────────────── */
+:root {
+  --bg:#0e1014; --surface:#1c1f26; --surface2:#252830; --surface3:#2e3240;
+  --border:#2e3240; --accent:#4a90d9; --accent2:#6db3f2;
+  --text:#e8eaf0; --text2:#9aa0b4; --text3:#484f58;
+  --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252;
+  --radius:10px;
+  /* glow tokens — used by premium themes */
+  --glow-accent:rgba(74,144,217,0.0);
+  --glow-surface:rgba(255,255,255,0.0);
+  --shimmer-opacity:0;
+  --reflection-opacity:0;
+  --grain-opacity:0;
+}
+
+/* ── Standard dark themes ───────────────────────────────────────── */
+[data-theme="dark-space"] {
+  --bg:#0e1014; --surface:#1c1f26; --surface2:#252830; --surface3:#2e3240;
+  --border:#2e3240; --accent:#4a90d9; --accent2:#6db3f2;
+  --text:#e8eaf0; --text2:#9aa0b4; --text3:#484f58;
+  --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252;
+  --glow-accent:rgba(74,144,217,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="midnight-blue"] {
+  --bg:#070d1a; --surface:#0f1b2d; --surface2:#162236; --surface3:#1e2e45;
+  --border:#1e2e45; --accent:#2979ff; --accent2:#5c9bff;
+  --text:#cfe3ff; --text2:#7a9fbf; --text3:#2e4a66;
+  --green:#43d9a0; --orange:#ffb74d; --purple:#9575cd; --red:#ef5350;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="forest"] {
+  --bg:#0a1209; --surface:#121d10; --surface2:#192716; --surface3:#213320;
+  --border:#213320; --accent:#4caf50; --accent2:#81c784;
+  --text:#d8f0d2; --text2:#7aab74; --text3:#2a4a26;
+  --green:#66bb6a; --orange:#ffb300; --purple:#ab47bc; --red:#ef5350;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="volcanic"] {
+  --bg:#110a08; --surface:#1e1210; --surface2:#271916; --surface3:#32211e;
+  --border:#32211e; --accent:#e64a19; --accent2:#ff7043;
+  --text:#fce8e2; --text2:#b07065; --text3:#4a2820;
+  --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="purple-haze"] {
+  --bg:#0d0812; --surface:#17101f; --surface2:#201728; --surface3:#2b2035;
+  --border:#2b2035; --accent:#9b72e8; --accent2:#bb99ff;
+  --text:#ece5ff; --text2:#8a78a8; --text3:#3a2a50;
+  --green:#4caf87; --orange:#f5a623; --purple:#ce93d8; --red:#e05252;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="solarized"] {
+  --bg:#002b36; --surface:#073642; --surface2:#0d4050; --surface3:#134d5e;
+  --border:#144f60; --accent:#2aa198; --accent2:#44c8be;
+  --text:#eee8d5; --text2:#839496; --text3:#1e4a55;
+  --green:#859900; --orange:#cb4b16; --purple:#6c71c4; --red:#dc322f;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="rose-gold"] {
+  --bg:#1a0f12; --surface:#251519; --surface2:#301c20; --surface3:#3d252a;
+  --border:#3d252a; --accent:#e88fa0; --accent2:#f0b8c4;
+  --text:#fce8ec; --text2:#a07880; --text3:#4a2830;
+  --green:#4caf87; --orange:#f5a623; --purple:#ce93d8; --red:#e05252;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+
+/* ── Light themes ───────────────────────────────────────────────── */
+[data-theme="light-clean"] {
+  --bg:#f0f2f5; --surface:#ffffff; --surface2:#f5f7fa; --surface3:#e8ebf0;
+  --border:#dde1e9; --accent:#1976d2; --accent2:#42a5f5;
+  --text:#1a1d23; --text2:#6b7280; --text3:#b0b8c8;
+  --green:#2e7d32; --orange:#e65100; --purple:#6a1b9a; --red:#c62828;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="light-warm"] {
+  --bg:#faf7f2; --surface:#ffffff; --surface2:#fdf9f4; --surface3:#f0ebe2;
+  --border:#e0d9ce; --accent:#e07b39; --accent2:#f5a623;
+  --text:#2a1f14; --text2:#8a7060; --text3:#c8b8a8;
+  --green:#558b2f; --orange:#bf360c; --purple:#6a1b9a; --red:#c62828;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+[data-theme="arctic"] {
+  --bg:#e8f0f8; --surface:#ffffff; --surface2:#f0f5fb; --surface3:#dce8f4;
+  --border:#c8d8ec; --accent:#0077b6; --accent2:#0096c7;
+  --text:#0d2137; --text2:#4a6a8a; --text3:#9ab8d4;
+  --green:#1b5e20; --orange:#bf360c; --purple:#4a148c; --red:#b71c1c;
+  --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --grain-opacity:0;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREMIUM GLOW / SHINE THEMES
+══════════════════════════════════════════════════════════════════ */
+
+/* Neon Cyber — electric blue/cyan glow, scanlines, grid bg */
+[data-theme="neon-cyber"] {
+  --bg:#00050f; --surface:#020b18; --surface2:#041528; --surface3:#07203a;
+  --border:#0a3060; --accent:#00d4ff; --accent2:#00ffcc;
+  --text:#c8f0ff; --text2:#5090b0; --text3:#1a3a50;
+  --green:#00ffaa; --orange:#ff6600; --purple:#cc00ff; --red:#ff2244;
+  --glow-accent:rgba(0,212,255,0.18); --shimmer-opacity:0.06; --grain-opacity:0.03;
+  --nav-bg:rgba(0,5,15,0.95);
+}
+/* Molten Gold — amber/gold glow, luxury metal feel */
+[data-theme="molten-gold"] {
+  --bg:#0a0800; --surface:#150f00; --surface2:#201600; --surface3:#2e2000;
+  --border:#3d2e00; --accent:#ffb800; --accent2:#ffd740;
+  --text:#fff8e0; --text2:#a08840; --text3:#504020;
+  --green:#80c800; --orange:#ff8c00; --purple:#cc80ff; --red:#ff4422;
+  --glow-accent:rgba(255,184,0,0.15); --shimmer-opacity:0.08; --grain-opacity:0.04;
+  --nav-bg:rgba(10,8,0,0.96);
+}
+/* Aurora — shifting green/purple/teal, like the northern lights */
+[data-theme="aurora"] {
+  --bg:#020a08; --surface:#061410; --surface2:#0a1e18; --surface3:#102820;
+  --border:#153520; --accent:#00e5a0; --accent2:#40ffcc;
+  --text:#d0fff0; --text2:#60a080; --text3:#204030;
+  --green:#00ff88; --orange:#ff8844; --purple:#aa44ff; --red:#ff3355;
+  --glow-accent:rgba(0,229,160,0.14); --shimmer-opacity:0.05; --grain-opacity:0.03;
+  --nav-bg:rgba(2,10,8,0.95);
+}
+/* Deep Crimson — dark red glow, ember/fire reflections */
+[data-theme="deep-crimson"] {
+  --bg:#0a0004; --surface:#140008; --surface2:#1e000e; --surface3:#2a0015;
+  --border:#3d0020; --accent:#ff1744; --accent2:#ff6090;
+  --text:#ffe0e8; --text2:#a04060; --text3:#501030;
+  --green:#00e676; --orange:#ff6d00; --purple:#ea80fc; --red:#ff1744;
+  --glow-accent:rgba(255,23,68,0.16); --shimmer-opacity:0.07; --grain-opacity:0.04;
+  --nav-bg:rgba(10,0,4,0.96);
+}
+/* Holographic — rainbow shimmer, iridescent surface */
+[data-theme="holographic"] {
+  --bg:#060610; --surface:#0e0e20; --surface2:#141430; --surface3:#1c1c40;
+  --border:#2a2a60; --accent:#a080ff; --accent2:#e080ff;
+  --text:#f0eaff; --text2:#8878c0; --text3:#302860;
+  --green:#44ffaa; --orange:#ffaa44; --purple:#ff44ff; --red:#ff4466;
+  --glow-accent:rgba(160,128,255,0.16); --shimmer-opacity:0.12; --grain-opacity:0.02;
+  --nav-bg:rgba(6,6,16,0.96);
+}
+/* Steel Forge — dark gunmetal, brushed metal sheen */
+[data-theme="steel-forge"] {
+  --bg:#080a0c; --surface:#111418; --surface2:#181c22; --surface3:#20262e;
+  --border:#2a3040; --accent:#78a0c8; --accent2:#a8c8e8;
+  --text:#d8e4f0; --text2:#708090; --text3:#303840;
+  --green:#50c878; --orange:#e8952a; --purple:#9878c8; --red:#e85050;
+  --glow-accent:rgba(120,160,200,0.10); --shimmer-opacity:0.05; --grain-opacity:0.06;
+  --nav-bg:rgba(8,10,12,0.97);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   GLOBAL RESETS + BODY
+══════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Premium theme body effects */
+[data-theme="neon-cyber"] body,
+[data-theme="molten-gold"] body,
+[data-theme="aurora"] body,
+[data-theme="deep-crimson"] body,
+[data-theme="holographic"] body,
+[data-theme="steel-forge"] body {
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%, var(--glow-accent), transparent),
+    radial-gradient(ellipse 60% 30% at 80% 100%, var(--glow-accent), transparent);
+}
+
+/* Neon cyber scanline overlay */
+[data-theme="neon-cyber"] body::after {
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px
+  );
+}
+
+/* Holographic grain */
+[data-theme="holographic"] body::before {
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:9998;
+  opacity:var(--grain-opacity);
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SHARED NAV — identical across ALL pages
+══════════════════════════════════════════════════════════════════ */
+.hub-nav {
+  position:sticky; top:0; z-index:200;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0;
+  padding:0 20px; height:48px;
+  font-size:12px; font-weight:600;
+  overflow-x:auto; white-space:nowrap;
+  flex-shrink:0;
+}
+
+/* Premium nav backdrop */
+[data-theme="neon-cyber"] .hub-nav,
+[data-theme="molten-gold"] .hub-nav,
+[data-theme="aurora"] .hub-nav,
+[data-theme="deep-crimson"] .hub-nav,
+[data-theme="holographic"] .hub-nav,
+[data-theme="steel-forge"] .hub-nav {
+  background:var(--nav-bg, var(--surface));
+  backdrop-filter:blur(12px) saturate(1.4);
+  border-bottom-color:var(--accent);
+  box-shadow:0 1px 0 var(--glow-accent), 0 2px 20px rgba(0,0,0,0.4);
+}
+
+.hub-nav-logo {
+  display:flex; align-items:center; gap:7px;
+  color:var(--accent2); text-decoration:none;
+  font-size:13px; font-weight:800; letter-spacing:-0.01em;
+  padding:0 16px 0 0; margin-right:4px;
+  border-right:1px solid var(--border); flex-shrink:0;
+  transition:color 0.15s;
+}
+.hub-nav-logo:hover { color:var(--text); }
+
+.hub-nav-links {
+  display:flex; align-items:center; gap:2px;
+  padding-left:8px; flex:1;
+}
+.hub-nav-links a {
+  color:var(--text2); text-decoration:none;
+  padding:0 10px; height:48px;
+  display:flex; align-items:center;
+  border-bottom:2px solid transparent;
+  font-size:12px; font-weight:600;
+  transition:color 0.15s, background 0.15s, border-color 0.15s;
+  flex-shrink:0;
+}
+.hub-nav-links a:hover {
+  color:var(--text);
+  background:rgba(255,255,255,0.04);
+}
+.hub-nav-links a.active {
+  color:var(--accent2);
+  border-bottom-color:var(--accent2);
+}
+.hub-nav-sep {
+  width:1px; height:20px;
+  background:var(--border);
+  margin:0 6px; flex-shrink:0;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SHARED PAGE HEADER — the title bar below the nav
+   Used on all tool pages except index/tools (which have special layouts)
+══════════════════════════════════════════════════════════════════ */
+.page-header {
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:16px 24px;
+  display:flex; align-items:center; gap:14px;
+  flex-shrink:0;
+}
+.page-header-icon {
+  font-size:28px; flex-shrink:0; line-height:1;
+}
+.page-header-text { flex:1; min-width:0; }
+.page-header-title {
+  font-size:18px; font-weight:800;
+  letter-spacing:-0.02em;
+  color:var(--text); line-height:1.1;
+}
+.page-header-desc {
+  font-size:12px; color:var(--text2);
+  margin-top:3px; line-height:1.5;
+}
+
+/* Premium page-header glow */
+[data-theme="neon-cyber"] .page-header,
+[data-theme="molten-gold"] .page-header,
+[data-theme="aurora"] .page-header,
+[data-theme="deep-crimson"] .page-header,
+[data-theme="holographic"] .page-header,
+[data-theme="steel-forge"] .page-header {
+  border-bottom-color:var(--accent);
+  box-shadow:0 1px 0 var(--glow-accent), inset 0 -1px 0 var(--glow-accent);
+  background:linear-gradient(135deg, var(--surface) 60%, color-mix(in srgb, var(--surface) 92%, var(--accent)));
+}
+[data-theme="neon-cyber"] .page-header-title,
+[data-theme="molten-gold"] .page-header-title,
+[data-theme="aurora"] .page-header-title,
+[data-theme="deep-crimson"] .page-header-title,
+[data-theme="holographic"] .page-header-title,
+[data-theme="steel-forge"] .page-header-title {
+  text-shadow:0 0 20px var(--glow-accent);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SHARED CARD — consistent card style across all pages
+══════════════════════════════════════════════════════════════════ */
+.hub-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+
+/* Premium card shimmer effect */
+[data-theme="neon-cyber"] .hub-card,
+[data-theme="molten-gold"] .hub-card,
+[data-theme="aurora"] .hub-card,
+[data-theme="deep-crimson"] .hub-card,
+[data-theme="holographic"] .hub-card,
+[data-theme="steel-forge"] .hub-card {
+  border-color:color-mix(in srgb, var(--border) 70%, var(--accent));
+  box-shadow:0 0 0 1px var(--glow-accent), 0 4px 20px rgba(0,0,0,0.4);
+  position:relative; overflow:hidden;
+}
+
+/* Shimmer top-edge reflection on premium themes */
+[data-theme="neon-cyber"] .hub-card::before,
+[data-theme="molten-gold"] .hub-card::before,
+[data-theme="aurora"] .hub-card::before,
+[data-theme="deep-crimson"] .hub-card::before,
+[data-theme="holographic"] .hub-card::before,
+[data-theme="steel-forge"] .hub-card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:var(--shimmer-opacity);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SCROLLBARS
+══════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+
+* { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100vh; }
+
+  /* ── Nav bar ── */
+  .hub-nav {
+    position:sticky; top:0; z-index:200;
+    background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:0;
+    padding:0 20px; height:44px; font-size:12px; font-weight:600;
+    overflow-x:auto; white-space:nowrap;
+  }
+  .hub-nav-logo { display:flex; align-items:center; gap:6px; color:var(--accent2); text-decoration:none; font-size:13px; font-weight:700; padding:0 14px 0 0; margin-right:4px; border-right:1px solid var(--border); flex-shrink:0; }
+  .hub-nav-logo:hover { color:var(--text); }
+  .hub-nav-links { display:flex; align-items:center; gap:2px; padding-left:8px; flex:1; }
+  .hub-nav-links a { color:var(--text2); text-decoration:none; padding:0 10px; height:44px; display:flex; align-items:center; transition:color 0.15s,background 0.15s; flex-shrink:0; }
+  .hub-nav-links a:hover { color:var(--text); background:rgba(255,255,255,0.04); }
+  .hub-nav-links a.active { color:var(--accent2); border-bottom:2px solid var(--accent2); }
+  .hub-nav-sep { width:1px; height:20px; background:var(--border); margin:0 6px; flex-shrink:0; }
+
+  /* ── Layout ── */
+  .page { max-width:1100px; margin:0 auto; padding:28px 24px 60px; }
+
+  /* ── Connection bar ── */
+  .conn-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:24px; }
+  .conn-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .conn-label { font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; }
+  .conn-input { flex:1; min-width:160px; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:7px 11px; font-size:13px; outline:none; transition:border-color 0.15s; }
+  .conn-input:focus { border-color:var(--accent); }
+  .conn-btn { padding:7px 16px; border-radius:7px; font-size:12px; font-weight:700; cursor:pointer; border:none; background:var(--accent); color:#fff; transition:background 0.15s; white-space:nowrap; }
+  .conn-btn:hover { background:var(--accent2); }
+  .conn-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .conn-status { font-size:12px; padding:4px 12px; border-radius:20px; font-weight:600; flex-shrink:0; }
+  .conn-status.idle    { background:rgba(155,114,232,0.1); color:var(--purple); border:1px solid rgba(155,114,232,0.3); }
+  .conn-status.loading { background:rgba(74,144,217,0.1);  color:var(--accent2); border:1px solid rgba(74,144,217,0.3); }
+  .conn-status.ok      { background:rgba(76,175,135,0.1);  color:var(--green);   border:1px solid rgba(76,175,135,0.3); }
+  .conn-status.err     { background:rgba(224,82,82,0.1);   color:var(--red);     border:1px solid rgba(224,82,82,0.3); }
+
+  /* ── Score ring ── */
+  .score-section { display:grid; grid-template-columns:auto 1fr; gap:32px; align-items:center; margin-bottom:28px; }
+  @media(max-width:600px) { .score-section { grid-template-columns:1fr; justify-items:center; } }
+  .ring-wrap { position:relative; width:180px; height:180px; flex-shrink:0; }
+  .ring-wrap svg { transform:rotate(-90deg); }
+  .ring-bg   { fill:none; stroke:var(--surface3); stroke-width:14; }
+  .ring-fill { fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke 0.5s; }
+  .ring-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .ring-score { font-size:42px; font-weight:800; line-height:1; }
+  .ring-label { font-size:11px; color:var(--text2); font-weight:600; margin-top:2px; }
+  .ring-grade { font-size:13px; font-weight:700; margin-top:4px; }
+
+  /* ── Pillar cards ── */
+  .pillars { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:600px) { .pillars { grid-template-columns:1fr; } }
+  .pillar-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; }
+  .pillar-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .pillar-icon { font-size:22px; }
+  .pillar-title { font-size:14px; font-weight:700; flex:1; }
+  .pillar-weight { font-size:11px; color:var(--text2); background:var(--surface2); border:1px solid var(--border); padding:2px 8px; border-radius:4px; }
+  .pillar-score-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .pillar-score-num { font-size:28px; font-weight:800; }
+  .pillar-bar-wrap { flex:1; height:8px; background:var(--surface3); border-radius:4px; overflow:hidden; }
+  .pillar-bar { height:100%; border-radius:4px; transition:width 1s cubic-bezier(.4,0,.2,1), background 0.5s; }
+  .metric-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-top:1px solid rgba(255,255,255,0.04); font-size:12px; }
+  .metric-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .metric-name { color:var(--text2); flex:1; }
+  .metric-val  { font-weight:600; }
+  .metric-pen  { font-size:11px; color:var(--red); }
+  .metric-ok   { font-size:11px; color:var(--green); }
+  .metric-na   { font-size:11px; color:var(--text2); font-style:italic; }
+
+  /* ── Dot colours ── */
+  .dot-green  { background:var(--green); }
+  .dot-orange { background:var(--orange); }
+  .dot-red    { background:var(--red); }
+  .dot-grey   { background:var(--surface3); }
+
+  /* ── Score colour classes ── */
+  .score-ex  { color:#4cff9e; }
+  .score-gd  { color:var(--green); }
+  .score-ok  { color:var(--orange); }
+  .score-bd  { color:var(--red); }
+  .bar-ex    { background:#4cff9e; }
+  .bar-gd    { background:var(--green); }
+  .bar-ok    { background:var(--orange); }
+  .bar-bd    { background:var(--red); }
+
+  /* ── Recommendations ── */
+  .reco-section { margin-top:24px; }
+  .section-title { font-size:13px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .reco-list { display:flex; flex-direction:column; gap:8px; }
+  .reco-row { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 16px; display:flex; align-items:flex-start; gap:12px; font-size:12px; line-height:1.6; }
+  .reco-row.reco-crit { border-color:rgba(224,82,82,0.4); background:rgba(224,82,82,0.05); }
+  .reco-row.reco-warn { border-color:rgba(245,166,35,0.35); background:rgba(245,166,35,0.04); }
+  .reco-row.reco-good { border-color:rgba(76,175,135,0.3); }
+  .reco-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+  .reco-text { color:var(--text2); }
+  .reco-text strong { color:var(--text); }
+
+  /* ── Zombie table ── */
+  .zombie-section { margin-top:24px; }
+  .zombie-table-wrap { overflow-x:auto; }
+  table.zt { width:100%; border-collapse:collapse; font-size:12px; }
+  table.zt th { text-align:left; padding:8px 12px; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border); }
+  table.zt td { padding:7px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  table.zt tr:last-child td { border-bottom:none; }
+  .zt-pill { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; }
+  .zt-unavail { background:rgba(224,82,82,0.12); color:var(--red); }
+  .zt-unknown  { background:rgba(245,166,35,0.12); color:var(--orange); }
+  .exclude-btn { font-size:10px; padding:2px 8px; border-radius:4px; background:var(--surface2); border:1px solid var(--border); color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .exclude-btn:hover { border-color:var(--accent); color:var(--text); }
+
+  /* ── Missing sensors notice ── */
+  .sensor-map-section { margin-top:24px; }
+  .smap-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+  .smap-row { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:12px; display:flex; align-items:center; gap:10px; }
+  .smap-icon { font-size:16px; flex-shrink:0; }
+  .smap-name { flex:1; color:var(--text2); }
+  .smap-entity { font-family:monospace; font-size:11px; color:var(--accent2); }
+  .smap-found  { color:var(--green); font-weight:700; font-size:11px; }
+  .smap-miss   { color:var(--red);   font-weight:700; font-size:11px; }
+
+  /* ── Empty/idle state ── */
+  .idle-state { text-align:center; padding:60px 20px; color:var(--text2); }
+  .idle-state .idle-icon { font-size:52px; margin-bottom:16px; }
+  .idle-state h2 { font-size:18px; font-weight:700; color:var(--text); margin-bottom:8px; }
+  .idle-state p  { font-size:13px; line-height:1.7; max-width:480px; margin:0 auto; }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 16px; }
+
+  /* ── HS Shell ── */
+  .hs-shell { display:flex; height:calc(100vh - 48px - 72px); overflow:hidden; }
+
+  /* ── HS Sidebar ── */
+  .hs-sidebar {
+    width:230px; flex-shrink:0;
+    background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .hs-sidebar-section { padding:12px 14px; border-bottom:1px solid var(--border); }
+  .hs-sidebar-title {
+    font-size:10px; font-weight:800; text-transform:uppercase;
+    letter-spacing:0.07em; color:var(--text2); margin-bottom:8px;
+  }
+  .hs-pillar-row {
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; margin-bottom:4px;
+  }
+  .hs-progress-track {
+    height:5px; background:var(--surface3); border-radius:3px; overflow:hidden;
+  }
+  .hs-progress-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
+
+  /* ── HS Main ── */
+  .hs-main { flex:1; overflow-y:auto; background:var(--bg); display:flex; flex-direction:column; }
+
+  /* ── Tabs ── */
+  .hs-tabs {
+    display:flex; gap:0; border-bottom:1px solid var(--border);
+    background:var(--surface); flex-shrink:0; overflow-x:auto;
+  }
+  .hs-tab {
+    padding:10px 16px; font-size:12px; font-weight:600; cursor:pointer;
+    color:var(--text2); border-bottom:2px solid transparent;
+    transition:all 0.15s; white-space:nowrap;
+  }
+  .hs-tab:hover { color:var(--text); background:var(--surface2); }
+  .hs-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+
+  /* ── Tab panels ── */
+  .hs-panel { display:none; padding:20px 24px; }
+  .hs-panel.active { display:block; }
+
+  /* ── Score section ── */
+  .score-section { display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; margin-bottom:20px; }
+  .ring-wrap { position:relative; width:180px; height:180px; flex-shrink:0; }
+  .pillars { display:grid; grid-template-columns:1fr 1fr; gap:14px; flex:1; min-width:260px; }
+
+  /* ── Metric cards ── */
+  .metric-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px 18px; margin-bottom:12px;
+  }
+  .metric-card-title { font-size:12px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .metric-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(255,255,255,0.04); font-size:12px; }
+
+  /* ── Recommendation cards ── */
+  .reco-card {
+    padding:12px 14px; border-radius:8px; margin-bottom:8px;
+    border-left:3px solid var(--border); background:var(--surface);
+    border:1px solid var(--border); font-size:12px; line-height:1.6;
+  }
+  .reco-card.good { border-left-color:var(--green); background:rgba(76,175,80,0.05); }
+  .reco-card.warn { border-left-color:var(--orange); background:rgba(245,166,35,0.05); }
+  .reco-card.crit { border-left-color:var(--red); background:rgba(224,82,82,0.05); }
+
+  /* ── Fix actions panel ── */
+  .fix-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px 18px; margin-bottom:12px;
+    display:flex; align-items:flex-start; gap:14px;
+  }
+  .fix-icon { font-size:24px; flex-shrink:0; }
+  .fix-body { flex:1; }
+  .fix-title { font-size:13px; font-weight:700; margin-bottom:4px; }
+  .fix-desc  { font-size:11px; color:var(--text2); line-height:1.6; margin-bottom:8px; }
+  .fix-btn {
+    padding:5px 14px; border-radius:6px; font-size:11px; font-weight:700;
+    border:1px solid var(--accent); background:transparent; color:var(--accent2);
+    cursor:pointer; transition:all 0.15s;
+  }
+  .fix-btn:hover { background:var(--accent); color:#fff; }
+  .fix-btn-danger { border-color:var(--red); color:var(--red); }
+  .fix-btn-danger:hover { background:var(--red); color:#fff; }
+
+  /* ── Zombie / update rows ── */
+  .zombie-row {
+    display:flex; align-items:center; gap:8px; padding:7px 10px;
+    border-radius:7px; background:var(--surface); border:1px solid var(--border);
+    font-size:11px; margin-bottom:4px;
+  }
+
+  /* ── Sidebar issue pills ── */
+  .sb-issue { font-size:10px; padding:3px 0; color:var(--text2); display:flex; align-items:center; gap:5px; }
+  .sb-issue.crit { color:var(--red); }
+  .sb-issue.warn { color:var(--orange); }
+
+  /* ── Score classes ── */
+  .score-excellent { color:var(--green); }
+  .score-good      { color:#7ecb52; }
+  .score-ok        { color:var(--orange); }
+  .score-poor      { color:#e08040; }
+  .score-crit      { color:var(--red); }
+
+  /* ── Conn status ── */
+  .conn-status { font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .conn-status.idle    { background:var(--surface2); border:1px solid var(--border); color:var(--text2); }
+  .conn-status.loading { background:rgba(245,166,35,0.1); border:1px solid var(--orange); color:var(--orange); }
+  .conn-status.ok      { background:rgba(76,175,80,0.1); border:1px solid var(--green); color:var(--green); }
+  .conn-status.err     { background:rgba(224,82,82,0.1); border:1px solid var(--red); color:var(--red); }
+
+
+  /* ── Standard Light additions ── */
+  [data-theme="cotton"]    { --bg:#fafafa; --surface:#ffffff; --surface2:#f5f5f5; --surface3:#eeeeee; --border:#e0e0e0; --accent:#e91e8c; --accent2:#f06292; --text:#1a0e14; --text2:#6d5760; --text3:#b0a0a6; --green:#2e7d32; --orange:#e65100; --purple:#7b1fa2; --red:#c62828; --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --reflection-opacity:0; --grain-opacity:0; }
+  [data-theme="sage"]      { --bg:#f0f5f0; --surface:#ffffff; --surface2:#e8f0e8; --surface3:#dceadc; --border:#c8dcc8; --accent:#388e3c; --accent2:#66bb6a; --text:#1a2a1a; --text2:#4a6a4a; --text3:#90b090; --green:#1b5e20; --orange:#e65100; --purple:#4a148c; --red:#b71c1c; --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --reflection-opacity:0; --grain-opacity:0; }
+  [data-theme="sand"]      { --bg:#fdf6ec; --surface:#ffffff; --surface2:#f8eedd; --surface3:#f0e0c0; --border:#e8d0a0; --accent:#c47a2a; --accent2:#e09040; --text:#2a1a08; --text2:#6a4a20; --text3:#b09060; --green:#2e7d32; --orange:#bf360c; --purple:#4a148c; --red:#b71c1c; --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --reflection-opacity:0; --grain-opacity:0; }
+  [data-theme="lavender"]  { --bg:#f4f0fb; --surface:#ffffff; --surface2:#ede8f8; --surface3:#e0d8f4; --border:#ccc0ec; --accent:#7c3aed; --accent2:#a78bfa; --text:#1e1428; --text2:#5a4a78; --text3:#a090c0; --green:#15803d; --orange:#c2410c; --purple:#6d28d9; --red:#dc2626; --glow-accent:rgba(0,0,0,0); --shimmer-opacity:0; --reflection-opacity:0; --grain-opacity:0; }
+
+  /* ── Premium Glow Light additions ── */
+  [data-theme="solar-flare"] {
+    --bg:#fffbf0; --surface:#ffffff; --surface2:#fff8e8; --surface3:#ffefc0;
+    --border:#fcd88a; --accent:#f59e0b; --accent2:#fbbf24;
+    --text:#1c1208; --text2:#6b4c1a; --text3:#b89050;
+    --green:#15803d; --orange:#c2410c; --purple:#7c3aed; --red:#dc2626;
+    --glow-accent:rgba(245,158,11,0.15); --shimmer-opacity:0.04; --reflection-opacity:0.03; --grain-opacity:0.015;
+  }
+  [data-theme="blossom"] {
+    --bg:#fef0f5; --surface:#ffffff; --surface2:#fde4ef; --surface3:#fbd0e5;
+    --border:#f9a8d4; --accent:#ec4899; --accent2:#f472b6;
+    --text:#1f0814; --text2:#6b2048; --text3:#b070a0;
+    --green:#15803d; --orange:#c2410c; --purple:#7c3aed; --red:#dc2626;
+    --glow-accent:rgba(236,72,153,0.15); --shimmer-opacity:0.04; --reflection-opacity:0.03; --grain-opacity:0.015;
+  }
+  [data-theme="seafoam"] {
+    --bg:#f0fdfb; --surface:#ffffff; --surface2:#e0faf6; --surface3:#ccf5ef;
+    --border:#99e8dc; --accent:#0d9488; --accent2:#14b8a6;
+    --text:#082820; --text2:#1a6058; --text3:#60a898;
+    --green:#065f46; --orange:#c2410c; --purple:#7c3aed; --red:#dc2626;
+    --glow-accent:rgba(13,148,136,0.15); --shimmer-opacity:0.04; --reflection-opacity:0.03; --grain-opacity:0.015;
+  }
+  [data-theme="cloudberry"] {
+    --bg:#f5f0ff; --surface:#ffffff; --surface2:#ede4ff; --surface3:#ddd0ff;
+    --border:#c4b5fd; --accent:#8b5cf6; --accent2:#a78bfa;
+    --text:#1e0f3c; --text2:#4c2888; --text3:#9070c8;
+    --green:#15803d; --orange:#c2410c; --purple:#6d28d9; --red:#dc2626;
+    --glow-accent:rgba(139,92,246,0.18); --shimmer-opacity:0.05; --reflection-opacity:0.04; --grain-opacity:0.02;
+  }
+
+  /* ── Bitcoin Branded Themes ── */
+  [data-theme="bitcoin-dark"] {
+    --bg:#0a0600; --surface:#1a0e00; --surface2:#241400; --surface3:#301c00;
+    --border:#4a2e00; --accent:#f7931a; --accent2:#ffb347;
+    --text:#fff8f0; --text2:#c8a060; --text3:#7a5030;
+    --green:#f7931a; --orange:#ff6600; --purple:#cc9900; --red:#ff4444;
+    --radius:6px;
+    --glow-accent:rgba(247,147,26,0.2); --shimmer-opacity:0.06; --reflection-opacity:0.04; --grain-opacity:0.02;
+  }
+  [data-theme="bitcoin-light"] {
+    --bg:#fffbf5; --surface:#ffffff; --surface2:#fff5e6; --surface3:#ffead0;
+    --border:#ffd599; --accent:#f7931a; --accent2:#e07800;
+    --text:#1a0e00; --text2:#7a4a10; --text3:#c09050;
+    --green:#c06000; --orange:#e05000; --purple:#c07000; --red:#cc2200;
+    --radius:6px;
+    --glow-accent:rgba(247,147,26,0.12); --shimmer-opacity:0.02; --reflection-opacity:0.01; --grain-opacity:0.01;
+  }
+  [data-theme="satoshi"] {
+    --bg:#060a06; --surface:#0d1a0d; --surface2:#142214; --surface3:#1c2e1c;
+    --border:#2a4a1a; --accent:#f7931a; --accent2:#ffb347;
+    --text:#f0ffe0; --text2:#80c040; --text3:#304820;
+    --green:#80cc20; --orange:#f7931a; --purple:#60a020; --red:#ff6633;
+    --radius:6px;
+    --glow-accent:rgba(247,147,26,0.18); --shimmer-opacity:0.05; --reflection-opacity:0.04; --grain-opacity:0.025;
+  }
+  [data-theme="hodl"] {
+    --bg:#050510; --surface:#0d0d25; --surface2:#141430; --surface3:#1c1c40;
+    --border:#2a2a60; --accent:#f7931a; --accent2:#ffb347;
+    --text:#e8f0ff; --text2:#6060a0; --text3:#282860;
+    --green:#f7931a; --orange:#ffcc00; --purple:#8080ff; --red:#ff4466;
+    --radius:6px;
+    --glow-accent:rgba(247,147,26,0.22); --shimmer-opacity:0.07; --reflection-opacity:0.05; --grain-opacity:0.03;
+  }
+
+  /* ── Bitcoin theme overrides — branding applied across page components ── */
+  [data-theme="bitcoin-dark"] .hub-nav,
+  [data-theme="bitcoin-light"] .hub-nav,
+  [data-theme="satoshi"] .hub-nav,
+  [data-theme="hodl"] .hub-nav {
+    border-bottom-color: var(--accent);
+  }
+  [data-theme="bitcoin-dark"] .hub-nav-logo,
+  [data-theme="satoshi"] .hub-nav-logo,
+  [data-theme="hodl"] .hub-nav-logo {
+    color: var(--accent);
+  }
+  [data-theme="bitcoin-dark"] .page-header,
+  [data-theme="satoshi"] .page-header,
+  [data-theme="hodl"] .page-header {
+    border-bottom-color: var(--accent);
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(247,147,26,0.06) 100%);
+  }
+  [data-theme="bitcoin-dark"] .hub-card,
+  [data-theme="satoshi"] .hub-card,
+  [data-theme="hodl"] .hub-card {
+    border-color: rgba(247,147,26,0.2);
+  }
+  [data-theme="bitcoin-dark"] .btn.btn-primary,
+  [data-theme="satoshi"] .btn.btn-primary,
+  [data-theme="hodl"] .btn.btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+/* ════════════════════════════════════════════════════════════════
+   HA TOOLS HUB — RESPONSIVE SYSTEM
+════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════
+   HA TOOLS HUB — RESPONSIVE SYSTEM
+   Breakpoints: 1024px (tablet land), 768px (tablet port), 480px (mobile)
+   Strategy:
+     > 1024  — full desktop layout, no changes
+     768-1024 — sidebar narrows, nav compresses
+     < 768    — sidebar becomes off-canvas drawer, nav becomes hamburger
+     < 480    — single column everything, full-screen modals
+════════════════════════════════════════════════════════════════ */
+
+/* ── Hamburger button (hidden on desktop) ── */
+.hub-hamburger {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 36px; height: 36px; margin-left: auto; flex-shrink: 0;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; color: var(--text); font-size: 16px;
+  transition: background 0.15s;
+}
+.hub-hamburger:hover { background: var(--surface2); }
+
+/* ── Mobile nav overlay menu ── */
+.hub-mobile-menu {
+  display: none;
+  position: fixed; top: 48px; left: 0; right: 0; bottom: 0;
+  background: var(--bg); z-index: 300;
+  flex-direction: column; overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+.hub-mobile-menu.open { display: flex; }
+.hub-mobile-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; font-size: 14px; font-weight: 600;
+  color: var(--text); text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.hub-mobile-menu a:hover, .hub-mobile-menu a.active { background: var(--surface2); color: var(--accent2); }
+
+/* ── Sidebar drawer overlay ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 150; backdrop-filter: blur(2px);
+}
+.sidebar-overlay.visible { display: block; }
+
+/* ── Sidebar toggle button ── */
+.sidebar-toggle-btn {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; color: var(--text); font-size: 14px;
+  flex-shrink: 0; transition: background 0.15s;
+}
+.sidebar-toggle-btn:hover { background: var(--surface3); }
+
+/* ════════════════════════════════════
+   TABLET LANDSCAPE (768-1024px)
+════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* Narrow all sidebars */
+  .cm-sidebar, .pt-sidebar, .hs-sidebar, .sa-sidebar,
+  .themes-sidebar, .hacs-sidebar, .sidenav,
+  .shell > .sidebar, .layout > .sidebar { width: 180px !important; }
+
+  /* Tighten sidebar section padding */
+  .cm-sidebar-section, .pt-sidebar-section, .hs-sidebar-section,
+  .themes-sidebar-section, .sa-sidebar-section { padding: 10px 10px !important; }
+
+  /* Page header — allow wrapping */
+  .page-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Grids — reduce columns */
+  .pt-page-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; }
+  .theme-grid    { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+}
+
+/* ════════════════════════════════════
+   TABLET PORTRAIT / LARGE MOBILE (≤ 768px)
+════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Nav → hamburger ── */
+  .hub-nav-links  { display: none !important; }
+  .hub-hamburger  { display: flex; }
+  .hub-nav-logo span { display: none; } /* hide "HA Tools Hub" text, keep icon */
+
+  /* ── Page header stack ── */
+  .page-header {
+    flex-wrap: wrap; padding: 10px 14px; gap: 8px;
+    min-height: 0;
+  }
+  .page-header-icon  { font-size: 20px; }
+  .page-header-title { font-size: 14px; }
+  .page-header-desc  { display: none; } /* hide subtitle on mobile */
+  .page-header > div:last-child { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+
+  /* ── All shells → column layout ── */
+  .cm-shell, .pt-shell, .hs-shell, .sa-shell, .themes-shell,
+  .shell, .layout {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+    min-height: calc(100vh - 48px) !important;
+  }
+
+  /* ── All sidebars → off-canvas drawer ── */
+  .cm-sidebar, .pt-sidebar, .hs-sidebar, .sa-sidebar,
+  .themes-sidebar, .hacs-sidebar, .sidenav,
+  .shell > .sidebar, .layout > .sidebar {
+    position: fixed !important;
+    top: 48px !important; left: 0 !important; bottom: 0 !important;
+    width: 280px !important;
+    z-index: 160 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.25s ease !important;
+    height: calc(100vh - 48px) !important;
+    overflow-y: auto !important;
+    border-right: 1px solid var(--border) !important;
+    border-bottom: none !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.4) !important;
+  }
+
+  /* Sidebar open state */
+  .sidebar-is-open .cm-sidebar,
+  .sidebar-is-open .pt-sidebar,
+  .sidebar-is-open .hs-sidebar,
+  .sidebar-is-open .sa-sidebar,
+  .sidebar-is-open .themes-sidebar,
+  .sidebar-is-open .hacs-sidebar,
+  .sidebar-is-open .sidenav,
+  .sidebar-is-open .shell > .sidebar,
+  .sidebar-is-open .layout > .sidebar {
+    transform: translateX(0) !important;
+  }
+
+  /* ── Main content → full width ── */
+  .cm-main, .pt-main, .hs-main, .sa-main, .themes-main,
+  .main, .shell > div:not(.sidebar):not(.sidenav),
+  .layout > div:not(.sidebar) {
+    width: 100% !important; min-width: 0 !important;
+    height: auto !important; overflow-y: visible !important;
+  }
+
+  /* ── Show sidebar toggle button ── */
+  .sidebar-toggle-btn { display: flex; }
+
+  /* ── Tabs → horizontal scroll ── */
+  .hs-tabs, .cm-tabs-bar, .analysis-tabs, .atabs { 
+    overflow-x: auto !important; white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+  }
+  .hs-tab { min-width: max-content; }
+
+  /* ── Grids → single column ── */
+  .pt-page-grid, .lcars-tool-grid, .stats-grid,
+  .device-grid, .hub-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .theme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+  }
+  .pillars, .sa-stat-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Stats rows → wrap ── */
+  .stats-row, .pt-stat-strip, .lcars-stats,
+  .analysis-summary, .hs-stat-strip {
+    flex-wrap: wrap !important;
+  }
+  .pt-stat, .lcars-stat { min-width: calc(50% - 6px) !important; flex: none !important; }
+
+  /* ── Modals → full screen ── */
+  #section-modal > div,
+  #diff-modal > div,
+  #modal,
+  [id$="-modal"] > div,
+  .modal-content {
+    width: 100% !important; max-width: 100% !important;
+    max-height: 100% !important; height: 100% !important;
+    border-radius: 0 !important; margin: 0 !important;
+    overflow-y: auto !important;
+  }
+  #section-modal,
+  #diff-modal,
+  #modal,
+  [id$="-modal"] { padding: 0 !important; align-items: flex-start !important; }
+
+  /* ── YAML editors → shorter ── */
+  .cm-yaml-editor { min-height: 140px !important; }
+  textarea { min-height: 100px; }
+
+  /* ── Filter rows → wrap ── */
+  .filter-row, .cm-btn-row, .hacs-filter-row { flex-wrap: wrap !important; }
+  .filter-row input, .filter-row select { min-width: 0; flex: 1; }
+
+  /* ── Snip long URLs / mono text ── */
+  .lcars-mono-readout, .cm-export-pre, code, pre {
+    font-size: 10px !important;
+    overflow-x: auto;
+  }
+
+  /* ── Hide decorative right columns (LCARS, device-explorer) ── */
+  .lcars-right, .lcars-sep-right { display: none !important; }
+
+  /* ── HACS checker ── */
+  .hacs-shell { flex-direction: column !important; height: auto !important; }
+
+  /* ── Setup wizard layout ── */
+  .layout { display: block !important; }
+  .layout .sidebar { height: auto !important; position: fixed !important; }
+  .layout .content, .layout .main { padding: 14px !important; }
+
+  /* ── Automation designer ── */
+  .sidebar { width: 280px !important; } /* uses drawer */
+  .auto-grid, .automation-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Dashboard composer canvas ── */
+  .composer-canvas, .workspace { min-height: 300px !important; }
+
+  /* ── Card library ── */
+  .shell { height: auto !important; }
+  .preview-pane { display: none !important; } /* hide iframe preview on mobile */
+  .show-preview .preview-pane { display: flex !important; }
+
+  /* ── Health score ring ── */
+  .ring-wrap { width: 140px !important; height: 140px !important; }
+  .ring-wrap svg { width: 140px !important; height: 140px !important; }
+  .score-section { flex-direction: column !important; align-items: center !important; }
+
+  /* ── Device explorer sidebar ── */
+  .sidenav { padding: 12px 0 !important; }
+  .nav-item { padding: 8px 14px !important; font-size: 12px !important; }
+
+  /* ── Tracker milestone timeline ── */
+  .pt-timeline { padding-left: 20px !important; }
+}
+
+/* ════════════════════════════════════
+   MOBILE PORTRAIT (≤ 480px)
+════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* Tighter spacing */
+  .page-header { padding: 8px 12px !important; }
+  .pt-panel, .cm-panel, .hs-panel { padding: 12px 14px !important; }
+
+  /* Stack everything */
+  .pt-stat-strip, .lcars-stats { gap: 6px !important; }
+  .pt-stat, .lcars-stat { 
+    min-width: calc(50% - 4px) !important;
+    padding: 8px 10px !important;
+  }
+  .pt-stat-val, .lcars-stat-val { font-size: 20px !important; }
+
+  /* Full-width buttons */
+  .cm-btn-row .cm-btn,
+  .lcars-action-btn { width: 100% !important; margin-bottom: 4px !important; }
+
+  /* Smaller theme cards */
+  .theme-card .theme-preview { height: 60px !important; }
+  .theme-label { padding: 5px 8px !important; font-size: 10px !important; }
+
+  /* Hero achievement bar */
+  .pt-achievement-bar { flex-direction: column !important; padding: 14px !important; }
+  .pt-achievement-icon { font-size: 24px !important; }
+  .pt-achievement-title { font-size: 14px !important; }
+
+  /* Single column grids always */
+  .pillars { grid-template-columns: 1fr !important; }
+  .cm-field-grid, .push-grid { grid-template-columns: 1fr !important; }
+
+  /* Nav even more compact */
+  .hub-nav { padding: 0 10px !important; }
+  .hub-nav-logo { font-size: 13px !important; }
+}
+
+/* ════════════════════════════════════
+   SMALL MOBILE (≤ 380px)
+════════════════════════════════════ */
+@media (max-width: 380px) {
+  .hub-nav-logo span { display: none !important; }
+  .pt-stat, .lcars-stat { min-width: 100% !important; }
+}
+
+/* ── Touch improvements (all sizes) ── */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase tap targets */
+  .nav-item, .cm-tab, .pt-nav-btn, .lcars-sidebar-btn,
+  .hub-mobile-menu a { min-height: 44px !important; }
+  
+  .btn, .cm-btn, .lcars-action-btn { min-height: 40px !important; }
+  
+  /* Remove hover-only states that look broken on touch */
+  .theme-card:hover { transform: none !important; }
+  .pt-page-card:hover { transform: none !important; }
+}
+
+</style>
+<!-- cache-bust: 1774399738 -->
+</head>
+<body>
+
+<nav class="hub-nav"></nav>
+<div class="page-header">
+  <span class="page-header-icon">❤️</span>
+  <div class="page-header-text">
+    <div class="page-header-title">HA Health Score</div>
+    <div class="page-header-desc">Real-time health analysis across hardware and application pillars — scored 0–100</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <button class="btn btn-secondary" onclick="exportReport()" id="btn-export" style="display:none;padding:5px 12px;font-size:11px;">⬇ Export</button>
+    <button class="btn btn-primary"   onclick="runAnalysis()" id="btn-analyse" style="padding:5px 14px;font-size:11px;">🔍 Analyse</button>
+    <div id="conn-status" class="conn-status idle" style="min-width:160px;">⚙ Configure via toolbar</div>
+  </div>
+</div>
+
+<div class="hs-shell">
+
+  <!-- ══ LEFT SIDEBAR ══ -->
+  <div class="hs-sidebar">
+
+    <!-- Score ring (compact) -->
+    <div class="hs-sidebar-section" style="text-align:center;padding:16px 14px;">
+      <div id="sb-ring-wrap">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Global Score</div>
+        <svg width="120" height="120" viewBox="0 0 120 120" id="sb-ring-svg">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface3)" stroke-width="10"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--text2)" stroke-width="10"
+            stroke-dasharray="314" stroke-dashoffset="314"
+            stroke-linecap="round" transform="rotate(-90 60 60)"
+            id="sb-ring-arc" style="transition:stroke-dashoffset 1s ease,stroke 0.5s"/>
+        </svg>
+        <div style="margin-top:-70px;margin-bottom:50px;font-size:28px;font-weight:800;color:var(--text);" id="sb-score-num">—</div>
+        <div style="font-size:11px;font-weight:700;margin-top:4px;" id="sb-grade-label" style="color:var(--text2);">Not analysed</div>
+      </div>
+    </div>
+
+    <!-- Pillar breakdown -->
+    <div class="hs-sidebar-section" id="sb-pillars" style="display:none;">
+      <div class="hs-sidebar-title">Pillars</div>
+      <div class="hs-pillar-row">
+        <span>⚙️ Hardware</span>
+        <span id="sb-hw-score" style="font-weight:700;font-family:monospace;">—</span>
+      </div>
+      <div class="hs-progress-track"><div class="hs-progress-fill" id="sb-hw-bar" style="width:0%;background:var(--green);"></div></div>
+      <div class="hs-pillar-row" style="margin-top:8px;">
+        <span>📱 Application</span>
+        <span id="sb-app-score" style="font-weight:700;font-family:monospace;">—</span>
+      </div>
+      <div class="hs-progress-track"><div class="hs-progress-fill" id="sb-app-bar" style="width:0%;background:var(--accent2);"></div></div>
+    </div>
+
+    <!-- History trend -->
+    <div class="hs-sidebar-section" id="sb-history-section" style="display:none;">
+      <div class="hs-sidebar-title">📈 Score History</div>
+      <canvas id="sb-history-canvas" width="192" height="80" style="width:100%;border-radius:6px;"></canvas>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-top:3px;">
+        <span id="sb-hist-oldest">—</span><span id="sb-hist-newest">now</span>
+      </div>
+    </div>
+
+    <!-- Quick issues -->
+    <div class="hs-sidebar-section" id="sb-issues" style="display:none;">
+      <div class="hs-sidebar-title">🚨 Issues</div>
+      <div id="sb-issues-list"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="hs-sidebar-section" style="margin-top:auto;">
+      <div class="hs-sidebar-title">⚙️ Options</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
+          <input type="checkbox" id="opt-autorefresh"> Auto-refresh (5 min)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
+          <input type="checkbox" id="opt-history" checked> Track history
+        </label>
+        <button onclick="clearHistory()" style="margin-top:4px;padding:5px;border-radius:6px;font-size:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;width:100%;">🗑 Clear History</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <div class="hs-main">
+    <!-- Tab bar -->
+    <div class="hs-tabs" id="hs-tabs">
+      <div class="hs-tab active" onclick="showTab('overview',this)">Overview</div>
+      <div class="hs-tab" onclick="showTab('hardware',this)">⚙️ Hardware</div>
+      <div class="hs-tab" onclick="showTab('application',this)">📱 Application</div>
+      <div class="hs-tab" onclick="showTab('zombies',this)">👻 Unavailable</div>
+      <div class="hs-tab" onclick="showTab('updates',this)">🔄 Updates</div>
+      <div class="hs-tab" onclick="showTab('fixes',this)">🔧 Fix Actions</div>
+    </div>
+
+    <div id="results">
+      <div class="idle-state">
+        <div class="idle-icon">❤️</div>
+        <h2>HA Health Score</h2>
+        <p>Calculates a 0–100 health score across Hardware and Application pillars.<br>Connect via the ⚙ toolbar and click <strong style="color:var(--accent2)">Analyse</strong> to get started.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+// ================================================================
+//  HA Tools Hub — https://ha-tools-hub.com
+//  Copyright © 2026 HA Tools Hub. All rights reserved.
+//  Unauthorised reproduction or distribution is prohibited.
+//  For licensing: info@ha-tools-hub.com
+// ================================================================
+
+// ─── Constants ────────────────────────────────────────────
+var STORAGE_KEY = 'ha_tools_config';
+var EXCL_KEY    = 'ha_health_excluded';  // localStorage key for user-excluded zombie entities
+
+// Scoring weights (matching HAGHS v2)
+var W_HW  = 0.40;
+var W_APP = 0.60;
+
+// Zombie domains to scan
+var ZOMBIE_DOMAINS = ['sensor','binary_sensor','switch','light','fan','climate',
+                      'media_player','vacuum','camera','cover','lock','alarm_control_panel'];
+
+// ─── State ────────────────────────────────────────────────
+var HA_URL = '', HA_TOKEN = '';
+var DATA   = {};   // raw fetched data
+var SCORE  = {};   // calculated score breakdown
+var EXCLUDED = []; // user-excluded entity IDs
+
+// ─── Helpers ──────────────────────────────────────────────
+function $(id) { return document.getElementById(id); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
+}
+function loadExcluded() {
+  try { return JSON.parse(localStorage.getItem(EXCL_KEY)) || []; } catch(e) { return []; }
+}
+function saveExcluded() {
+  localStorage.setItem(EXCL_KEY, JSON.stringify(EXCLUDED));
+}
+
+function setStatus(cls, msg) {
+  var el = $('conn-status');
+  el.className = 'conn-status ' + cls;
+  el.textContent = msg;
+}
+
+function haFetch(path) {
+  return fetch(HA_URL + path, {
+    headers: { 'Authorization':'Bearer ' + HA_TOKEN, 'Content-Type':'application/json' }
+  });
+}
+
+function buildWsUrl(u) {
+  return u.trim().replace(/\/$/, '')
+    .replace(/^https:\/\//i,'wss://')
+    .replace(/^http:\/\//i,'ws://') + '/api/websocket';
+}
+
+// ─── WebSocket helper (same resilient pattern as device-explorer) ──
+function wsCommand(wsUrl, token, commands) {
+  return new Promise(function(resolve) {
+    var ws, settled=false, authed=false, msgId=1, pending={};
+    function finish() {
+      if (settled) return; settled=true;
+      clearTimeout(timeout);
+      try { if (ws && ws.readyState < 2) ws.close(); } catch(e){}
+      resolve(commands);
+    }
+    var timeout = setTimeout(finish, 12000);
+    try { ws = new WebSocket(wsUrl); } catch(e) { finish(); return; }
+
+    ws.onmessage = function(evt) {
+      var msg; try { msg = JSON.parse(evt.data); } catch(e) { return; }
+      if (msg.type === 'auth_required') {
+        ws.send(JSON.stringify({ type:'auth', access_token:token }));
+      } else if (msg.type === 'auth_ok') {
+        authed = true;
+        commands.forEach(function(cmd) {
+          var id = msgId++; cmd.id = id; pending[id] = cmd;
+          ws.send(JSON.stringify(cmd));
+        });
+      } else if (msg.type === 'auth_invalid') {
+        commands._authError = 'Invalid token';
+        finish();
+      } else if (msg.type === 'result') {
+        var cmd = pending[msg.id];
+        if (cmd) {
+          cmd._result = msg.success ? msg.result : null;
+          cmd._error  = msg.success ? null : (msg.error&&msg.error.message)||'failed';
+          delete pending[msg.id];
+        }
+        if (Object.keys(pending).length === 0) finish();
+      }
+    };
+    ws.onerror = function() { commands._wsError = true; finish(); };
+    ws.onclose = function() { finish(); };
+  });
+}
+
+// ─── Main analysis ────────────────────────────────────────
+async // Auto-run when HAConn connects
+  // HAConn wired above
+
+async function runAnalysis() {
+  // Addon mode: use backend proxy — works without user WS token
+  // Standalone mode: require HAConn connection as before
+  var addonMode = HAConn.addonMode;
+
+  if (!addonMode && HAConn.state !== 'connected') {
+    setStatus('err', '⚠ Configure connection via toolbar ⚙');
+    return;
+  }
+
+  if (!addonMode) {
+    HA_URL   = HAConn.url;
+    HA_TOKEN = HAConn.token;
+  }
+  EXCLUDED = loadExcluded();
+
+  var btn = $('btn-analyse');
+  if (btn) btn.disabled = true;
+  setStatus('loading', '⏳ Analysing…');
+  $('results').innerHTML = '<div class="idle-state"><div class="spinner"></div><p>Fetching data from Home Assistant…</p></div>';
+
+  try {
+    setStatus('loading', '⏳ Fetching registries…');
+
+    if (addonMode) {
+      // ── Addon mode: all data via backend proxy ──────────────
+      setStatus('loading', '⏳ Fetching via addon backend…');
+      var [entityReg, deviceReg, statesData, healthData, configData, backupData] =
+        await Promise.all([
+          HAConn.addonRegistry('entities').catch(function(){ return []; }),
+          HAConn.addonRegistry('devices').catch(function(){ return []; }),
+          HAConn.addonFetch('/api/states').catch(function(){ return []; }),
+          HAConn.addonFetch('/api/system_health').catch(function(){ return {}; }),
+          HAConn.addonFetch('/api/config').catch(function(){ return {}; }),
+          HAConn.addonFetch('/api/states/sensor.backup_state').catch(function(){ return null; }),
+        ]);
+
+      DATA.entityRegistry = Array.isArray(entityReg) ? entityReg : [];
+      DATA.deviceRegistry = Array.isArray(deviceReg) ? deviceReg : [];
+      DATA.states         = Array.isArray(statesData) ? statesData : [];
+      DATA.health         = healthData || {};
+      DATA.config         = configData || {};
+      DATA.backupState    = backupData;
+
+      // Fetch Supervisor hardware stats for health score hardware pillar.
+      // /api/system-stats is a HUB endpoint (not a HA Core endpoint) so it must
+      // be called directly via the hub base URL — NOT through HAConn.addonFetch()
+      // which routes via /api/proxy?path=... (HA Core proxy only).
+      try {
+        var _hubBase = (function() {
+          var p = window.location.pathname;
+          var parts = p.split('/');
+          var idx = parts.indexOf('pages');
+          return idx > 0 ? window.location.origin + parts.slice(0, idx).join('/') + '/' : '';
+        })();
+        var sysStatsR = _hubBase
+          ? await fetch(_hubBase + 'api/system-stats', { credentials: 'include' })
+              .then(function(r){ return r.json(); })
+              .catch(function(){ return null; })
+          : null;
+        DATA.systemStats = (sysStatsR && sysStatsR.ok !== false) ? sysStatsR : null;
+      } catch(e) { DATA.systemStats = null; }
+
+    } else {
+      // ── Standalone mode: use HAConn WS + REST ──────────────
+      var responses = await Promise.all([
+        HAConn.send({ type: 'config/entity_registry/list' }),
+        haFetch('/api/states').catch(function(){ return null; }),
+        haFetch('/api/system_health').catch(function(){ return null; }),
+        haFetch('/api/config').catch(function(){ return null; }),
+        haFetch('/api/states/sensor.backup_state').catch(function(){ return null; }),
+        HAConn.send({ type: 'config/device_registry/list' })
+      ]);
+
+      DATA.entityRegistry = responses[0].ok ? responses[0].result || [] : [];
+      DATA.deviceRegistry = responses[5].ok ? responses[5].result || [] : [];
+      DATA.states      = (responses[1] && responses[1].ok) ? await responses[1].json() : [];
+      DATA.health      = (responses[2] && responses[2].ok) ? await responses[2].json() : {};
+      DATA.config      = (responses[3] && responses[3].ok) ? await responses[3].json() : {};
+      DATA.backupState = (responses[4] && responses[4].ok) ? await responses[4].json() : null;
+    } // end else (standalone mode)
+
+    DATA.stateMap = {};
+    DATA.states.forEach(function(s){ DATA.stateMap[s.entity_id] = s; });
+
+    setStatus('loading', '⏳ Calculating score…');
+    SCORE = calculateScore();
+
+    // Save to history
+    if (($('opt-history') || {}).checked !== false) saveToHistory(SCORE.global);
+
+    renderResults();
+    updateSidebar();
+
+    var exportBtn = $('btn-export');
+    if (exportBtn) exportBtn.style.display = '';
+
+    setStatus('ok', '✅ Score: ' + SCORE.global + '/100 · ' + new Date().toLocaleTimeString());
+
+  } catch(e) {
+    setStatus('err', '❌ ' + e.message);
+    $('results').innerHTML = '<div class="idle-state"><p style="color:var(--red)">Error: ' + escHtml(e.message) + '</p></div>';
+  }
+  if (btn) btn.disabled = false;
+}
+
+// ─── Sensor auto-detection ────────────────────────────────
+// Scan states for known entity-state patterns
+function detectSensor(patterns) {
+  for (var i=0; i<DATA.states.length; i++) {
+    var s = DATA.states[i];
+    for (var j=0; j<patterns.length; j++) {
+      if (s.entity_id.indexOf(patterns[j]) !== -1) {
+        var v = parseFloat(s.state);
+        if (!isNaN(v)) return { entity_id: s.entity_id, value: v };
+      }
+    }
+  }
+  return null;
+}
+
+// ─── Score calculation ────────────────────────────────────
+function calculateScore() {
+  var sc = {
+    hw:{}, app:{}, sensors:{},
+    zombies:[], updates:[], recommendations:[]
+  };
+
+  // ────────────────────────────────────────
+  // HARDWARE PILLAR  (40%)
+  // ────────────────────────────────────────
+
+  // CPU
+  // ── Hardware pillar: always use Supervisor API stats ────────────
+  // Hardware metrics come directly from Supervisor API (not HA entity states).
+  // CPU, RAM and Disk come directly from /supervisor/stats, /core/stats
+  // and /host/info via /api/system-stats on the Hub backend.
+  // DATA.systemStats is pre-fetched in runAnalysis() every time.
+  var ss = DATA.systemStats || {};
+
+  // CPU — HA Core process (most meaningful: reflects HA workload directly)
+  var rawCpu = ss.core_cpu_percent != null ? ss.core_cpu_percent
+             : ss.cpu_percent      != null ? ss.cpu_percent
+             : null;
+  if (rawCpu != null) {
+    var cv     = parseFloat(rawCpu);
+    var cScore = cv > 50 ? 20 : cv > 25 ? 50 : cv > 15 ? 75 : cv > 10 ? 90 : 100;
+    var cLabel = ss.core_cpu_percent != null ? 'HA Core' : 'Supervisor';
+    sc.hw.cpu = { score:cScore, value:cv,
+                  sensor:{entity_id:cLabel + ' (via Supervisor API)', value:cv},
+                  source:'supervisor' };
+  } else {
+    sc.hw.cpu = { score:100, value:null, sensor:null };
+  }
+
+  // Memory — HA Core process memory
+  var rawMem = ss.core_memory_percent != null ? ss.core_memory_percent
+             : ss.memory_percent      != null ? ss.memory_percent
+             : null;
+  if (rawMem != null) {
+    var rv     = parseFloat(rawMem);
+    var rScore = rv > 85 ? 20 : rv > 70 ? 50 : rv > 55 ? 75 : rv > 40 ? 90 : 100;
+    var rLabel = ss.core_memory_percent != null ? 'HA Core' : 'Supervisor';
+    var coreUsage = ss.core_memory_usage || ss.memory_usage;
+    var coreLimit = ss.core_memory_limit || ss.memory_limit;
+    var memDetail = '';
+    if (coreUsage && coreLimit) {
+      var toMb = function(b) {
+        return b >= 1073741824 ? (b/1073741824).toFixed(1) + ' GB'
+                               : Math.round(b/1048576) + ' MB';
+      };
+      memDetail = ' (' + toMb(coreUsage) + ' / ' + toMb(coreLimit) + ')';
+    }
+    sc.hw.ram = { score:rScore, value:rv,
+                  sensor:{entity_id:rLabel + ' memory' + memDetail, value:rv},
+                  source:'supervisor' };
+  } else {
+    sc.hw.ram = { score:100, value:null, sensor:null };
+  }
+
+  // Disk — host-level from /host/info (GiB values, whole-disk)
+  if (ss.disk_percent != null) {
+    var dv     = parseFloat(ss.disk_percent);
+    var dScore = dv > 90 ? 20 : dv > 80 ? 50 : dv > 70 ? 75 : dv > 60 ? 90 : 100;
+    var diskDetail = ss.disk_used_gib != null
+      ? ' (' + ss.disk_used_gib + ' GB / ' + ss.disk_total_gib + ' GB)' : '';
+    sc.hw.disk = { score:dScore, value:dv,
+                   sensor:{entity_id:'Host disk' + diskDetail, value:dv},
+                   source:'supervisor' };
+  } else {
+    sc.hw.disk = { score:100, value:null, sensor:null };
+  }
+
+  // Hardware final — average of available sensors (skip null)
+  var hwScores = [sc.hw.cpu, sc.hw.ram, sc.hw.disk].filter(function(x){ return x.value!==null; });
+  sc.hw.final = hwScores.length ? Math.round(hwScores.reduce(function(a,b){ return a+b.score; },0) / hwScores.length) : null;
+
+  // ────────────────────────────────────────
+  // APPLICATION PILLAR  (60%)
+  // ────────────────────────────────────────
+  var appPenalty = 0;
+
+  // A. Zombie entities (unavailable/unknown in key domains)
+  var zombies = [];
+  var disabledEntities = new Set(DATA.entityRegistry.filter(function(e){ return e.disabled_by; }).map(function(e){ return e.entity_id; }));
+  DATA.states.forEach(function(s) {
+    if (s.state !== 'unavailable' && s.state !== 'unknown') return;
+    var domain = s.entity_id.split('.')[0];
+    if (ZOMBIE_DOMAINS.indexOf(domain) === -1) return;
+    if (disabledEntities.has(s.entity_id)) return;    // disabled entities are expected
+    if (EXCLUDED.indexOf(s.entity_id) !== -1) return; // user-excluded
+    zombies.push(s);
+  });
+  sc.zombies = zombies;
+  var zombiePenalty = Math.min(20, zombies.length * 2);
+  sc.app.zombie = { count:zombies.length, penalty:zombiePenalty };
+  appPenalty += zombiePenalty;
+
+  // B. Integration health sensors
+  var integrationErrors = DATA.states.filter(function(s){
+    return s.entity_id.indexOf('integration_health') !== -1 &&
+           (s.state === 'unhealthy' || s.state === 'failed' || s.state === '0' || s.state === 'false');
+  });
+  var integPenalty = Math.min(15, integrationErrors.length * 5);
+  sc.app.integration = { count:integrationErrors.length, penalty:integPenalty };
+  appPenalty += integPenalty;
+
+  // C. Database size
+  var dbSensor = detectSensor(['_home_assistant_v2_db','_db_size','home_assistant_v2_db']);
+  sc.sensors.db = dbSensor;
+  var dbMB = null, dbPenalty = 0;
+  if (dbSensor) {
+    // Sensor may be in bytes or MB — normalise
+    var rawDb = dbSensor.value;
+    var dbUnit = (DATA.stateMap[dbSensor.entity_id]&&DATA.stateMap[dbSensor.entity_id].attributes&&DATA.stateMap[dbSensor.entity_id].attributes.unit_of_measurement)||'';
+    if (dbUnit.toLowerCase().indexOf('b') !== -1 && dbUnit.toLowerCase().indexOf('m') === -1) {
+      dbMB = rawDb / (1024*1024); // bytes → MB
+    } else if (dbUnit.toLowerCase() === 'gb') {
+      dbMB = rawDb * 1024;
+    } else {
+      dbMB = rawDb; // assume MB
+    }
+    var dbGB = dbMB / 1024;
+    if      (dbGB > 2.5) dbPenalty = 30;
+    else if (dbGB > 1.0) dbPenalty = 10;
+  }
+  sc.app.db = { mb:dbMB, penalty:dbPenalty, sensor:dbSensor };
+  appPenalty += dbPenalty;
+
+  // D. Log file size
+  var logSensor = detectSensor(['_log_file_size','_log_size','home_assistant_log']);
+  sc.sensors.log = logSensor;
+  var logMB = null, logPenalty = 0;
+  if (logSensor) {
+    var rawLog = logSensor.value;
+    var logUnit = (DATA.stateMap[logSensor.entity_id]&&DATA.stateMap[logSensor.entity_id].attributes&&DATA.stateMap[logSensor.entity_id].attributes.unit_of_measurement)||'';
+    if (logUnit.toLowerCase() === 'b' || (logUnit.toLowerCase().indexOf('b')!==-1 && logUnit.toLowerCase().indexOf('m')===-1)) {
+      logMB = rawLog / (1024*1024);
+    } else {
+      logMB = rawLog;
+    }
+    if      (logMB > 100) logPenalty = 25;
+    else if (logMB > 20)  logPenalty = 10;
+  }
+  sc.app.log = { mb:logMB, penalty:logPenalty, sensor:logSensor };
+  appPenalty += logPenalty;
+
+  // E. Available updates
+  var updateEntities = DATA.states.filter(function(s){
+    return s.entity_id.startsWith('update.') && s.state === 'on';
+  });
+  sc.updates = updateEntities;
+  var updatePenalty = Math.min(20, updateEntities.length * 5);
+
+  // F. Core version lag (>2 months behind latest)
+  var coreUpdate = DATA.stateMap['update.home_assistant_core_update'];
+  var coreLatest = coreUpdate && coreUpdate.attributes && coreUpdate.attributes.latest_version;
+  var coreCurrent = coreUpdate && coreUpdate.attributes && coreUpdate.attributes.installed_version;
+  var coreLag = false;
+  if (coreLatest && coreCurrent) {
+    // version format YYYY.MM.patch — compare year/month
+    var lv = coreLatest.split('.').map(Number);
+    var cv = coreCurrent.split('.').map(Number);
+    var monthsLag = (lv[0]-cv[0])*12 + (lv[1]-cv[1]);
+    coreLag = monthsLag >= 2;
+  }
+  var corePenalty = coreLag ? 20 : 0;
+  var totalUpdatePenalty = Math.min(35, updatePenalty + corePenalty);
+  sc.app.updates = { count:updateEntities.length, corelag:coreLag, penalty:totalUpdatePenalty };
+  appPenalty += totalUpdatePenalty;
+
+  // G. Backup staleness
+  var backupPenalty = 0;
+  var backupAge = null;
+  // Check sensor.backup_state or sensor.*last_backup or similar
+  var backupSensor = DATA.backupState ||
+    detectSensor(['_last_backup','backup_state','last_successful_backup']);
+  if (backupSensor) {
+    // If it's a state object (from direct fetch)
+    var bVal = backupSensor.state || (backupSensor.value && String(backupSensor.value));
+    // Try to parse as a date
+    var bDate = bVal ? new Date(bVal) : null;
+    if (bDate && !isNaN(bDate)) {
+      var daysSince = (Date.now() - bDate.getTime()) / 86400000;
+      backupAge = Math.round(daysSince);
+      if (daysSince > 7) backupPenalty = 30;
+    }
+  }
+  sc.app.backup = { age:backupAge, penalty:backupPenalty };
+  appPenalty += backupPenalty;
+
+  // Application final
+  sc.app.penalty = appPenalty;
+  sc.app.final = Math.max(0, 100 - appPenalty);
+
+  // ────────────────────────────────────────
+  // GLOBAL SCORE
+  // ────────────────────────────────────────
+  var hwF  = sc.hw.final !== null ? sc.hw.final : 80; // assume 80 if no hw sensors
+  var appF = sc.app.final;
+  sc.global = Math.floor(hwF * W_HW + appF * W_APP);
+  // hwMissing = true only if Supervisor stats also unavailable
+  // (hw.final is null only when /api/system-stats also failed)
+  sc.hwMissing = sc.hw.final === null;
+
+  // ────────────────────────────────────────
+  // RECOMMENDATIONS
+  // ────────────────────────────────────────
+  var recos = [];
+
+  if (sc.global >= 90)       recos.push({level:'good', icon:'✅', text:'<strong>Excellent health.</strong> Your HA instance is running well across all pillars.'});
+  else if (sc.global >= 75)  recos.push({level:'warn', icon:'👍', text:'<strong>Good health.</strong> A few items could be improved — see below.'});
+  else if (sc.global >= 50)  recos.push({level:'warn', icon:'⚠️', text:'<strong>Fair health.</strong> Several issues are affecting your score.'});
+  else                        recos.push({level:'crit', icon:'🚨', text:'<strong>Poor health.</strong> Your HA instance needs attention.'});
+
+  if (sc.app.zombie.count > 0) {
+    recos.push({level:sc.app.zombie.count>5?'crit':'warn', icon:'👻',
+      text:'<strong>' + sc.app.zombie.count + ' unavailable entit' + (sc.app.zombie.count===1?'y':'ies') + '</strong> detected. Check device connectivity or disable entities that are no longer in use.'});
+  }
+  if (sc.app.updates.count > 0) {
+    recos.push({level:sc.app.updates.count>3?'warn':'warn', icon:'🔄',
+      text:'<strong>' + sc.app.updates.count + ' update' + (sc.app.updates.count===1?'':'s') + ' available</strong> — keep integrations and frontend cards up to date.'});
+  }
+  if (sc.app.updates.corelag) {
+    recos.push({level:'crit', icon:'⏰', text:'<strong>HA Core is 2+ months behind</strong> the latest release. Update to get security patches and new features.'});
+  }
+  if (sc.app.backup.penalty > 0) {
+    var ageStr = sc.app.backup.age !== null ? sc.app.backup.age + ' days ago' : 'unknown';
+    recos.push({level:'crit', icon:'💾', text:'<strong>Last backup was ' + ageStr + '.</strong> Schedule daily or weekly backups in Settings → System → Backups.'});
+  }
+  if (sc.app.db.penalty > 0 && sc.app.db.mb !== null) {
+    recos.push({level:sc.app.db.penalty===30?'crit':'warn', icon:'🗄️',
+      text:'<strong>Database is ' + Math.round(sc.app.db.mb) + ' MB</strong> — consider enabling auto-purge or reducing history retention in configuration.yaml.'});
+  }
+  if (sc.app.log.penalty > 0 && sc.app.log.mb !== null) {
+    recos.push({level:sc.app.log.penalty===25?'crit':'warn', icon:'📋',
+      text:'<strong>Log file is ' + Math.round(sc.app.log.mb) + ' MB</strong> — check Settings → System → Logs for recurring errors and reduce log level if not debugging.'});
+  }
+  if (sc.hw.cpu && sc.hw.cpu.value !== null && sc.hw.cpu.value > 25) {
+    recos.push({level:'warn', icon:'💻', text:'<strong>CPU at ' + Math.round(sc.hw.cpu.value) + '%</strong> — investigate high-load integrations or consider hardware upgrades.'});
+  }
+  if (sc.hw.ram && sc.hw.ram.value !== null && sc.hw.ram.value > 80) {
+    recos.push({level:'warn', icon:'🧠', text:'<strong>RAM at ' + Math.round(sc.hw.ram.value) + '%</strong> — consider disabling unused integrations or adding more RAM.'});
+  }
+  if (sc.hw.disk && sc.hw.disk.value !== null && sc.hw.disk.value > 80) {
+    recos.push({level:sc.hw.disk.value>90?'crit':'warn', icon:'💿',
+      text:'<strong>Disk at ' + Math.round(sc.hw.disk.value) + '%</strong> — clean up old backups, media files, and database history.'});
+  }
+
+
+  sc.recommendations = recos;
+  return sc;
+}
+
+// ─── Grade helper ─────────────────────────────────────────
+function gradeOf(n) {
+  if (n >= 90) return { grade:'A', label:'Excellent', cls:'score-ex', barcls:'bar-ex' };
+  if (n >= 75) return { grade:'B', label:'Good',      cls:'score-gd', barcls:'bar-gd' };
+  if (n >= 50) return { grade:'C', label:'Fair',      cls:'score-ok', barcls:'bar-ok' };
+  return               { grade:'D', label:'Poor',     cls:'score-bd', barcls:'bar-bd' };
+}
+
+function dotCls(score) {
+  if (score >= 80) return 'dot-green';
+  if (score >= 50) return 'dot-orange';
+  return 'dot-red';
+}
+
+function fmtVal(v, unit) {
+  if (v === null || v === undefined) return '<span class="metric-na">n/a</span>';
+  return '<span class="metric-val">' + Math.round(v*10)/10 + (unit||'') + '</span>';
+}
+
+function penaltyBadge(p) {
+  if (!p) return '<span class="metric-ok">✓ no penalty</span>';
+  return '<span class="metric-pen">−' + p + ' pts</span>';
+}
+
+// ─── Render ───────────────────────────────────────────────
+function ringColour(n) {
+  if (n >= 90) return '#4cff9e';
+  if (n >= 75) return '#4caf87';
+  if (n >= 50) return '#f5a623';
+  return '#e05252';
+}
+
+function animateNum(id, from, to, dur) {
+  var el = $(id); if (!el) return;
+  var start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min((ts-start)/dur, 1);
+    el.textContent = Math.round(from + (to-from) * p);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function metricRow(obj, label, val, unit) {
+  var score = obj ? obj.score : null;
+  var dc = score === null ? 'dot-grey' : dotCls(score);
+  var valHtml = val !== null && val !== undefined ? Math.round(val*10)/10 + (unit||'') : '<span class="metric-na">n/a</span>';
+  var penHtml  = score !== null ? penaltyBadge(100 - score) : '<span class="metric-na">no sensor</span>';
+  return '<div class="metric-row"><div class="metric-dot ' + dc + '"></div><span class="metric-name">' + label + '</span><span style="font-size:12px">' + valHtml + '</span>' + penHtml + '</div>';
+}
+
+function appMetricRow(label, val, penalty, isOk) {
+  var dc = isOk ? 'dot-green' : (penalty >= 20 ? 'dot-red' : 'dot-orange');
+  var valStr = typeof val === 'number' ? String(val) : String(val||'—');
+  var penHtml = isOk ? '<span class="metric-ok">✓</span>' : '<span class="metric-pen">−' + penalty + ' pts</span>';
+  return '<div class="metric-row"><div class="metric-dot ' + dc + '"></div><span class="metric-name">' + label + '</span><span style="font-size:12px">' + escHtml(valStr) + '</span>' + penHtml + '</div>';
+}
+
+// ─── Exclude / unexclude ──────────────────────────────────
+function excludeEntity(eid) {
+  if (EXCLUDED.indexOf(eid) === -1) EXCLUDED.push(eid);
+  saveExcluded();
+  runAnalysis(); // re-run to recalculate
+}
+function unexclude(eid) {
+  EXCLUDED = EXCLUDED.filter(function(e){ return e !== eid; });
+  saveExcluded();
+  runAnalysis();
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  TAB SYSTEM
+// ══════════════════════════════════════════════════════════
+var _currentTab = 'overview';
+
+function showTab(id, el) {
+  _currentTab = id;
+  document.querySelectorAll('.hs-tab').forEach(function(t){ t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  // Re-render results into the correct tab layout
+  if (SCORE.global !== undefined) renderResults();
+}
+
+// ══════════════════════════════════════════════════════════
+//  HISTORY TRACKING
+// ══════════════════════════════════════════════════════════
+var HIST_KEY = 'ha_health_history';
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch(e) { return []; }
+}
+function saveToHistory(score) {
+  var hist = loadHistory();
+  hist.push({ score: score, ts: Date.now() });
+  if (hist.length > 50) hist = hist.slice(-50); // keep last 50
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+}
+function clearHistory() {
+  localStorage.removeItem(HIST_KEY);
+  drawHistoryChart([]);
+  var sec = $('sb-history-section');
+  if (sec) sec.style.display = 'none';
+}
+
+function drawHistoryChart(hist) {
+  var canvas = $('sb-history-canvas');
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if (hist.length < 2) return;
+
+  // Background
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines at 25, 50, 75
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  [25, 50, 75].forEach(function(v) {
+    var y = H - (v / 100) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  });
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#4a90d9';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  hist.forEach(function(pt, i) {
+    var x = (i / (hist.length - 1)) * W;
+    var y = H - (pt.score / 100) * H;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under line
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fillStyle = 'rgba(74,144,217,0.1)';
+  ctx.fill();
+
+  // Dots at each point
+  hist.forEach(function(pt, i) {
+    var x = (i / (hist.length - 1)) * W;
+    var y = H - (pt.score / 100) * H;
+    ctx.beginPath();
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = scoreColor(pt.score);
+    ctx.fill();
+  });
+
+  // Update labels
+  if ($('sb-hist-oldest')) {
+    var oldest = new Date(hist[0].ts);
+    $('sb-hist-oldest').textContent = oldest.toLocaleDateString([], { month:'short', day:'numeric' });
+  }
+}
+
+function scoreColor(n) {
+  if (n >= 90) return '#4caf50';
+  if (n >= 75) return '#7ecb52';
+  if (n >= 60) return '#f5a623';
+  if (n >= 40) return '#e08040';
+  return '#e05252';
+}
+
+// ══════════════════════════════════════════════════════════
+//  SIDEBAR UPDATE
+// ══════════════════════════════════════════════════════════
+function updateSidebar() {
+  var s = SCORE;
+  var C = 314; // 2π×50 for r=50
+
+  // Ring
+  var arc = $('sb-ring-arc');
+  if (arc) {
+    var offset = C - (s.global / 100) * C;
+    arc.style.strokeDashoffset = offset;
+    arc.style.stroke = scoreColor(s.global);
+  }
+  if ($('sb-score-num')) $('sb-score-num').textContent = s.global;
+
+  var gG = gradeOf(s.global);
+  if ($('sb-grade-label')) {
+    $('sb-grade-label').textContent = gG.label;
+    $('sb-grade-label').style.color = scoreColor(s.global);
+  }
+
+  // Pillars
+  var hwF  = s.hw.final !== null ? s.hw.final : null;
+  var appF = s.app.final;
+  var sbPillars = $('sb-pillars');
+  if (sbPillars) sbPillars.style.display = '';
+  if ($('sb-hw-score'))  $('sb-hw-score').textContent  = hwF !== null ? hwF : '—';
+  if ($('sb-app-score')) $('sb-app-score').textContent = appF;
+  if ($('sb-hw-bar'))    $('sb-hw-bar').style.width    = (hwF !== null ? hwF : 80) + '%';
+  if ($('sb-app-bar'))   $('sb-app-bar').style.width   = appF + '%';
+  if ($('sb-hw-bar'))    $('sb-hw-bar').style.background  = scoreColor(hwF !== null ? hwF : 80);
+  if ($('sb-app-bar'))   $('sb-app-bar').style.background = scoreColor(appF);
+
+  // History chart
+  var hist = loadHistory();
+  var histSec = $('sb-history-section');
+  if (histSec) histSec.style.display = hist.length >= 2 ? '' : 'none';
+  drawHistoryChart(hist);
+
+  // Quick issues sidebar
+  var issuesList = $('sb-issues-list');
+  var issuesSec  = $('sb-issues');
+  if (issuesList && issuesSec) {
+    var issues = [];
+    if (s.app.zombie && s.app.zombie.count > 0) issues.push({ cls:'crit', text: s.app.zombie.count + ' unavailable entities' });
+    if (s.app.updates && s.app.updates.count > 0) issues.push({ cls:'warn', text: s.app.updates.count + ' updates pending' });
+    if (s.app.backup && s.app.backup.penalty > 0) issues.push({ cls:'crit', text: 'Backup is stale' });
+    if (s.app.db && s.app.db.penalty > 0) issues.push({ cls:'warn', text: 'Database is large' });
+    if (s.hwMissing) issues.push({ cls:'warn', text: 'Supervisor stats unavailable' });
+    issuesSec.style.display = issues.length ? '' : 'none';
+    issuesList.innerHTML = issues.map(function(i) {
+      return '<div class="sb-issue ' + i.cls + '">' +
+        (i.cls === 'crit' ? '❌' : '⚠️') + ' ' + escHtml(i.text) + '</div>';
+    }).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  REWRITTEN renderResults — tab-aware
+// ══════════════════════════════════════════════════════════
+function renderResults() {
+  var s  = SCORE;
+  var resultsEl = $('results');
+  if (!resultsEl) return;
+
+  var panels = {
+    overview:    renderOverviewPanel(s),
+    hardware:    renderHardwarePanel(s),
+    application: renderApplicationPanel(s),
+    zombies:     renderZombiesPanel(s),
+    updates:     renderUpdatesPanel(s),
+    fixes:       renderFixesPanel(s)
+  };
+
+  var html = '';
+  Object.keys(panels).forEach(function(key) {
+    html += '<div class="hs-panel' + (key === _currentTab ? ' active' : '') + '" id="hsp-' + key + '">' + panels[key] + '</div>';
+  });
+  resultsEl.innerHTML = html;
+
+  // Animate global number
+  animateNum($('ring-num') || null, 0, s.global, 900);
+}
+
+function renderOverviewPanel(s) {
+  var gG = gradeOf(s.global);
+  var C  = 477.5;
+  var offset = C - (s.global / 100) * C;
+  var hwF = s.hw.final !== null ? s.hw.final : '—';
+  var gH  = s.hw.final !== null ? gradeOf(s.hw.final) : { grade:'?', label:'No sensors', cls:'score-ok', barcls:'bar-ok' };
+  var gA  = gradeOf(s.app.final);
+
+  var html = '<div class="score-section">';
+  // Ring
+  html += '<div class="ring-wrap">' +
+    '<svg width="180" height="180" viewBox="0 0 180 180">' +
+      '<circle cx="90" cy="90" r="76" fill="none" stroke="var(--surface3)" stroke-width="14"/>' +
+      '<circle cx="90" cy="90" r="76" fill="none" stroke="' + scoreColor(s.global) + '" stroke-width="14"' +
+        ' stroke-dasharray="' + C + '" stroke-dashoffset="' + offset + '"' +
+        ' stroke-linecap="round" transform="rotate(-90 90 90)" style="transition:stroke-dashoffset 1s ease"/>' +
+    '</svg>' +
+    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+      '<div style="font-size:40px;font-weight:900;color:' + scoreColor(s.global) + ';line-height:1" id="ring-num">' + s.global + '</div>' +
+      '<div style="font-size:11px;color:var(--text2);margin-top:2px;">/100</div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:4px;color:' + scoreColor(s.global) + '">' + gG.grade + ' — ' + gG.label + '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Pillar cards
+  html += '<div class="pillars">' +
+    pillarCard('⚙️ Hardware', hwF, gH, s.hw, s) +
+    pillarCard('📱 Application', s.app.final, gA, s.app, s) +
+  '</div>';
+  html += '</div>';
+
+  // Recommendations
+  html += '<div style="margin-top:4px;">';
+  s.recommendations.forEach(function(r) {
+    html += '<div class="reco-card ' + r.level + '">' + r.icon + '&nbsp; ' + r.text + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function pillarCard(title, score, grade, data, s) {
+  var pct = typeof score === 'number' ? score : 80;
+  return '<div class="card" style="padding:16px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">' +
+      '<div style="font-size:12px;font-weight:700;">' + title + '</div>' +
+      '<div style="font-size:22px;font-weight:900;color:' + scoreColor(pct) + '">' + (typeof score === 'number' ? score : '—') + '</div>' +
+    '</div>' +
+    '<div class="hs-progress-track" style="margin-bottom:6px;">' +
+      '<div class="hs-progress-fill" style="width:' + pct + '%;background:' + scoreColor(pct) + ';"></div>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text2);">' + grade.label + '</div>' +
+  '</div>';
+}
+
+function renderHardwarePanel(s) {
+  var ss = DATA.systemStats || {};
+
+  function pct(val) {
+    if (val == null) return '<span class="metric-na">—</span>';
+    var n   = parseFloat(val);
+    if (isNaN(n)) return '<span class="metric-na">—</span>';
+    var col = n > 80 ? 'var(--red)' : n > 60 ? 'var(--orange)' : 'var(--green)';
+    return '<span style="color:' + col + ';font-weight:800;">' + n.toFixed(1) + '%</span>';
+  }
+
+  function mem(bytes) {
+    if (!bytes) return '—';
+    if (bytes >= 1073741824) return (bytes/1073741824).toFixed(1) + ' GB';
+    return Math.round(bytes/1048576) + ' MB';
+  }
+
+  function card(title, val, sub) {
+    return '<div style="background:var(--surface);border:1px solid var(--border);' +
+           'border-radius:8px;padding:12px;text-align:center;">' +
+      '<div style="font-size:10px;color:var(--text2);margin-bottom:6px;' +
+           'text-transform:uppercase;letter-spacing:.5px;">' + title + '</div>' +
+      '<div style="font-size:24px;font-weight:800;line-height:1;">' + val + '</div>' +
+      (sub ? '<div style="font-size:10px;color:var(--text2);margin-top:4px;">' + sub + '</div>' : '') +
+    '</div>';
+  }
+
+  var html = '<div class="metric-card">';
+  html += '<div class="metric-card-title">💻 Hardware Resources</div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Via Supervisor API — HA Core process stats</div>';
+
+  // Three metric cards: CPU, Memory, Disk
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">';
+
+  // CPU — prefer core_cpu_percent, fall back to cpu_percent
+  var cpuVal = ss.core_cpu_percent != null ? ss.core_cpu_percent
+             : ss.cpu_percent      != null ? ss.cpu_percent : null;
+  var cpuSrc = ss.core_cpu_percent != null ? 'HA Core' : 'Supervisor';
+  html += card('CPU', pct(cpuVal), cpuVal != null ? cpuSrc : 'no data');
+
+  // Memory — prefer core_memory_percent
+  var memPct   = ss.core_memory_percent != null ? ss.core_memory_percent
+               : ss.memory_percent      != null ? ss.memory_percent : null;
+  var memUsage = ss.core_memory_usage   || ss.memory_usage;
+  var memLimit = ss.core_memory_limit   || ss.memory_limit;
+  var memSrc   = ss.core_memory_percent != null ? 'HA Core' : 'Supervisor';
+  var memSub   = (memUsage && memLimit) ? mem(memUsage) + ' / ' + mem(memLimit) : (memPct != null ? memSrc : 'no data');
+  html += card('Memory', pct(memPct), memSub);
+
+  // Disk — from /host/info, values in GiB
+  var diskPct  = ss.disk_percent   != null ? ss.disk_percent : null;
+  var diskSub  = (ss.disk_used_gib != null)
+    ? ss.disk_used_gib + ' GB / ' + ss.disk_total_gib + ' GB'
+    : (diskPct != null ? 'Host disk' : 'no data');
+  html += card('Disk', pct(diskPct), diskSub);
+
+  html += '</div>';
+
+  // Score rows using the page's metricRow
+  html += '<div class="metric-card-title" style="margin-top:4px;">📊 Scores</div>';
+  html += metricRow(s.hw.cpu,  'CPU',    s.hw.cpu  ? s.hw.cpu.value  : null, '%');
+  html += metricRow(s.hw.ram,  'Memory', s.hw.ram  ? s.hw.ram.value  : null, '%');
+  html += metricRow(s.hw.disk, 'Disk',   s.hw.disk ? s.hw.disk.value : null, '%');
+
+  html += '</div>'; // close metric-card
+
+  // System health data (unchanged)
+  if (s._systemHealth) {
+    html += '<div class="metric-card"><div class="metric-card-title" style="margin-top:0;">🩺 System Health</div>';
+    Object.keys(s._systemHealth).forEach(function(component) {
+      var info = s._systemHealth[component];
+      Object.keys(info).forEach(function(key) {
+        var val = info[key];
+        if (typeof val === 'object' && val !== null) val = val.value || JSON.stringify(val);
+        html += metricRow(null, component + ' / ' + key, null, '');
+      });
+    });
+    html += '</div>';
+  }
+
+  return html;
+}
+
+function renderApplicationPanel(s) {
+  // appRow: builds a metric row using the page's metricRow(obj, label, val, unit)
+  // obj.score drives dot colour and penalty badge
+  // For non-numeric display values, pass val=null and override via label suffix
+  function appRow(label, displayVal, penalty, isErr) {
+    var score = Math.max(0, 100 - (penalty || 0));
+    var obj   = { score: score };
+    // For string display values (e.g. "Up to date", "Unknown"),
+    // embed in label since val must be numeric for metricRow
+    if (typeof displayVal === 'string') {
+      return metricRow(obj, label + '<span style="margin-left:8px;font-weight:400;color:var(--text2);font-size:11px;">' + escHtml(displayVal) + '</span>', null, '');
+    }
+    return metricRow(obj, label, displayVal, '');
+  }
+
+  var html = '<div class="metric-card"><div class="metric-card-title">📱 Application Metrics</div>';
+  html += appRow('Unavailable Entities', s.app.zombie.count,       s.app.zombie.penalty,      s.app.zombie.count > 5);
+  html += appRow('Pending Updates',      s.app.updates.count,      s.app.updates.penalty,     s.app.updates.count > 0);
+  html += appRow('Core Version Lag',     s.app.updates.corelag ? '2+ months behind' : 'Up to date', s.app.updates.corelag ? 20 : 0, s.app.updates.corelag);
+  html += appRow('DB Size',              s.app.db.mb !== null ? Math.round(s.app.db.mb) + ' MB' : 'No sensor', s.app.db.penalty, s.app.db.penalty >= 30);
+  html += appRow('Log Size',             s.app.log.mb !== null ? Math.round(s.app.log.mb) + ' MB' : 'No sensor', s.app.log.penalty, s.app.log.penalty >= 25);
+  html += appRow('Last Backup',          s.app.backup.age !== null ? s.app.backup.age + ' days ago' : 'Unknown', s.app.backup.penalty, s.app.backup.penalty > 0);
+  html += appRow('Integration Errors',   s.app.integration.count,  s.app.integration.penalty, s.app.integration.count > 0);
+  html += '</div>';
+  return html;
+}
+
+function renderZombiesPanel(s) {
+  if (!s.zombies || !s.zombies.length) {
+    return '<div class="idle-state"><div class="idle-icon" style="font-size:40px;">✅</div>' +
+           '<p>No unavailable entities detected in key domains.</p></div>';
+  }
+
+  var html = '<div style="margin-bottom:12px;font-size:12px;color:var(--text2);">' +
+    s.zombies.length + ' unavailable entit' + (s.zombies.length === 1 ? 'y' : 'ies') +
+    ' in key domains. Exclude any that are intentionally offline.' +
+  '</div>';
+
+  s.zombies.forEach(function(z) {
+    var excluded  = EXCLUDED.indexOf(z.entity_id) !== -1;
+    var name      = escHtml((z.attributes || {}).friendly_name || z.entity_id);
+    var eid       = escHtml(z.entity_id);
+    var domain    = z.entity_id.split('.')[0];
+    var stateCol  = z.state === 'unavailable' ? '#e05252' : '#f5a623';
+    var btnStyle  = excluded
+      ? 'flex-shrink:0;padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text1);'
+      : 'flex-shrink:0;padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer;border:1px solid #f5a623;background:transparent;color:#f5a623;';
+    var btnLabel  = excluded ? 'Restore' : 'Exclude';
+    var btnAction = excluded ? 'unexclude' : 'excludeEntity';
+    var safeEid   = z.entity_id.replace(/"/g, '');
+
+    html +=
+      '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;' +
+               'border-radius:7px;background:var(--surface);border:1px solid var(--border);' +
+               'font-size:11px;margin-bottom:4px;">' +
+        // Icon
+        '<span style="flex-shrink:0;font-size:16px;">' +
+          BrandIcon.img(domain, 18, domainIcon(domain)) +
+        '</span>' +
+        // Name + entity_id block
+        '<div style="flex:1;min-width:0;overflow:hidden;">' +
+          '<div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+            name +
+          '</div>' +
+          '<div style="font-size:10px;color:var(--text2);font-family:monospace;' +
+               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+            eid +
+          '</div>' +
+        '</div>' +
+        // State badge
+        '<span style="flex-shrink:0;font-size:10px;font-family:monospace;' +
+              'font-weight:700;color:' + stateCol + ';">' +
+          escHtml(z.state) +
+        '</span>' +
+        // Exclude/Restore button
+        '<button style="' + btnStyle + '" data-eid="' + safeEid + '" data-act="' + btnAction + '" ' +
+          'onclick="window[this.dataset.act](this.dataset.eid)">' +
+          btnLabel +
+        '</button>' +
+      '</div>';
+  });
+
+  if (EXCLUDED.length) {
+    html += '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);' +
+            'font-size:11px;color:var(--text2);">' +
+      EXCLUDED.length + ' entit' + (EXCLUDED.length === 1 ? 'y' : 'ies') + ' excluded from scoring.' +
+    '</div>';
+  }
+
+  return html;
+}
+
+function renderUpdatesPanel(s) {
+  if (!s.updates || !s.updates.length) {
+    return '<div class="idle-state"><div class="idle-icon" style="font-size:40px;">✅</div><p>All integrations and components are up to date.</p></div>';
+  }
+  var html = '<div style="margin-bottom:12px;font-size:12px;color:var(--text2);">' + s.updates.length + ' update' + (s.updates.length === 1 ? '' : 's') + ' available.</div>';
+  s.updates.sort(function(a, b) {
+    var aCore = a.entity_id.includes('core') ? 0 : 1;
+    var bCore = b.entity_id.includes('core') ? 0 : 1;
+    return aCore - bCore;
+  }).forEach(function(u) {
+    var attr = u.attributes || {};
+    var latest = attr.latest_version || '?';
+    var current = attr.installed_version || '?';
+    var isCore = u.entity_id.includes('home_assistant_core');
+    html += '<div class="zombie-row">' +
+      '<span style="font-size:14px;">' + (isCore ? '🏠' : '🔄') + '</span>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:600;">' + escHtml(attr.friendly_name || u.entity_id) + (isCore ? ' <span style="background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">CORE</span>' : '') + '</div>' +
+        '<div style="font-size:10px;color:var(--text2);">' + current + ' → <strong style="color:var(--green)">' + latest + '</strong></div>' +
+      '</div>' +
+    '</div>';
+  });
+  return html;
+}
+
+function renderFixesPanel(s) {
+  var fixes = [];
+
+  if (s.app.zombie.count > 0) {
+    fixes.push({
+      icon:'👻', title: 'Fix unavailable entities (' + s.app.zombie.count + ')',
+      desc:'Unavailable entities drag your score down. Check device connectivity, re-pair devices, or exclude entities that are permanently offline from the Unavailable tab.',
+      action: "showTab('zombies', document.querySelectorAll('.hs-tab')[3])", actionLabel:'→ Go to Unavailable', danger:false
+    });
+  }
+  if (s.app.updates.count > 0) {
+    fixes.push({
+      icon:'🔄', title: 'Apply ' + s.app.updates.count + ' pending update' + (s.app.updates.count === 1 ? '' : 's'),
+      desc:'Open HA Settings → System → Updates and apply all available updates. HACS updates require opening HACS from the sidebar.',
+      action: null, actionLabel: null, danger:false
+    });
+  }
+  if (s.app.backup.penalty > 0) {
+    fixes.push({
+      icon:'💾', title:'Set up automatic backups',
+      desc:'Go to Settings → System → Backups → Configure automatic backups. Aim for daily local + weekly cloud offsite.',
+      action: null, actionLabel: null, danger:false
+    });
+  }
+  if (s.app.db.mb !== null && s.app.db.penalty > 0) {
+    fixes.push({
+      icon:'🗄️', title:'Reduce database size (' + Math.round(s.app.db.mb) + ' MB)',
+      desc:'Add a recorder purge to configuration.yaml: <code style="font-family:monospace;background:var(--surface3);padding:1px 5px;border-radius:3px;">recorder:\n  purge_keep_days: 7</code> then restart HA.',
+      action: null, actionLabel: null, danger:false
+    });
+  }
+  if (s.app.log.mb !== null && s.app.log.penalty > 0) {
+    fixes.push({
+      icon:'📋', title:'Clean up log file (' + Math.round(s.app.log.mb) + ' MB)',
+      desc:'Settings → System → Logs — check for recurring errors. Add <code style="font-family:monospace;background:var(--surface3);padding:1px 5px;border-radius:3px;">logger:\n  default: warning</code> to reduce log verbosity.',
+      action: null, actionLabel: null, danger:false
+    });
+  }
+
+  if (s.app.updates.corelag) {
+    fixes.push({
+      icon:'⏰', title:'Update HA Core (2+ months behind)',
+      desc:'Settings → System → Updates → Home Assistant Core. Keeping HA updated is the single most impactful thing for security and stability.',
+      action: null, actionLabel: null, danger:false
+    });
+  }
+
+  if (!fixes.length) {
+    return '<div class="idle-state"><div class="idle-icon" style="font-size:40px;">✅</div><p>No fixes needed — your HA instance is in great shape!</p></div>';
+  }
+
+  return fixes.map(function(f, i) {
+    return '<div class="fix-card">' +
+      '<div class="fix-icon">' + f.icon + '</div>' +
+      '<div class="fix-body">' +
+        '<div class="fix-title">' + escHtml(f.title) + '</div>' +
+        '<div class="fix-desc">' + f.desc + '</div>' +
+        (f.action ? '<button class="fix-btn" onclick="' + f.action + '">' + f.actionLabel + '</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function domainIcon(d) {
+  var icons = { sensor:'📊', binary_sensor:'🔘', switch:'🔲', light:'💡', media_player:'📺',
+    climate:'🌡️', lock:'🔒', camera:'📷', cover:'🪟', device_tracker:'📍',
+    input_boolean:'☑️', automation:'⚡', script:'📝', scene:'🎭', weather:'⛅',
+    update:'🔄', person:'👤', vacuum:'🤖', fan:'🌀', alarm_control_panel:'🚨' };
+  return icons[d] || '📡';
+}
+
+// ══════════════════════════════════════════════════════════
+//  EXPORT REPORT
+// ══════════════════════════════════════════════════════════
+function exportReport() {
+  var s = SCORE;
+  var lines = [
+    'HA Health Score Report',
+    '======================',
+    'Generated: ' + new Date().toLocaleString(),
+    'Instance:  ' + HAConn.url,
+    '',
+    'GLOBAL SCORE:  ' + s.global + '/100  (' + gradeOf(s.global).grade + ' — ' + gradeOf(s.global).label + ')',
+    'Hardware:      ' + (s.hw.final !== null ? s.hw.final : 'N/A') + '/100',
+    'Application:   ' + s.app.final + '/100',
+    '',
+    'METRICS',
+    '-------',
+    'CPU Usage:     ' + (s.hw.cpu && s.hw.cpu.value !== null ? Math.round(s.hw.cpu.value) + '%' : 'No sensor'),
+    'RAM Usage:     ' + (s.hw.ram && s.hw.ram.value !== null ? Math.round(s.hw.ram.value) + '%' : 'No sensor'),
+    'Disk Usage:    ' + (s.hw.disk && s.hw.disk.value !== null ? Math.round(s.hw.disk.value) + '%' : 'No sensor'),
+    'DB Size:       ' + (s.app.db.mb !== null ? Math.round(s.app.db.mb) + ' MB' : 'No sensor'),
+    'Log Size:      ' + (s.app.log.mb !== null ? Math.round(s.app.log.mb) + ' MB' : 'No sensor'),
+    'Last Backup:   ' + (s.app.backup.age !== null ? s.app.backup.age + ' days ago' : 'Unknown'),
+    'Unavailable:   ' + s.app.zombie.count + ' entities',
+    'Updates:       ' + s.app.updates.count + ' pending',
+    '',
+    'RECOMMENDATIONS',
+    '---------------'
+  ];
+  s.recommendations.forEach(function(r) { lines.push(r.icon + ' ' + r.text.replace(/<[^>]+>/g,'')); });
+  if (s.zombies && s.zombies.length) {
+    lines.push('', 'UNAVAILABLE ENTITIES', '--------------------');
+    s.zombies.forEach(function(z) { lines.push('  ' + z.entity_id + '  (' + z.state + ')'); });
+  }
+  var blob = new Blob([lines.join('\n')], { type:'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ha-health-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+//  AUTO-REFRESH
+// ══════════════════════════════════════════════════════════
+var _autoRefreshTimer = null;
+function setupAutoRefresh() {
+  var cb = $('opt-autorefresh');
+  if (!cb) return;
+  cb.addEventListener('change', function() {
+    if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+    if (cb.checked && HAConn.state === 'connected') {
+      _autoRefreshTimer = setInterval(function() {
+        if (HAConn.state === 'connected') runAnalysis();
+      }, 5 * 60 * 1000);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  HAConn STATE WIRING
+// ══════════════════════════════════════════════════════════
+HAConn.onStateChange(function(s) {
+  if (s === 'connected') {
+    HA_URL   = HAConn.url;
+    HA_TOKEN = HAConn.token;
+    BrandIcon.warmToken();
+    setStatus('ok', '✅ Connected');
+    // Ensure overview tab is active before analysis renders results
+    _currentTab = 'overview';
+    document.querySelectorAll('.hs-tab').forEach(function(t){ t.classList.remove('active'); });
+    var firstTab = document.querySelector('.hs-tab');
+    if (firstTab) firstTab.classList.add('active');
+    runAnalysis();
+  } else if (s === 'connecting') {
+    setStatus('loading', '⏳ Connecting…');
+  } else {
+    setStatus('idle', '⚙ Configure via toolbar');
+  }
+});
+
+// On page load: if HAConn is already connected (stored credentials),
+// it fires onStateChange immediately — but the DOM may not be ready yet.
+// Use DOMContentLoaded to also check the current state and auto-run.
+document.addEventListener('DOMContentLoaded', function() {
+  // In addon mode: run analysis immediately — no WS connection needed
+  if (HAConn.addonMode) {
+    _currentTab = 'overview';
+    var firstTab = document.querySelector('.hs-tab');
+    if (firstTab) firstTab.classList.add('active');
+    runAnalysis();
+    return;
+  }
+  // Standalone: only run if already connected
+  if (HAConn.state === 'connected') {
+    HA_URL   = HAConn.url;
+    HA_TOKEN = HAConn.token;
+    _currentTab = 'overview';
+    var firstTab = document.querySelector('.hs-tab');
+    if (firstTab) firstTab.classList.add('active');
+    runAnalysis();
+  }
+});
+
+// ─── Init ─────────────────────────────────────────────────
+
+(function init() {
+  setupAutoRefresh();
+  // History
+  var hist = loadHistory();
+  if (hist.length >= 2) drawHistoryChart(hist);
+})();
+
+</script>
+</body>
+</html>

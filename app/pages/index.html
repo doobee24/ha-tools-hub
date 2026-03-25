@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║                        HA Tools Hub — Home                      ║
+  ║              https://ha-tools-hub.com                           ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Copyright © 2026 HA Tools Hub. All rights reserved.            ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+  <script>(function(){var t=localStorage.getItem('ha_tools_theme')||'dark-space',m=localStorage.getItem('ha_tools_mode')||'system';var light=['light-clean','light-warm','arctic'],dark=['dark-space','midnight-blue','forest','volcanic','purple-haze','solarized','rose-gold','neon-cyber','molten-gold','aurora','deep-crimson','holographic','steel-forge'];if(m==='light'){if(dark.indexOf(t)!==-1)t='light-clean';}else if(m==='dark'){if(light.indexOf(t)!==-1)t='dark-space';}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){if(dark.indexOf(t)!==-1)t='light-clean';}document.documentElement.setAttribute('data-theme',t);})();</script>
+
+  <meta charset="UTF-8">
+  <!-- ② Security headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com data: blob:; connect-src 'self' ws: wss: http: https:; frame-src 'self' http: https:; img-src 'self' data: blob: http: https:;">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ③ Title -->
+  <title>Home — HA Tools Hub</title>
+
+  <!-- ④ Shared styles -->
+  <link rel="stylesheet" href="../assets/css/main.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/layout.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.03">
+
+  <!-- ⑤ Shared scripts -->
+  <script src="../assets/js/main.js?v=0.03"></script>
+  <script src="../assets/js/components.js?v=0.03"></script>
+
+  <!-- ⑥ Page-specific styles -->
+  <style>
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .ix-sidebar-section {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ix-sidebar-title {
+      font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text2); margin-bottom: 10px;
+    }
+    .ix-tool-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ix-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text2);
+      transition: all 0.13s;
+      border: 1px solid transparent;
+      text-decoration: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .ix-tool-btn:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .ix-tool-btn.active {
+      background: rgba(74,144,217,0.1);
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+    .ix-tool-btn-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      width: 22px;
+      text-align: center;
+    }
+    .ix-tool-btn-label { flex: 1; }
+    .ix-tool-btn-badge {
+      font-size: 9px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+      background: var(--surface2);
+      color: var(--text3);
+    }
+    .ix-tool-btn.ix-coming-soon {
+      opacity: 0.45;
+      cursor: default;
+      pointer-events: none;
+    }
+    .ix-coming-badge {
+      font-size: 8px; font-weight: 700;
+      padding: 1px 5px; border-radius: 6px;
+      background: rgba(245,166,35,0.15);
+      color: var(--orange);
+      border: 1px solid rgba(245,166,35,0.25);
+    }
+
+    /* ── HA Status strip ────────────────────────────────────────── */
+    .ix-status-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .ix-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .ix-stat-val {
+      font-size: 24px; font-weight: 800;
+      line-height: 1; margin-bottom: 4px;
+      color: var(--accent2);
+    }
+    .ix-stat-lbl {
+      font-size: 10px; font-weight: 600;
+      color: var(--text2);
+    }
+    .ix-stat-val.ix-loading { color: var(--text3); font-size: 18px; }
+
+    /* ── Section heading ────────────────────────────────────────── */
+    .ix-section-heading {
+      font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text2);
+      margin: 0 0 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ix-section-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Tool cards grid ────────────────────────────────────────── */
+    .ix-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    /* Override hub-tool-card for large launch cards */
+    .ix-tool-grid .hub-tool-card {
+      padding: 26px 20px 22px;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+    }
+    .ix-tool-grid .hub-tool-card-icon {
+      font-size: 40px;
+      margin-bottom: 2px;
+    }
+    .ix-tool-grid .hub-tool-card-title {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .ix-tool-grid .hub-tool-card-desc {
+      font-size: 11px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* ── Overview panel (shown when sidebar item is clicked) ────── */
+    #ix-overview {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 26px;
+      margin-bottom: 28px;
+    }
+    #ix-overview.visible { display: block; }
+    .ix-ov-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .ix-ov-icon {
+      font-size: 44px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .ix-ov-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .ix-ov-subtitle {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.7;
+    }
+    .ix-ov-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 16px;
+    }
+    .ix-ov-desc {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.8;
+      margin-bottom: 18px;
+    }
+    .ix-ov-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ix-close-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text2);
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+      float: right;
+      margin-top: -4px;
+    }
+    .ix-close-btn:hover { color: var(--text); background: var(--surface2); }
+
+    /* ── ToDo list ──────────────────────────────────────────────── */
+    .ix-todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ix-todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+    .ix-todo-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .ix-todo-text strong { color: var(--text); font-size: 12px; }
+
+  </style>
+</head>
+<body>
+
+<!-- ⑦ Nav — empty shell, main.js injects all links -->
+<nav class="hub-nav"></nav>
+
+<!-- ⑧ Page header -->
+<div class="page-header">
+  <span class="page-header-icon">🏠</span>
+  <div class="page-header-text">
+    <div class="page-header-title">HA Tools Hub</div>
+    <div class="page-header-desc">Your Home Assistant toolkit — all tools in one place</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+    <span id="ix-ha-version" style="font-size:10px;font-family:monospace;color:var(--text3);">— Not connected</span>
+  </div>
+</div>
+
+<!-- ⑨ Shell -->
+<div class="hub-shell">
+
+  <!-- ══ Sidebar ══ -->
+  <aside class="hub-sidebar">
+
+    <!-- Tools section -->
+    <div class="ix-sidebar-section">
+      <div class="ix-sidebar-title">Tools</div>
+      <div class="ix-tool-list">
+        <button class="ix-tool-btn" data-tool="system" onclick="ixShowOverview('system', this)">
+          <span class="ix-tool-btn-icon">🧠</span>
+          <span class="ix-tool-btn-label">System</span>
+        </button>
+        <button class="ix-tool-btn" data-tool="config-manager" onclick="ixShowOverview('config-manager', this)">
+          <span class="ix-tool-btn-icon">⚙️</span>
+          <span class="ix-tool-btn-label">Config Manager</span>
+        </button>
+        <button class="ix-tool-btn" data-tool="automation-manager" onclick="ixShowOverview('automation-manager', this)">
+          <span class="ix-tool-btn-icon">⚡</span>
+          <span class="ix-tool-btn-label">Automation Manager</span>
+        </button>
+        <button class="ix-tool-btn" data-tool="dashboard-card-library" onclick="ixShowOverview('dashboard-card-library', this)">
+          <span class="ix-tool-btn-icon">📚</span>
+          <span class="ix-tool-btn-label">Card Library</span>
+        </button>
+        <!-- Future tool slots -->
+        <button class="ix-tool-btn" data-tool="device-explorer" onclick="ixShowOverview('device-explorer', this)">
+          <span class="ix-tool-btn-icon">🔭</span>
+          <span class="ix-tool-btn-label">Device Explorer</span>
+        </button>
+        <button class="ix-tool-btn" data-tool="health-score" onclick="ixShowOverview('health-score', this)">
+          <span class="ix-tool-btn-icon">❤️</span>
+          <span class="ix-tool-btn-label">Health Score</span>
+        </button>
+        <button class="ix-tool-btn ix-coming-soon">
+          <span class="ix-tool-btn-icon">📊</span>
+          <span class="ix-tool-btn-label">Energy Dashboard</span>
+          <span class="ix-coming-badge">Soon</span>
+        </button>
+        <button class="ix-tool-btn ix-coming-soon">
+          <span class="ix-tool-btn-icon">🌡️</span>
+          <span class="ix-tool-btn-label">Climate Tools</span>
+          <span class="ix-coming-badge">Soon</span>
+        </button>
+        <button class="ix-tool-btn ix-coming-soon">
+          <span class="ix-tool-btn-icon">💡</span>
+          <span class="ix-tool-btn-label">Lighting Tools</span>
+          <span class="ix-coming-badge">Soon</span>
+        </button>
+        <button class="ix-tool-btn ix-coming-soon">
+          <span class="ix-tool-btn-icon">📡</span>
+          <span class="ix-tool-btn-label">Network Monitor</span>
+          <span class="ix-coming-badge">Soon</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- HA Status -->
+    <div class="ix-sidebar-section" style="flex:1;">
+      <div class="ix-sidebar-title">HA Status</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;">
+          <span style="color:var(--text2);">Connection</span>
+          <span id="ix-sb-conn" style="font-weight:700;color:var(--text3);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;">
+          <span style="color:var(--text2);">HA Version</span>
+          <span id="ix-sb-ver" style="font-family:monospace;color:var(--text2);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;">
+          <span style="color:var(--text2);">Entities</span>
+          <span id="ix-sb-ents" style="font-family:monospace;color:var(--text2);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;">
+          <span style="color:var(--text2);">Devices</span>
+          <span id="ix-sb-devs" style="font-family:monospace;color:var(--text2);">—</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ Main ══ -->
+  <main class="hub-main">
+
+    <!-- Overview panel — hidden until sidebar tool clicked -->
+    <div id="ix-overview">
+      <button class="ix-close-btn" onclick="ixCloseOverview()">✕ Close</button>
+      <div class="ix-ov-header">
+        <div class="ix-ov-icon" id="ov-icon">🧠</div>
+        <div>
+          <div class="ix-ov-title" id="ov-title">System</div>
+          <div class="ix-ov-subtitle" id="ov-subtitle"></div>
+        </div>
+      </div>
+      <div class="ix-ov-tags" id="ov-tags"></div>
+      <div class="ix-ov-desc" id="ov-desc"></div>
+      <div class="ix-ov-actions" id="ov-actions"></div>
+    </div>
+
+    <!-- HA stat strip -->
+    <div class="ix-status-strip" id="ix-stats">
+      <div class="ix-stat">
+        <div class="ix-stat-val ix-loading" id="stat-entities">—</div>
+        <div class="ix-stat-lbl">Entities</div>
+      </div>
+      <div class="ix-stat">
+        <div class="ix-stat-val ix-loading" id="stat-devices">—</div>
+        <div class="ix-stat-lbl">Devices</div>
+      </div>
+      <div class="ix-stat">
+        <div class="ix-stat-val ix-loading" id="stat-integrations">—</div>
+        <div class="ix-stat-lbl">Integrations</div>
+      </div>
+    </div>
+
+    <!-- Active tools section -->
+    <div class="ix-section-heading">Active Tools</div>
+    <div class="ix-tool-grid">
+
+      <a class="hub-tool-card" href="system.html" style="--card-color: #4a90d9;">
+        <div class="hub-tool-card-icon">🧠</div>
+        <div class="hub-tool-card-title">System</div>
+        <div class="hub-tool-card-desc">Devices, integrations, domains and availability at a glance</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Overview</span>
+          <span class="hub-tag">Live</span>
+        </div>
+      </a>
+
+      <a class="hub-tool-card" href="config-manager.html" style="--card-color: #f5a623;">
+        <div class="hub-tool-card-icon">⚙️</div>
+        <div class="hub-tool-card-title">Config Manager</div>
+        <div class="hub-tool-card-desc">Browse, edit and validate your HA configuration files</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Config</span>
+          <span class="hub-tag">YAML</span>
+        </div>
+      </a>
+
+      <a class="hub-tool-card" href="automation-manager.html" style="--card-color: #9c27b0;">
+        <div class="hub-tool-card-icon">⚡</div>
+        <div class="hub-tool-card-title">Automation Manager</div>
+        <div class="hub-tool-card-desc">Create, manage and trigger your HA automations</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Automations</span>
+          <span class="hub-tag">Triggers</span>
+        </div>
+      </a>
+
+      <a class="hub-tool-card" href="device-explorer.html" style="--card-color: #4a90d9;">
+        <div class="hub-tool-card-icon">🔭</div>
+        <div class="hub-tool-card-title">Device Explorer</div>
+        <div class="hub-tool-card-desc">Browse every device, entity, area and integration — Home Passport, DNA view, Power Map and diagnostics</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Devices</span>
+          <span class="hub-tag">Entities</span>
+          <span class="hub-tag">Areas</span>
+        </div>
+      </a>
+
+      <a class="hub-tool-card" href="health-score.html" style="--card-color: #e05252;">
+        <div class="hub-tool-card-icon">❤️</div>
+        <div class="hub-tool-card-title">Health Score</div>
+        <div class="hub-tool-card-desc">Real-time 0–100 health score across hardware and application pillars with fix recommendations</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Health</span>
+          <span class="hub-tag">Monitoring</span>
+        </div>
+      </a>
+
+      <a class="hub-tool-card" href="dashboard-card-library.html" style="--card-color: #00bcd4;">
+        <div class="hub-tool-card-icon">📚</div>
+        <div class="hub-tool-card-title">Card Library</div>
+        <div class="hub-tool-card-desc">Browse, preview and extract Lovelace dashboard cards — built-in templates and HACS cards</div>
+        <div class="hub-tool-card-tags">
+          <span class="hub-tag">Dashboard</span>
+          <span class="hub-tag">Lovelace</span>
+          <span class="hub-tag">HACS</span>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- ToDo section -->
+    <div class="ix-section-heading">Planned Improvements</div>
+    <div class="ix-todo-list">
+      <div class="ix-todo-item">
+        <span class="ix-todo-icon">🔧</span>
+        <div class="ix-todo-text"><strong>Dynamic tool list</strong> — Tools shown here should reflect which tools are actually installed and available, not a hardcoded list.</div>
+      </div>
+      <div class="ix-todo-item">
+        <span class="ix-todo-icon">👤</span>
+        <div class="ix-todo-text"><strong>User tool chooser</strong> — Each user should be able to pick which tools appear in their view. Disabled tools stay installed but hidden unless specifically needed.</div>
+      </div>
+      <div class="ix-todo-item">
+        <span class="ix-todo-icon">💬</span>
+        <div class="ix-todo-text"><strong>Disabled tools behaviour</strong> — Needs a discussion. When a tool is disabled, does it fully disconnect? Can other tools still reference it? Decision needed before building the tool chooser.</div>
+      </div>
+      <div class="ix-todo-item">
+        <span class="ix-todo-icon">📊</span>
+        <div class="ix-todo-text"><strong>System stats panel</strong> — The HA version, entity count, device count and integration summary should live here on the home page (BUG-010).</div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /.hub-shell -->
+
+<!-- ⑩ Page script -->
+<script>
+
+  // ── Tool overview definitions ────────────────────────────────
+  var IX_TOOLS = {
+    'system': {
+      icon: '🧠',
+      title: 'System',
+      subtitle: 'A full overview of your Home Assistant instance — everything in one place.',
+      tags: ['Overview', 'Live Data', 'Integrations', 'Devices'],
+      desc: 'The System tool connects to your Home Assistant and gives you a real-time snapshot of your entire setup. See all your devices grouped by integration, check which entities are unavailable, browse your active domains, and quickly spot anything that needs attention. It\'s the first stop for understanding the health and shape of your HA instance.',
+      href: 'system.html'
+    },
+    'config-manager': {
+      icon: '⚙️',
+      title: 'Config Manager',
+      subtitle: 'Browse, view and manage your Home Assistant configuration files.',
+      tags: ['Config', 'YAML', 'Files'],
+      desc: 'The Config Manager gives you a clean interface for working with your HA configuration. Browse your config files, check for errors, and make edits without having to SSH into your server or use the HA file editor. Designed to make configuration work less intimidating for everyone.',
+      href: 'config-manager.html'
+    },
+    'automation-manager': {
+      icon: '⚡',
+      title: 'Automation Manager',
+      subtitle: 'See, manage and trigger all your Home Assistant automations.',
+      tags: ['Automations', 'Triggers', 'Schedules'],
+      desc: 'The Automation Manager pulls in all your HA automations and lets you view them in a clear, organised way. See which automations are enabled or disabled, trigger them manually for testing, and get a plain-language summary of what each one does. A much friendlier alternative to digging through the HA UI.',
+      href: 'automation-manager.html'
+    },
+    'device-explorer': {
+      icon: '🔭',
+      title: 'Device Explorer',
+      subtitle: 'Browse every device, entity, area and integration in your HA instance.',
+      tags: ['Devices', 'Entities', 'Areas', 'Diagnostics'],
+      desc: 'The Device Explorer reads the full HA registry — devices, entities, areas, floors. Browse device cards with capability badges, explore your Home Passport snapshot, visualise Integration DNA, map live power consumption by room, and run diagnostics across your whole instance.',
+      href: 'device-explorer.html'
+    },
+    'health-score': {
+      icon: '❤️',
+      title: 'Health Score',
+      subtitle: 'Real-time 0–100 health analysis across Hardware and Application pillars.',
+      tags: ['Health', 'Monitoring', 'Score'],
+      desc: 'The Health Score page analyses your HA instance across two pillars — Hardware (CPU, RAM, Disk) and Application (unavailable entities, updates, database size, backups). It produces a single 0–100 score with a letter grade and actionable fix recommendations. Tracks score history over time.',
+      href: 'health-score.html'
+    },
+    'dashboard-card-library': {
+      icon: '📚',
+      title: 'Card Library',
+      subtitle: 'Browse, preview and extract Lovelace dashboard cards.',
+      tags: ['Dashboard', 'Lovelace', 'HACS', 'Cards'],
+      desc: 'The Card Library gives you 18 built-in card templates with live visual previews — phones, smart plugs, climate, solar, security and more. Browse 10 popular HACS cards with installation guides. Extract cards directly from your live dashboards over WebSocket. Save your own card library for reuse across projects.',
+      href: 'dashboard-card-library.html'
+    }
+  };
+
+  // ── Show overview panel ──────────────────────────────────────
+  function ixShowOverview(toolId, btn) {
+    var tool = IX_TOOLS[toolId];
+    if (!tool) return;
+
+    // Update sidebar active state
+    document.querySelectorAll('.ix-tool-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    // Populate panel
+    document.getElementById('ov-icon').textContent    = tool.icon;
+    document.getElementById('ov-title').textContent   = tool.title;
+    document.getElementById('ov-subtitle').textContent = tool.subtitle;
+    document.getElementById('ov-desc').textContent    = tool.desc;
+
+    // Tags
+    var tagsHtml = tool.tags.map(function(t) {
+      return '<span class="hub-tag">' + escHtml(t) + '</span>';
+    }).join('');
+    document.getElementById('ov-tags').innerHTML = tagsHtml;
+
+    // Actions
+    document.getElementById('ov-actions').innerHTML =
+      '<a class="btn btn-primary" href="' + escHtml(tool.href) + '">Open ' + escHtml(tool.title) + ' →</a>' +
+      '<button class="btn btn-secondary" onclick="ixCloseOverview()">Back to Hub</button>';
+
+    // Show panel
+    var panel = document.getElementById('ix-overview');
+    panel.classList.add('visible');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function ixCloseOverview() {
+    document.getElementById('ix-overview').classList.remove('visible');
+    document.querySelectorAll('.ix-tool-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+  }
+
+  // ── Populate HA stats ────────────────────────────────────────
+  async function ixFetchStats() {
+    try {
+      var results = await Promise.all([
+        HAConn.send({ type: 'get_states' }),
+        HAConn.send({ type: 'config/device_registry/list' }),
+        HAConn.send({ type: 'config/config_entries/list' })
+      ]);
+
+      // Entities — bare array or { entity_entries: [] } (HA 2024+)
+      if (results[0].ok && results[0].result) {
+        var entRaw = results[0].result;
+        var ents = Array.isArray(entRaw) ? entRaw
+                 : Array.isArray(entRaw.entity_entries) ? entRaw.entity_entries : [];
+        var entCount = ents.length;
+        document.getElementById('stat-entities').textContent = entCount;
+        document.getElementById('stat-entities').classList.remove('ix-loading');
+        document.getElementById('ix-sb-ents').textContent = entCount;
+      }
+
+      // Devices — bare array or { devices: [] } (HA 2024+)
+      if (results[1].ok && results[1].result) {
+        var devRaw = results[1].result;
+        var devs = Array.isArray(devRaw) ? devRaw
+                 : Array.isArray(devRaw.devices) ? devRaw.devices : [];
+        document.getElementById('stat-devices').textContent = devs.length;
+        document.getElementById('stat-devices').classList.remove('ix-loading');
+        document.getElementById('ix-sb-devs').textContent = devs.length;
+      }
+
+      // Integrations — bare array or { entries: [] } (HA 2023.6+)
+      if (results[2].ok && results[2].result) {
+        var raw = results[2].result;
+        var entries = Array.isArray(raw) ? raw
+                    : Array.isArray(raw.entries) ? raw.entries : [];
+        var domains = {};
+        entries.forEach(function(e) { if (e.domain) domains[e.domain] = true; });
+        var intCount = Object.keys(domains).length;
+        document.getElementById('stat-integrations').textContent = intCount;
+        document.getElementById('stat-integrations').classList.remove('ix-loading');
+      }
+
+    } catch(e) {
+      // Silently fail — stats will remain at —
+    }
+  }
+
+  // ── HA connection wiring ─────────────────────────────────────
+  HAConn.onStateChange(function(s, msg, ver) {
+    var connEl  = document.getElementById('ix-sb-conn');
+    var verEl   = document.getElementById('ix-sb-ver');
+    var headVer = document.getElementById('ix-ha-version');
+
+    if (s === 'connected') {
+      if (connEl)  { connEl.textContent = 'Connected'; connEl.style.color = 'var(--green)'; }
+      if (verEl)   { verEl.textContent = ver || '—'; }
+      if (headVer) { headVer.textContent = ver ? 'HA ' + ver : ''; }
+      ixFetchStats();
+    } else if (s === 'connecting') {
+      if (connEl)  { connEl.textContent = 'Connecting…'; connEl.style.color = 'var(--orange)'; }
+    } else if (s === 'error') {
+      if (connEl)  { connEl.textContent = 'Error'; connEl.style.color = 'var(--red)'; }
+    } else {
+      if (connEl)  { connEl.textContent = 'Not connected'; connEl.style.color = 'var(--text3)'; }
+      if (headVer) { headVer.textContent = '— Not connected'; }
+    }
+  });
+
+</script>
+
+</body>
+</html>

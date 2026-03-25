@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<!--
+  HA Tools Hub — auditor.html
+  Self-contained project auditor. Fetches sibling files and checks
+  structural rules, CSS class consistency, nav integrity and routes.
+  Copyright © 2026 HA Tools Hub. All rights reserved.
+-->
+<html lang="en">
+<head>
+  <script>(function(){var t=localStorage.getItem('ha_tools_theme')||'dark-space',m=localStorage.getItem('ha_tools_mode')||'system';var light=['light-clean','light-warm','arctic'],dark=['dark-space','midnight-blue','forest','volcanic','purple-haze','solarized','rose-gold','neon-cyber','molten-gold','aurora','deep-crimson','holographic','steel-forge'];if(m==='light'){if(dark.indexOf(t)!==-1)t='light-clean';}else if(m==='dark'){if(light.indexOf(t)!==-1)t='dark-space';}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){if(dark.indexOf(t)!==-1)t='light-clean';}document.documentElement.setAttribute('data-theme',t);})();</script>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' ws: wss: http: https:; img-src 'self' data: blob:;">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditor — HA Tools Hub</title>
+
+  <link rel="stylesheet" href="../assets/css/main.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/layout.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.03">
+  <script src="../assets/js/main.js?v=0.03"></script>
+  <script src="../assets/js/components.js?v=0.03"></script>
+
+  <style>
+    /* ── au- prefix for all auditor-specific classes ── */
+    .au-run-btn {
+      padding: 9px 24px; border: none; border-radius: 8px;
+      background: var(--accent); color: #fff;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .au-run-btn:hover { filter: brightness(1.12); }
+    .au-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .au-summary-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0;
+    }
+    .au-summary-pill {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px;
+      font-weight: 700; border: 1px solid transparent;
+    }
+    .au-summary-pill.au-pass { background: rgba(76,175,135,0.12); color: var(--green); border-color: rgba(76,175,135,0.3); }
+    .au-summary-pill.au-fail { background: rgba(224,82,82,0.12);  color: var(--red);   border-color: rgba(224,82,82,0.3); }
+    .au-summary-pill.au-warn { background: rgba(245,166,35,0.12); color: var(--orange);border-color: rgba(245,166,35,0.3); }
+
+    .au-group {
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; margin-bottom: 10px;
+    }
+    .au-group-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; cursor: pointer; user-select: none;
+      background: var(--surface); transition: background 0.12s;
+    }
+    .au-group-header:hover { background: var(--surface2); }
+    .au-group-icon { font-size: 14px; flex-shrink: 0; }
+    .au-group-title { font-size: 13px; font-weight: 700; flex: 1; }
+    .au-group-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 10px; flex-shrink: 0;
+    }
+    .au-group-badge.au-pass { background: rgba(76,175,135,0.15); color: var(--green); }
+    .au-group-badge.au-fail { background: rgba(224,82,82,0.15);  color: var(--red); }
+    .au-group-badge.au-warn { background: rgba(245,166,35,0.15); color: var(--orange); }
+    .au-group-chevron { font-size: 9px; color: var(--text2); flex-shrink: 0; }
+
+    .au-group-body { display: none; border-top: 1px solid var(--border); }
+    .au-group.open .au-group-body { display: block; }
+
+    .au-check {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .au-check:last-child { border-bottom: none; }
+    .au-check-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+    .au-check-body { flex: 1; }
+    .au-check-title { font-weight: 600; color: var(--text1); }
+    .au-check-detail { color: var(--text2); margin-top: 3px; line-height: 1.5; }
+    .au-failure-list { margin-top: 5px; }
+    .au-failure {
+      font-size: 11px; font-family: monospace;
+      color: var(--red); padding: 1px 0; line-height: 1.6;
+    }
+    .au-warn-item {
+      font-size: 11px; font-family: monospace;
+      color: var(--orange); padding: 1px 0; line-height: 1.6;
+    }
+
+    .au-status { font-size: 12px; color: var(--text2); margin-bottom: 16px; min-height: 18px; }
+    .au-idle-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+    .au-idle-state-icon { font-size: 48px; margin-bottom: 12px; }
+    .au-idle-state-text { font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<nav class="hub-nav"></nav>
+
+<div class="page-header">
+  <span class="page-header-icon">🔍</span>
+  <div class="page-header-text">
+    <div class="page-header-title">Auditor</div>
+    <div class="page-header-desc">Checks structural rules, CSS class consistency, nav integrity and route coverage across all pages</div>
+  </div>
+</div>
+
+<main class="hub-main">
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+    <button class="au-run-btn" id="au-run-btn" onclick="runAudit()">▶ Run Audit</button>
+    <span style="font-size:11px; color:var(--text2);">Fetches and analyses all project files in your browser — nothing leaves your network</span>
+  </div>
+
+  <div class="au-status" id="au-status"></div>
+  <div class="au-summary-bar" id="au-summary" style="display:none;"></div>
+  <div id="au-results">
+    <div class="au-idle-state">
+      <div class="au-idle-state-icon">🔎</div>
+      <div class="au-idle-state-text">Press Run Audit to start</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  AUDITOR — checks run entirely client-side via fetch()
+//  Base path: one level up from /pages/
+// ═══════════════════════════════════════════════════════════════
+
+// ── Base path: resolved at runtime from window.location ──────────
+// pages/auditor.html sits one level inside the project root.
+// e.g. http://ha:8123/local/ha-tools-hub/pages/auditor.html
+//   → base = http://ha:8123/local/ha-tools-hub/
+var BASE = (function() {
+  var href = window.location.href.split('?')[0].split('#')[0];
+  // Strip filename and pages/ folder to reach project root
+  var parts = href.split('/');
+  parts.pop();           // remove auditor.html
+  parts.pop();           // remove pages/
+  return parts.join('/') + '/';
+})();
+
+// ── Known shared CSS classes (extracted at build time + maintained here) ──
+// The auditor also re-parses the actual CSS files live, this is a fallback.
+var KNOWN_PAGE_PREFIXES = ['sa-', 'bt-', 'tr-', 'au-', 'ix-', 'cm-', 'am-', 'fr-', 'cr-'];
+
+// ── Inline routes data — embedded at build time, no fetch needed ──
+// Update this when config/routes.json changes.
+var ROUTES_DATA = {
+  "version": "0.01a",
+  "base_path": "/local/ha-tools-hub/pages/",
+  "routes": [
+    {
+      "id": "index",
+      "file": "index.html",
+      "title": "Home",
+      "nav_label": "\ud83c\udfe0 Home",
+      "nav_group": "hub",
+      "in_nav": true
+    },
+    {
+      "id": "system-analyser",
+      "file": "system.html",
+      "title": "System Analyser",
+      "nav_label": "\ud83e\udde0 Analyser",
+      "nav_group": "analysis",
+      "in_nav": true
+    },
+    {
+      "id": "config-manager",
+      "file": "config-manager.html",
+      "title": "Config Manager",
+      "nav_label": "\u2699\ufe0f Config",
+      "nav_group": "config",
+      "in_nav": true
+    },
+    {
+      "id": "tracker",
+      "file": "tracker.html",
+      "title": "Project Tracker",
+      "nav_label": "\ud83d\udcca Tracker",
+      "nav_group": "hub",
+      "in_nav": true
+    },
+    {
+      "id": "auditor",
+      "file": "auditor.html",
+      "title": "Auditor",
+      "nav_label": "\ud83d\udd0d Auditor",
+      "nav_group": "hub",
+      "in_nav": false
+    },
+    {
+      "id": "automation-manager",
+      "file": "automation-manager.html",
+      "title": "Automation Manager",
+      "nav_label": "\u26a1 Automations",
+      "nav_group": "automations",
+      "in_nav": false
+    }
+  ]
+};
+
+
+
+// Classes that are purely state/JS-toggled — not defined in CSS but valid
+var JS_STATE_CLASSES = new Set([
+  'active', 'open', 'disabled', 'visible', 'loading',
+  'expanded', 'collapsed', 'selected', 'focused', 'hover',
+  'done', 'error', 'success', 'warning', 'connected', 'disconnected',
+  'sidebar-is-open', 'hub-tab-panel'
+]);
+
+// ── Required meta tags every page must have ──
+var REQUIRED_META = [
+  { attr: 'http-equiv="Content-Security-Policy"',      label: 'CSP meta tag' },
+  { attr: 'name="referrer"',                           label: 'Referrer meta tag' },
+  { attr: 'name="robots"',                             label: 'Robots meta tag' },
+  { attr: 'name="viewport"',                           label: 'Viewport meta tag' },
+];
+
+// ── Required shared asset loads ──
+var REQUIRED_CSS = ['main.css', 'layout.css', 'components.css'];
+var REQUIRED_JS  = ['main.js', 'components.js'];
+
+// ── Structural rules ──
+var STRUCTURAL_RULES = [
+  {
+    id: 'nav-shell',
+    label: 'Nav is empty shell',
+    test: function(html) {
+      // Must have <nav class="hub-nav"></nav> with nothing inside
+      return /<nav\s+class="hub-nav"\s*><\/nav>/.test(html);
+    },
+    fix: 'Replace nav contents with empty shell: <nav class="hub-nav"></nav>'
+  },
+  {
+    id: 'no-inline-nav-links',
+    label: 'No hardcoded nav links in page',
+    test: function(html) {
+      // Nav shell must be empty — no <a href inside the nav element
+      var navMatch = html.match(/<nav\s+class="hub-nav"[^>]*>([\s\S]*?)<\/nav>/);
+      if (!navMatch) return true; // no nav at all — caught by nav-shell check
+      return navMatch[1].trim() === '';
+    },
+    fix: 'Remove all links from <nav class="hub-nav"> — main.js injects them'
+  },
+  {
+    id: 'theme-init-first',
+    label: 'Theme init IIFE is first script in <head>',
+    test: function(html) {
+      return /(<head>[\s\S]*?)<script>\s*\(function\(\)\{var t=localStorage\.getItem\('ha_tools_theme'\)/.test(html);
+    },
+    fix: 'The theme init IIFE must be the very first <script> tag inside <head>'
+  },
+  {
+    id: 'no-page-shell-inline',
+    label: 'No inline shell/sidebar/main layout classes defined',
+    test: function(html) {
+      // Extract only the <style> blocks
+      var styleBlocks = (html.match(/<style>([\s\S]*?)<\/style>/g) || []).join('');
+      // Should not define hub-shell, hub-sidebar, hub-main in page CSS
+      return !/(\.hub-shell|\.hub-sidebar|\.hub-main)\s*\{/.test(styleBlocks);
+    },
+    fix: 'Remove hub-shell/hub-sidebar/hub-main rules from the page <style> block — these live in layout.css'
+  },
+  {
+    id: 'no-media-query-in-page',
+    label: 'No responsive @media blocks in page CSS',
+    test: function(html) {
+      var styleBlocks = (html.match(/<style>([\s\S]*?)<\/style>/g) || []).join('');
+      return !/@media/.test(styleBlocks);
+    },
+    fix: 'Remove @media blocks from the page <style> — layout.css handles all breakpoints'
+  },
+  {
+    id: 'no-eschhtml-defined',
+    label: 'No per-page escHtml() definition',
+    test: function(html) {
+      return !/function escHtml\s*\(/.test(html);
+    },
+    fix: 'Remove the local escHtml() definition — use the one from components.js'
+  },
+  {
+    id: 'page-header-present',
+    label: 'Page header block present',
+    test: function(html) {
+      return /class="page-header"/.test(html);
+    },
+    fix: 'Add the standard <div class="page-header"> block'
+  }
+];
+
+// ── Utility ───────────────────────────────────────────────────────
+function escH(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function status(msg) {
+  document.getElementById('au-status').textContent = msg;
+}
+
+// ── Fetch helpers ─────────────────────────────────────────────────
+async function fetchText(path) {
+  try {
+    var r = await fetch(BASE + path + '?_=' + Date.now());
+    // Read text regardless of status — HA sometimes returns non-200 for static JS/JSON
+    // but still delivers content. Only return null on network failure.
+    return await r.text();
+  } catch(e) { return null; }
+}
+
+// For JS files already loaded on the page, read from the DOM script tags
+// rather than re-fetching — avoids HA static server MIME/permission issues.
+function getLoadedScriptContent(filename) {
+  var scripts = document.querySelectorAll('script[src]');
+  // Can't read cross-origin script content from DOM — use fetch with relaxed ok check
+  return null; // fallback to fetch
+}
+
+// ── CSS class extractor ───────────────────────────────────────────
+function extractCssClasses(css) {
+  var classes = new Set();
+  var re = /\.([\w-]+)\s*[{,:\[]/g;
+  var m;
+  while ((m = re.exec(css)) !== null) {
+    classes.add(m[1]);
+  }
+  return classes;
+}
+
+// ── HTML class extractor (skips style/script blocks) ─────────────
+function extractHtmlClasses(html) {
+  // Strip script and style content
+  var stripped = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+  var classes = new Set();
+  var re = /class\s*=\s*["']([^"']+)["']/g;
+  var m;
+  while ((m = re.exec(stripped)) !== null) {
+    m[1].trim().split(/\s+/).forEach(function(c){ if (c) classes.add(c); });
+  }
+  return classes;
+}
+
+// Determine which page prefix applies to a filename
+function pagePrefix(filename) {
+  var map = {
+    'system.html':      'sa-',
+    'tracker.html':     'tr-',
+    'auditor.html': 'au-',
+  };
+  return map[filename] || null;
+}
+
+// ── CHECKS ────────────────────────────────────────────────────────
+
+async function checkCssConsistency(pages, sharedClasses) {
+  var failures = [], warnings = [];
+
+  for (var i = 0; i < pages.length; i++) {
+    var p = pages[i];
+    if (!p.html) continue;
+    var prefix = pagePrefix(p.name);
+    var usedClasses = extractHtmlClasses(p.html);
+
+    usedClasses.forEach(function(cls) {
+      // Skip state classes toggled by JS
+      if (JS_STATE_CLASSES.has(cls)) return;
+      // Skip page-specific prefixed classes (intentionally inline)
+      if (KNOWN_PAGE_PREFIXES.some(function(px){ return cls.startsWith(px); })) return;
+      // Skip classes defined in shared CSS
+      if (sharedClasses.has(cls)) return;
+      // Skip single-word utility classes (likely from inline style shortcuts)
+      if (/^[a-z]+$/.test(cls) && cls.length <= 4) return;
+      // Flag it
+      failures.push({ file: p.name, cls: cls });
+    });
+  }
+
+  // Group by file for display
+  var byFile = {};
+  failures.forEach(function(f){
+    if (!byFile[f.file]) byFile[f.file] = [];
+    byFile[f.file].push(f.cls);
+  });
+
+  return {
+    id: 'css-classes',
+    title: 'CSS Class Consistency',
+    desc: 'Every class= in HTML either exists in shared CSS or uses the correct page-specific prefix',
+    failures: Object.keys(byFile).map(function(file){
+      return file + ': ' + byFile[file].map(function(c){ return '.'+c; }).join(', ');
+    }),
+    warnings: warnings
+  };
+}
+
+async function checkStructuralRules(pages) {
+  var allFailures = [];
+
+  STRUCTURAL_RULES.forEach(function(rule) {
+    var ruleFailures = [];
+    pages.forEach(function(p) {
+      if (!p.html) return;
+      if (!rule.test(p.html)) {
+        ruleFailures.push(p.name + ' — ' + rule.fix);
+      }
+    });
+    if (ruleFailures.length) {
+      allFailures = allFailures.concat(ruleFailures.map(function(f){
+        return '[' + rule.label + '] ' + f;
+      }));
+    }
+  });
+
+  return {
+    id: 'structure',
+    title: 'Page Structure Rules',
+    desc: 'Every page follows the 10-step structure defined in ai-notes.md',
+    failures: allFailures,
+    warnings: []
+  };
+}
+
+async function checkAssetLoads(pages) {
+  var failures = [], warnings = [];
+
+  pages.forEach(function(p) {
+    if (!p.html) return;
+    REQUIRED_CSS.forEach(function(f){
+      if (p.html.indexOf(f) === -1)
+        failures.push(p.name + ' — missing shared CSS: ' + f);
+    });
+    REQUIRED_JS.forEach(function(f){
+      if (p.html.indexOf(f) === -1)
+        failures.push(p.name + ' — missing shared JS: ' + f);
+    });
+  });
+
+  return {
+    id: 'assets',
+    title: 'Shared Asset Loads',
+    desc: 'Every page loads all three CSS files and both JS files',
+    failures: failures,
+    warnings: warnings
+  };
+}
+
+async function checkMetaTags(pages) {
+  var failures = [];
+
+  pages.forEach(function(p) {
+    if (!p.html) return;
+    REQUIRED_META.forEach(function(m){
+      if (p.html.indexOf(m.attr) === -1)
+        failures.push(p.name + ' — missing ' + m.label);
+    });
+  });
+
+  return {
+    id: 'meta',
+    title: 'Security & Meta Tags',
+    desc: 'Every page has CSP, referrer, robots and viewport meta tags',
+    failures: failures,
+    warnings: []
+  };
+}
+
+async function checkNavIntegrity(mainJs, pages) {
+  var failures = [], warnings = [];
+  var navLinks = [];
+
+  // Read nav links directly from the live injected DOM nav.
+  // main.js is already loaded on this page and has injected NAV_HTML —
+  // so the links are in the DOM without needing to re-fetch the JS file.
+  // This avoids HA static server MIME/permission issues with .js fetches.
+  var navEl = document.querySelector('.hub-nav-links');
+  if (navEl) {
+    navEl.querySelectorAll('a[href]').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (href && href.endsWith('.html')) navLinks.push(href);
+    });
+  }
+
+  // Fallback: parse fetched main.js text if DOM nav somehow empty
+  if (!navLinks.length && mainJs) {
+    var re = /href="([^"]+\.html)"/g;
+    var m;
+    while ((m = re.exec(mainJs)) !== null) navLinks.push(m[1]);
+  }
+
+  if (!navLinks.length) {
+    warnings.push('Could not read nav links — DOM nav empty and main.js unavailable');
+    return { id:'nav', title:'Nav Integrity', desc:'NAV_HTML links resolve to real files', failures:failures, warnings:warnings };
+  }
+
+  navLinks = navLinks.filter(function(l,i,a){ return a.indexOf(l)===i; });
+
+  var pageNames = pages.map(function(p){ return p.name; });
+  navLinks.forEach(function(link) {
+    if (pageNames.indexOf(link) === -1 && pageNames.indexOf(link.replace('pages/','')) === -1) {
+      failures.push('Nav links to "' + link + '" — file not found in /pages/');
+    }
+  });
+
+  return {
+    id: 'nav',
+    title: 'Nav Integrity',
+    desc: 'NAV_HTML links (read from live DOM) all resolve to real page files',
+    failures: failures,
+    warnings: warnings
+  };
+}
+
+async function checkRoutes(routesJson, pages) {
+  var failures = [], warnings = [];
+
+  // Single guard: handles null, empty, and HTML error pages returned instead of JSON
+  if (!routesJson || routesJson.trim().charAt(0) !== '{') {
+    warnings.push('config/routes.json could not be fetched — check the file exists at /config/routes.json relative to project root');
+    return { id:'routes', title:'Routes Coverage', desc:'routes.json entries match actual files', failures:failures, warnings:warnings };
+  }
+  var routes;
+  try { routes = JSON.parse(routesJson).routes; } catch(e) {
+    failures.push('config/routes.json is not valid JSON');
+    return { id:'routes', title:'Routes Coverage', desc:'routes.json entries match actual files', failures:failures, warnings:warnings };
+  }
+
+  var pageNames = pages.map(function(p){ return p.name; });
+  routes.forEach(function(r) {
+    if (pageNames.indexOf(r.file) === -1) {
+      failures.push('routes.json references "' + r.file + '" — file not found in /pages/');
+    }
+  });
+
+  // Pages that exist but aren't in routes.json
+  pageNames.forEach(function(name) {
+    if (name === 'bug-tracker.html') return; // known missing, tracked
+    var inRoutes = routes.some(function(r){ return r.file === name; });
+    if (!inRoutes) {
+      warnings.push('"' + name + '" exists but is not registered in routes.json');
+    }
+  });
+
+  return {
+    id: 'routes',
+    title: 'Routes Coverage',
+    desc: 'Every file in routes.json exists; every page file is registered',
+    failures: failures,
+    warnings: warnings
+  };
+}
+
+async function checkCssPrefixRules(pages) {
+  var failures = [];
+
+  pages.forEach(function(p) {
+    if (!p.html) return;
+    var prefix = pagePrefix(p.name);
+    if (!prefix) return; // stub pages — no expected prefix
+
+    // Extract page-specific style block
+    var styleBlocks = (p.html.match(/<style>([\s\S]*?)<\/style>/g) || []).join('');
+    // Find CSS class definitions in page styles
+    var re = /\.([\w-]+)\s*\{/g;
+    var m;
+    while ((m = re.exec(styleBlocks)) !== null) {
+      var cls = m[1];
+      // Skip shared structural classes
+      if (cls.startsWith('hub-') || cls.startsWith('sa-') || cls.startsWith('page-') || cls.startsWith('btn')) continue;
+      // Check it uses the right prefix
+      if (!cls.startsWith(prefix)) {
+        failures.push(p.name + ': .' + cls + ' should start with ' + prefix);
+      }
+    }
+  });
+
+  return {
+    id: 'prefix',
+    title: 'CSS Prefix Rules',
+    desc: 'Page-specific CSS classes use the correct page-id prefix (sa-, bt-, tr-, au-, ix-, cm-, am-)',
+    failures: failures,
+    warnings: []
+  };
+}
+
+// ── Result renderer ───────────────────────────────────────────────
+function renderResults(checks) {
+  var totalFail = 0, totalWarn = 0, totalPass = 0;
+  checks.forEach(function(c){
+    if (c.failures.length) totalFail += c.failures.length;
+    else if (c.warnings.length) totalWarn++;
+    else totalPass++;
+  });
+
+  // Summary pills
+  var summaryEl = document.getElementById('au-summary');
+  summaryEl.style.display = 'flex';
+  summaryEl.innerHTML =
+    '<span class="au-summary-pill au-pass">✅ ' + checks.filter(function(c){ return !c.failures.length && !c.warnings.length; }).length + ' checks passed</span>' +
+    (totalFail  ? '<span class="au-summary-pill au-fail">❌ ' + totalFail + ' failure' + (totalFail>1?'s':'') + '</span>' : '') +
+    (totalWarn  ? '<span class="au-summary-pill au-warn">⚠ ' + totalWarn + ' warning' + (totalWarn>1?'s':'') + '</span>' : '');
+
+  // Check groups
+  var html = '';
+  checks.forEach(function(c, i) {
+    var hasFail = c.failures.length > 0;
+    var hasWarn = c.warnings.length > 0;
+    var state   = hasFail ? 'fail' : hasWarn ? 'warn' : 'pass';
+    var icon    = hasFail ? '❌' : hasWarn ? '⚠️' : '✅';
+    var badge   = hasFail
+      ? c.failures.length + ' failure' + (c.failures.length>1?'s':'')
+      : hasWarn
+        ? c.warnings.length + ' warning' + (c.warnings.length>1?'s':'')
+        : 'passed';
+
+    // Auto-expand failing groups
+    var isOpen = hasFail || hasWarn;
+
+    html += '<div class="au-group' + (isOpen?' open':'') + '" id="aug-' + i + '">' +
+      '<div class="au-group-header" onclick="toggleGroup(' + i + ')">' +
+        '<span class="au-group-icon">' + icon + '</span>' +
+        '<span class="au-group-title">' + escH(c.title) + '</span>' +
+        '<span class="au-group-badge ' + state + '">' + escH(badge) + '</span>' +
+        '<span class="au-group-chevron" id="aug-chev-' + i + '">' + (isOpen?'▼':'▶') + '</span>' +
+      '</div>' +
+      '<div class="au-group-body">' +
+        '<div class="au-check">' +
+          '<span class="au-check-icon">' + icon + '</span>' +
+          '<div class="au-check-body">' +
+            '<div class="au-check-title">' + escH(c.desc) + '</div>' +
+            (hasFail || hasWarn ? (
+              '<div class="au-failure-list">' +
+                c.failures.map(function(f){ return '<div class="au-failure">✗ ' + escH(f) + '</div>'; }).join('') +
+                c.warnings.map(function(w){ return '<div class="au-warn-item">⚠ ' + escH(w) + '</div>'; }).join('') +
+              '</div>'
+            ) : '<div class="au-check-detail" style="color:var(--green);">All clear</div>') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  document.getElementById('au-results').innerHTML = html;
+}
+
+function toggleGroup(i) {
+  var el   = document.getElementById('aug-' + i);
+  var chev = document.getElementById('aug-chev-' + i);
+  var open = el.classList.toggle('open');
+  if (chev) chev.textContent = open ? '▼' : '▶';
+}
+
+// ── Main audit runner ─────────────────────────────────────────────
+async function runAudit() {
+  var btn = document.getElementById('au-run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+  document.getElementById('au-summary').style.display = 'none';
+  document.getElementById('au-results').innerHTML = '';
+
+  try {
+    // Show resolved base path for transparency
+    status('Base path: ' + BASE + ' — fetching shared CSS…');
+    var sharedClasses = new Set();
+    for (var ci = 0; ci < ['assets/css/main.css','assets/css/layout.css','assets/css/components.css'].length; ci++) {
+      var css = await fetchText(['assets/css/main.css','assets/css/layout.css','assets/css/components.css'][ci]);
+      if (css) extractCssClasses(css).forEach(function(c){ sharedClasses.add(c); });
+    }
+    status('Found ' + sharedClasses.size + ' shared CSS classes. Fetching pages…');
+
+    // 2. Fetch all HTML pages
+    var pageFiles = [
+      'pages/index.html',
+      'pages/system.html',
+      'pages/tracker.html',
+      'pages/config-manager.html',
+      'pages/automation-manager.html',
+      'pages/auditor.html',
+    ];
+
+    var pages = [];
+    for (var pi = 0; pi < pageFiles.length; pi++) {
+      var html = await fetchText(pageFiles[pi]);
+      var name = pageFiles[pi].replace('pages/', '');
+      pages.push({ name: name, path: pageFiles[pi], html: html });
+    }
+
+    var loadedCount = pages.filter(function(p){ return p.html; }).length;
+    status('Loaded ' + loadedCount + '/' + pages.length + ' pages. Running checks…');
+
+    // 3. Fetch supporting files
+    var mainJs     = await fetchText('assets/js/main.js');
+    // routes.json is inlined as ROUTES_DATA — no server fetch needed
+    var routesJson = JSON.stringify(ROUTES_DATA);
+
+    // 4. Run all checks
+    var checks = await Promise.all([
+      checkStructuralRules(pages),
+      checkAssetLoads(pages),
+      checkMetaTags(pages),
+      checkCssConsistency(pages, sharedClasses),
+      checkCssPrefixRules(pages),
+      checkNavIntegrity(mainJs, pages),
+      checkRoutes(routesJson, pages),
+    ]);
+
+    // 5. Render
+    renderResults(checks);
+
+    var failCount = checks.reduce(function(s,c){ return s+(c.failures?c.failures.length:0); }, 0);
+    status(failCount === 0
+      ? '✅ Audit complete — all checks passed'
+      : '❌ Audit complete — ' + failCount + ' issue' + (failCount>1?'s':'') + ' found');
+
+  } catch(e) {
+    status('❌ Audit error: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run Audit';
+}
+</script>
+
+</body>
+</html>

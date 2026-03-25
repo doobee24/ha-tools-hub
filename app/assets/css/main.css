@@ -1,0 +1,55 @@
+/* ═══════════════════════════════════════════════════════════════════
+   HA TOOLS HUB — MAIN.CSS
+   Global styles, theme definitions, CSS variables.
+   No page-specific rules. No layout rules (see layout.css).
+   No component rules (see components.css).
+═══════════════════════════════════════════════════════════════════
+   Copyright © 2026 HA Tools Hub. All rights reserved.
+   https://ha-tools-hub.com
+ */
+
+/* ── Core tokens (dark-space default fallback) ────────────────── */
+:root {
+  --bg:#0e1014; --surface:#1c1f26; --surface2:#252830; --surface3:#2e3240;
+  --border:#2e3240; --accent:#4a90d9; --accent2:#6db3f2;
+  --text:#e8eaf0; --text2:#9aa0b4; --text3:#484f58;
+  --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252;
+  --radius:10px;
+  --glow-accent:rgba(74,144,217,0.0);
+  --glow-surface:rgba(255,255,255,0.0);
+  --shimmer-opacity:0;
+  --reflection-opacity:0;
+  --grain-opacity:0;
+}
+
+/* ── Standard dark themes ─────────────────────────────────────── */
+[data-theme="dark-space"]    { --bg:#0e1014; --surface:#1c1f26; --surface2:#252830; --surface3:#2e3240; --border:#2e3240; --accent:#4a90d9; --accent2:#6db3f2; --text:#e8eaf0; --text2:#9aa0b4; --text3:#484f58; --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252; }
+[data-theme="midnight-blue"] { --bg:#070d1a; --surface:#0f1b2d; --surface2:#162236; --surface3:#1e2e45; --border:#1e2e45; --accent:#2979ff; --accent2:#5c9bff; --text:#cfe3ff; --text2:#7a9fbf; --text3:#2e4a66; --green:#43d9a0; --orange:#ffb74d; --purple:#9575cd; --red:#ef5350; }
+[data-theme="forest"]        { --bg:#0a1209; --surface:#121d10; --surface2:#192716; --surface3:#213320; --border:#213320; --accent:#4caf50; --accent2:#81c784; --text:#d8f0d2; --text2:#7aab74; --text3:#2a4a26; --green:#66bb6a; --orange:#ffb300; --purple:#ab47bc; --red:#ef5350; }
+[data-theme="volcanic"]      { --bg:#110a08; --surface:#1e1210; --surface2:#271916; --surface3:#32211e; --border:#32211e; --accent:#e64a19; --accent2:#ff7043; --text:#fce8e2; --text2:#b07065; --text3:#4a2820; --green:#4caf87; --orange:#f5a623; --purple:#9b72e8; --red:#e05252; }
+[data-theme="purple-haze"]   { --bg:#0d0812; --surface:#17101f; --surface2:#201728; --surface3:#2b2035; --border:#2b2035; --accent:#9b72e8; --accent2:#bb99ff; --text:#ece5ff; --text2:#8a78a8; --text3:#3a2a50; --green:#4caf87; --orange:#f5a623; --purple:#ce93d8; --red:#e05252; }
+[data-theme="solarized"]     { --bg:#002b36; --surface:#073642; --surface2:#0d4050; --surface3:#134d5e; --border:#144f60; --accent:#2aa198; --accent2:#44c8be; --text:#eee8d5; --text2:#839496; --text3:#1e4a55; --green:#859900; --orange:#cb4b16; --purple:#6c71c4; --red:#dc322f; }
+[data-theme="rose-gold"]     { --bg:#1a0f12; --surface:#251519; --surface2:#301c20; --surface3:#3d252a; --border:#3d252a; --accent:#e88fa0; --accent2:#f0b8c4; --text:#fce8ec; --text2:#a07880; --text3:#4a2830; --green:#4caf87; --orange:#f5a623; --purple:#ce93d8; --red:#e05252; }
+
+/* ── Light themes ─────────────────────────────────────────────── */
+[data-theme="light-clean"]   { --bg:#f0f2f5; --surface:#ffffff; --surface2:#f5f7fa; --surface3:#e8ebf0; --border:#dde1e9; --accent:#1976d2; --accent2:#42a5f5; --text:#1a1d23; --text2:#6b7280; --text3:#b0b8c8; --green:#2e7d32; --orange:#e65100; --purple:#6a1b9a; --red:#c62828; }
+[data-theme="light-warm"]    { --bg:#faf7f2; --surface:#ffffff; --surface2:#fdf9f4; --surface3:#f0ebe2; --border:#e0d9ce; --accent:#e07b39; --accent2:#f5a623; --text:#2a1f14; --text2:#8a7060; --text3:#c8b8a8; --green:#558b2f; --orange:#bf360c; --purple:#6a1b9a; --red:#c62828; }
+[data-theme="arctic"]        { --bg:#e8f0f8; --surface:#ffffff; --surface2:#f0f5fb; --surface3:#dce8f4; --border:#c8d8ec; --accent:#0077b6; --accent2:#0096c7; --text:#0d2137; --text2:#4a6a8a; --text3:#9ab8d4; --green:#1b5e20; --orange:#bf360c; --purple:#4a148c; --red:#b71c1c; }
+
+/* ── Premium glow themes ──────────────────────────────────────── */
+[data-theme="neon-cyber"]    { --bg:#00050f; --surface:#020b18; --surface2:#041528; --surface3:#07203a; --border:#0a3060; --accent:#00d4ff; --accent2:#00ffcc; --text:#c8f0ff; --text2:#5090b0; --text3:#1a3a50; --green:#00ffaa; --orange:#ff6600; --purple:#cc00ff; --red:#ff2244; --glow-accent:rgba(0,212,255,0.18); --shimmer-opacity:0.06; --grain-opacity:0.03; --nav-bg:rgba(0,5,15,0.95); }
+[data-theme="molten-gold"]   { --bg:#0a0800; --surface:#150f00; --surface2:#201600; --surface3:#2e2000; --border:#3d2e00; --accent:#ffb800; --accent2:#ffd740; --text:#fff8e0; --text2:#a08840; --text3:#504020; --green:#80c800; --orange:#ff8c00; --purple:#cc80ff; --red:#ff4422; --glow-accent:rgba(255,184,0,0.15); --shimmer-opacity:0.08; --grain-opacity:0.04; --nav-bg:rgba(10,8,0,0.96); }
+[data-theme="aurora"]        { --bg:#020a08; --surface:#061410; --surface2:#0a1e18; --surface3:#102820; --border:#153520; --accent:#00e5a0; --accent2:#40ffcc; --text:#d0fff0; --text2:#60a080; --text3:#204030; --green:#00ff88; --orange:#ff8844; --purple:#aa44ff; --red:#ff3355; --glow-accent:rgba(0,229,160,0.14); --shimmer-opacity:0.05; --grain-opacity:0.03; --nav-bg:rgba(2,10,8,0.95); }
+[data-theme="deep-crimson"]  { --bg:#0a0004; --surface:#140008; --surface2:#1e000e; --surface3:#2a0015; --border:#3d0020; --accent:#ff1744; --accent2:#ff6090; --text:#ffe0e8; --text2:#a04060; --text3:#501030; --green:#00e676; --orange:#ff6d00; --purple:#ea80fc; --red:#ff1744; --glow-accent:rgba(255,23,68,0.16); --shimmer-opacity:0.07; --grain-opacity:0.04; --nav-bg:rgba(10,0,4,0.96); }
+[data-theme="holographic"]   { --bg:#060610; --surface:#0e0e20; --surface2:#141430; --surface3:#1c1c40; --border:#2a2a60; --accent:#a080ff; --accent2:#e080ff; --text:#f0eaff; --text2:#8878c0; --text3:#302860; --green:#44ffaa; --orange:#ffaa44; --purple:#ff44ff; --red:#ff4466; --glow-accent:rgba(160,128,255,0.16); --shimmer-opacity:0.12; --grain-opacity:0.02; --nav-bg:rgba(6,6,16,0.96); }
+[data-theme="steel-forge"]   { --bg:#080a0c; --surface:#111418; --surface2:#181c22; --surface3:#20262e; --border:#2a3040; --accent:#78a0c8; --accent2:#a8c8e8; --text:#d8e4f0; --text2:#708090; --text3:#303840; --green:#50c878; --orange:#e8952a; --purple:#9878c8; --red:#e85050; --glow-accent:rgba(120,160,200,0.10); --shimmer-opacity:0.05; --grain-opacity:0.06; --nav-bg:rgba(8,10,12,0.97); }
+
+/* ── Global resets ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; font-size:14px; line-height:1.5; min-height:100vh; -webkit-font-smoothing:antialiased; }
+a { color:var(--accent2); text-decoration:none; }
+a:hover { color:var(--text); }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text3); }

@@ -1,0 +1,4016 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║              HA Tools Hub — Automation Manager                  ║
+  ║              https://ha-tools-hub.com                           ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  Copyright © 2026 HA Tools Hub. All rights reserved.            ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com data: blob:; connect-src 'self' ws: wss: http: https:; img-src 'self' data: blob: http: https:;">
+  <title>Automation Manager — HA Tools Hub</title>
+  <script>(function(){var t=localStorage.getItem('ha_tools_theme')||'dark-space';var m=localStorage.getItem('ha_tools_mode')||'system';var light=['light-clean','light-warm','arctic'];var dark=['dark-space','midnight-blue','forest','volcanic','purple-haze','solarized','rose-gold','neon-cyber','molten-gold','aurora','deep-crimson','holographic','steel-forge'];if(m==='light'){if(dark.indexOf(t)!==-1)t='light-clean';}else if(m==='dark'){if(light.indexOf(t)!==-1)t='dark-space';}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches){if(dark.indexOf(t)!==-1)t='light-clean';}document.documentElement.setAttribute('data-theme',t);})();</script>
+  <link rel="stylesheet" href="../assets/css/main.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/layout.css?v=0.03">
+  <link rel="stylesheet" href="../assets/css/components.css?v=0.03">
+  <script src="../assets/js/main.js?v=0.03"></script>
+  <script src="../assets/js/components.js?v=0.03"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <style>
+    /* ── Two-pane layout ──────────────────────────────────────── */
+    .am-shell {
+      display: flex;
+      height: calc(100vh - 58px);
+      overflow: hidden;
+    }
+
+    /* ── Left pane ────────────────────────────────────────────── */
+    .am-left {
+      width: 300px;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    /* Tab strip */
+    .am-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .am-tab {
+      flex: 1; padding: 11px 8px; text-align: center;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      color: var(--text2); border-bottom: 2px solid transparent;
+      transition: all 0.12s;
+    }
+    .am-tab:hover { color: var(--text1); }
+    .am-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+    .am-tab-badge {
+      display: inline-block; background: var(--surface2);
+      color: var(--text2); border-radius: 8px; padding: 0 6px;
+      font-size: 10px; margin-left: 4px;
+    }
+    .am-tab.active .am-tab-badge { background: rgba(74,144,217,0.15); color: var(--accent2); }
+
+    /* Search & filters */
+    .am-filters {
+      padding: 10px; border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+    }
+    .am-search {
+      width: 100%; padding: 7px 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text1); font-size: 12px; outline: none;
+    }
+    .am-search:focus { border-color: var(--accent); }
+    .am-filter-row { display: flex; gap: 6px; }
+    .am-select {
+      flex: 1; padding: 5px 8px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text1); font-size: 11px; outline: none; cursor: pointer;
+    }
+    .am-fav-btn {
+      padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text2); font-size: 13px; cursor: pointer;
+      transition: all 0.12s;
+    }
+    .am-fav-btn.active { color: #f5a623; border-color: #f5a623; background: rgba(245,166,35,0.1); }
+
+    /* Automation list */
+    .am-list {
+      flex: 1; overflow-y: auto; padding: 6px;
+    }
+    .am-cat-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text2); padding: 10px 8px 4px;
+    }
+    .am-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.1s;
+      margin-bottom: 2px;
+    }
+    .am-item:hover { background: var(--surface2); }
+    .am-item.active { background: rgba(74,144,217,0.1); border-color: rgba(74,144,217,0.25); }
+    .am-item-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+    .am-item-info { flex: 1; min-width: 0; }
+    .am-item-name { font-size: 12px; font-weight: 600; color: var(--text1);
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .am-item-meta { font-size: 10px; color: var(--text2); margin-top: 1px; }
+    .am-item-fav  { color: #f5a623; font-size: 13px; flex-shrink: 0; cursor: pointer; }
+    .am-no-results { padding: 24px; text-align: center; font-size: 12px; color: var(--text2); }
+
+    /* Diff badges */
+    .diff-easy     { color: var(--green); }
+    .diff-medium   { color: var(--orange); }
+    .diff-advanced { color: var(--red); }
+
+    /* Bottom of left pane */
+    .am-left-bottom {
+      border-top: 1px solid var(--border); padding: 10px; flex-shrink: 0;
+    }
+
+    /* ── Right pane ───────────────────────────────────────────── */
+    .am-right {
+      flex: 1; overflow-y: auto; padding: 24px;
+      background: var(--bg);
+    }
+
+    /* Empty state */
+    .am-empty {
+      height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; color: var(--text2); padding: 40px;
+    }
+    .am-empty-icon  { font-size: 48px; margin-bottom: 16px; }
+    .am-empty-title { font-size: 16px; font-weight: 700; color: var(--text1); margin-bottom: 8px; }
+    .am-empty-sub   { font-size: 13px; line-height: 1.6; max-width: 360px; }
+
+    /* Detail view */
+    .am-detail { display: none; }
+
+    .am-detail-header {
+      display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px;
+    }
+    .am-detail-icon {
+      font-size: 36px; width: 56px; height: 56px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .am-detail-title { font-size: 18px; font-weight: 800; color: var(--text1); margin-bottom: 4px; }
+    .am-detail-desc  { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 8px; }
+    .am-badge-row    { display: flex; gap: 6px; flex-wrap: wrap; }
+    .am-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
+    }
+    .am-badge.easy     { background: rgba(76,175,80,0.1);  color: var(--green);  border-color: rgba(76,175,80,0.3); }
+    .am-badge.medium   { background: rgba(245,166,35,0.1); color: var(--orange); border-color: rgba(245,166,35,0.3); }
+    .am-badge.advanced { background: rgba(224,82,82,0.1);  color: var(--red);    border-color: rgba(224,82,82,0.3); }
+
+    /* Breakdown cards */
+    .am-breakdown {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .am-breakdown { grid-template-columns: 1fr; } }
+    .am-bd-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px;
+    }
+    .am-bd-head {
+      font-size: 11px; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .am-bd-item {
+      display: flex; align-items: flex-start; gap: 7px;
+      font-size: 11px; color: var(--text1); margin-bottom: 4px; line-height: 1.5;
+    }
+    .am-bd-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    }
+    .am-bd-dot.t { background: var(--accent); }
+    .am-bd-dot.c { background: var(--orange); }
+    .am-bd-dot.a { background: var(--green); }
+
+    /* Entities note */
+    .am-ent-note {
+      background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.25);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 20px;
+    }
+    .am-ent-note-title { font-size: 11px; font-weight: 800; color: var(--orange);
+                         text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+    .am-ent-tag {
+      display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 7px; font-family: monospace; font-size: 11px;
+      color: var(--accent2);
+    }
+
+    /* Entity substitution */
+    .am-sub-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px; margin-bottom: 20px;
+    }
+    .am-sub-title { font-size: 11px; font-weight: 800; text-transform: uppercase;
+                    letter-spacing:.05em; color: var(--text2); margin-bottom: 10px; }
+    .am-sub-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .am-sub-label {
+      font-family: monospace; font-size: 11px; color: var(--accent2);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; padding: 2px 8px; flex-shrink: 0;
+    }
+    .am-sub-select {
+      flex: 1; min-width: 160px; padding: 5px 8px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px; color: var(--text1);
+      font-size: 11px; outline: none; cursor: pointer;
+    }
+    .am-sub-select:focus { border-color: var(--accent); }
+    .am-sub-hint { font-size: 10px; color: var(--text2); }
+
+    /* YAML section */
+    .am-yaml-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin-bottom: 20px;
+    }
+    .am-yaml-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .am-yaml-title { font-size: 11px; font-weight: 800; text-transform: uppercase;
+                     letter-spacing: .05em; color: var(--text2); }
+    .am-yaml-btns  { display: flex; gap: 6px; }
+    .am-yaml-btn {
+      padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700;
+      cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text1); transition: background .1s;
+    }
+    .am-yaml-btn:hover { background: var(--surface3); }
+    .am-yaml-pre {
+      padding: 14px; font-family: monospace; font-size: 11px; line-height: 1.7;
+      color: var(--text1); overflow-x: auto; white-space: pre;
+      max-height: 380px; overflow-y: auto; margin: 0;
+    }
+
+    /* Deploy bar */
+    .am-deploy-bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 0; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .am-deploy-btn {
+      padding: 9px 22px; border: none; border-radius: 8px;
+      background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: filter .12s;
+    }
+    .am-deploy-btn:hover { filter: brightness(1.1); }
+    .am-deploy-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+    .am-deploy-hint { font-size: 11px; color: var(--text2); }
+    .am-deploy-error {
+      width: 100%; padding: 8px 12px; background: rgba(224,82,82,0.1);
+      border: 1px solid rgba(224,82,82,0.3); border-radius: 7px;
+      font-size: 12px; color: var(--red); margin-top: 4px;
+    }
+
+    /* ── Live HA tab ──────────────────────────────────────────── */
+    .am-live-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
+    }
+    .am-live-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    }
+    .am-live-state {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .am-live-state.on  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .am-live-state.off { background: var(--text3); }
+    .am-live-state.unavailable { background: var(--red); }
+    .am-live-name { font-size: 14px; font-weight: 700; color: var(--text1); flex: 1; }
+    .am-live-controls { display: flex; gap: 6px; flex-shrink: 0; }
+    .am-live-meta {
+      font-size: 11px; color: var(--text2); margin-bottom: 10px;
+      display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .am-live-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── Custom Builder modal ─────────────────────────────────── */
+    .am-builder-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 1000; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px); padding: 20px;
+    }
+    .am-builder-overlay.open { display: flex; }
+    .am-builder-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px; width: 100%; max-width: 680px;
+      max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .am-builder-title { font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+    .am-builder-row { margin-bottom: 14px; }
+    .am-builder-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text2); margin-bottom: 5px;
+    }
+    .am-builder-input, .am-builder-select {
+      width: 100%; padding: 8px 10px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 7px; color: var(--text1);
+      font-size: 12px; outline: none;
+    }
+    .am-builder-input:focus, .am-builder-select:focus { border-color: var(--accent); }
+    .am-builder-add {
+      display: flex; gap: 8px; margin-top: 6px;
+    }
+    .am-builder-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 28px; }
+    .am-builder-tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 10px; font-size: 11px;
+      display: flex; align-items: center; gap: 6px; color: var(--text1);
+    }
+    .am-builder-tag span { cursor: pointer; color: var(--text2); font-size: 13px; }
+    .am-builder-tag span:hover { color: var(--red); }
+    .am-builder-yaml-out { display: none; margin-top: 16px; }
+    .am-builder-yaml-pre {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; font-family: monospace; font-size: 11px; line-height: 1.7;
+      max-height: 260px; overflow-y: auto; white-space: pre;
+    }
+    .am-builder-footer {
+      display: flex; gap: 8px; justify-content: flex-end;
+      margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap;
+    }
+
+    /* Shared button */
+    .am-btn {
+      padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700;
+      cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text1); transition: background .12s;
+    }
+    .am-btn:hover { background: var(--surface3); }
+    .am-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .am-btn.primary:hover { filter: brightness(1.1); }
+    .am-btn.danger  { border-color: var(--red); color: var(--red); background: none; }
+    .am-btn.danger:hover { background: rgba(224,82,82,0.08); }
+  </style>
+</head>
+<body>
+<nav class="hub-nav"></nav>
+
+<div class="page-header">
+  <span class="page-header-icon">⚡</span>
+  <div class="page-header-text">
+    <div class="page-header-title">Automation Manager</div>
+    <div class="page-header-desc">Browse 57 templates and deploy directly to HA — or view and manage your live automations</div>
+  </div>
+</div>
+
+<div class="am-shell">
+
+  <!-- ══ LEFT PANE ══ -->
+  <div class="am-left">
+
+    <!-- Tabs -->
+    <div class="am-tabs">
+      <div class="am-tab active" id="am-tab-lib" onclick="amTab('library')">
+        ⚡ Library <span class="am-tab-badge" id="tb-library">57</span>
+      </div>
+      <div class="am-tab" id="am-tab-live" onclick="amTab('live')">
+        📥 Live HA <span class="am-tab-badge" id="tb-live">—</span>
+      </div>
+    </div>
+
+    <!-- Filters (library only) -->
+    <div class="am-filters" id="am-filters">
+      <input class="am-search" id="am-search" type="text" placeholder="🔍 Search…" oninput="amFilter()">
+      <div class="am-filter-row">
+        <select class="am-select" id="am-cat" onchange="amFilter()">
+          <option value="">All Categories</option>
+          <option value="Notifications">🔔 Notifications</option>
+          <option value="Lighting">💡 Lighting</option>
+          <option value="Security">🛡️ Security</option>
+          <option value="Energy">⚡ Energy</option>
+          <option value="Climate">🌡️ Climate</option>
+          <option value="Presence">👤 Presence</option>
+          <option value="Scenes">🎬 Scenes</option>
+          <option value="Media">🎵 Media</option>
+          <option value="Door &amp; Window">🚪 Door &amp; Window</option>
+          <option value="Network">📡 Network</option>
+          <option value="Health">🧘 Health</option>
+          <option value="Plants">🌱 Plants</option>
+          <option value="Vehicle">🚗 Vehicle</option>
+          <option value="Bitcoin">₿ Bitcoin</option>
+          <option value="Seasonal">🌦️ Seasonal</option>
+          <option value="Helpers">🎛️ Helpers</option>
+          <option value="Time-based">⏰ Time-based</option>
+          <option value="Multi-device">📱 Multi-device</option>
+        </select>
+        <select class="am-select" id="am-diff" onchange="amFilter()" style="max-width:90px;">
+          <option value="">All</option>
+          <option value="easy">🟢 Easy</option>
+          <option value="medium">🟡 Med</option>
+          <option value="advanced">🔴 Adv</option>
+        </select>
+        <button class="am-fav-btn" id="am-fav-btn" onclick="amToggleFavOnly()" title="Favourites">★</button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="am-list" id="am-list"></div>
+
+    <!-- Bottom -->
+    <div class="am-left-bottom">
+      <button class="am-btn primary" style="width:100%;" onclick="showBuilder()">✏️ Custom Builder</button>
+    </div>
+
+  </div>
+
+  <!-- ══ RIGHT PANE ══ -->
+  <div class="am-right" id="am-right">
+
+    <!-- Empty state -->
+    <div class="am-empty" id="am-empty">
+      <div class="am-empty-icon">⚡</div>
+      <div class="am-empty-title">Select an automation</div>
+      <div class="am-empty-sub">Choose a template from the library to preview its YAML and deploy it to Home Assistant — or switch to Live HA to manage existing automations.</div>
+    </div>
+
+    <!-- Detail panel (library) -->
+    <div class="am-detail" id="am-detail"></div>
+
+    <!-- Live HA panel -->
+    <div style="display:none;" id="am-live-panel"></div>
+
+  </div>
+</div>
+
+<!-- ══ Custom Builder modal ══ -->
+<div class="am-builder-overlay" id="am-builder" onclick="if(event.target===this)hideBuilder()">
+  <div class="am-builder-box">
+    <div class="am-builder-title">✏️ Custom Automation Builder</div>
+
+    <div class="am-builder-row">
+      <div class="am-builder-label">Automation Name</div>
+      <input class="am-builder-input" id="b-name" placeholder="e.g. Notify when door opens at night">
+    </div>
+
+    <div class="am-builder-row">
+      <div class="am-builder-label">Triggers — what starts this automation?</div>
+      <div class="am-builder-add">
+        <select class="am-builder-select" id="b-trig-type" style="max-width:140px;">
+          <option value="state">State change</option>
+          <option value="time">Time</option>
+          <option value="numeric_state">Numeric threshold</option>
+          <option value="sun">Sun rise/set</option>
+          <option value="homeassistant">HA start</option>
+        </select>
+        <input class="am-builder-input" id="b-trig-val" placeholder="entity or value">
+        <button class="am-btn" onclick="bAdd('triggers')">+ Add</button>
+      </div>
+      <div class="am-builder-tags" id="b-trig-tags"></div>
+    </div>
+
+    <div class="am-builder-row">
+      <div class="am-builder-label">Conditions (optional) — only run if…</div>
+      <div class="am-builder-add">
+        <select class="am-builder-select" id="b-cond-type" style="max-width:140px;">
+          <option value="state">State equals</option>
+          <option value="numeric_state">Numeric check</option>
+          <option value="time">Time range</option>
+          <option value="template">Template</option>
+        </select>
+        <input class="am-builder-input" id="b-cond-val" placeholder="entity or value">
+        <button class="am-btn" onclick="bAdd('conditions')">+ Add</button>
+      </div>
+      <div class="am-builder-tags" id="b-cond-tags"></div>
+    </div>
+
+    <div class="am-builder-row">
+      <div class="am-builder-label">Actions — what should happen?</div>
+      <div class="am-builder-add">
+        <select class="am-builder-select" id="b-act-type" style="max-width:140px;">
+          <option value="notify">Send notification</option>
+          <option value="light.turn_on">Turn on light</option>
+          <option value="light.turn_off">Turn off light</option>
+          <option value="switch.turn_on">Turn on switch</option>
+          <option value="switch.turn_off">Turn off switch</option>
+          <option value="scene.turn_on">Activate scene</option>
+          <option value="delay">Wait/delay</option>
+          <option value="script.turn_on">Run script</option>
+        </select>
+        <input class="am-builder-input" id="b-act-val" placeholder="entity or message">
+        <button class="am-btn" onclick="bAdd('actions')">+ Add</button>
+      </div>
+      <div class="am-builder-tags" id="b-act-tags"></div>
+    </div>
+
+    <div class="am-builder-row">
+      <div class="am-builder-label">Run Mode</div>
+      <select class="am-builder-select" id="b-mode" style="max-width:180px;">
+        <option value="single">Single (stop if already running)</option>
+        <option value="restart">Restart</option>
+        <option value="queued">Queued</option>
+        <option value="parallel">Parallel</option>
+      </select>
+    </div>
+
+    <button class="am-btn primary" style="width:100%;" onclick="bGenerate()">Generate YAML</button>
+
+    <div class="am-builder-yaml-out" id="b-yaml-out">
+      <pre class="am-builder-yaml-pre" id="b-yaml-pre"></pre>
+      <div class="am-builder-footer">
+        <button class="am-btn" onclick="bCopy()">📋 Copy</button>
+        <button class="am-btn" onclick="bDownload()">⬇ Download</button>
+        <button class="am-btn primary" id="b-deploy-btn" onclick="bDeploy()">🚀 Deploy to HA</button>
+        <button class="am-btn" onclick="hideBuilder()">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  AUTOMATION MANAGER
+// ════════════════════════════════════════════════════════════════
+
+var _activeTab     = 'library';
+var _currentId     = null;
+var _favOnly       = false;
+var _favs          = {};
+var _liveAutos     = [];
+var _liveStates    = {};
+var _liveFetched   = false;
+try { _favs = JSON.parse(localStorage.getItem('ha_auto_favs') || '{}'); } catch(e) {}
+
+var CAT_ORDER = ['Notifications','Lighting','Security','Energy','Climate','Presence',
+                 'Scenes','Media','Door & Window','Network','Health','Plants',
+                 'Vehicle','Bitcoin','Seasonal','Helpers','Time-based','Multi-device'];
+var CAT_ICONS = {
+  'Notifications':'🔔','Lighting':'💡','Security':'🛡️','Energy':'⚡',
+  'Climate':'🌡️','Presence':'👤','Scenes':'🎬','Media':'🎵',
+  'Door & Window':'🚪','Network':'📡','Health':'🧘','Plants':'🌱',
+  'Vehicle':'🚗','Bitcoin':'₿','Seasonal':'🌦️','Helpers':'🎛️',
+  'Time-based':'⏰','Multi-device':'📱'
+};
+
+// ── Addon backend helpers ────────────────────────────────────
+function _addonBase() {
+  var p = window.location.pathname;
+  var parts = p.split('/');
+  var idx = parts.indexOf('pages');
+  if (idx > 0) return window.location.origin + parts.slice(0, idx).join('/') + '/';
+  return window.location.origin + p.replace(/\/[^\/]*\/[^\/]*$/, '/');
+}
+async function _addonReadFile(path) {
+  try {
+    var r = await fetch(_addonBase() + 'api/read-file?path=' + encodeURIComponent(path), { credentials: 'include' });
+    if (!r.ok) return null;
+    var d = await r.json(); return d.ok ? d.content : null;
+  } catch(e) { return null; }
+}
+async function _addonWriteFile(path, text) {
+  try {
+    var r = await fetch(_addonBase() + 'api/write-file', {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ path: path, content: text })
+    });
+    if (!r.ok) return false;
+    var d = await r.json(); return d.ok === true;
+  } catch(e) { return false; }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ════════════════════════════════════════════════════════════════
+function amTab(tab) {
+  _activeTab = tab;
+  document.getElementById('am-tab-lib').className  = 'am-tab' + (tab === 'library' ? ' active' : '');
+  document.getElementById('am-tab-live').className = 'am-tab' + (tab === 'live'    ? ' active' : '');
+
+  // Filters only visible on library tab
+  document.getElementById('am-filters').style.display = tab === 'library' ? '' : 'none';
+
+  if (tab === 'library') {
+    amFilter();
+    // Restore last selected item
+    document.getElementById('am-empty').style.display  = _currentId ? 'none' : '';
+    document.getElementById('am-detail').style.display = _currentId ? 'block' : 'none';
+    document.getElementById('am-live-panel').style.display = 'none';
+  } else {
+    document.getElementById('am-empty').style.display  = 'none';
+    document.getElementById('am-detail').style.display = 'none';
+    document.getElementById('am-live-panel').style.display = '';
+    renderLiveList();
+    if (!_liveFetched) loadLiveAutos();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  LIBRARY TAB
+// ════════════════════════════════════════════════════════════════
+function amFilter() {
+  var q    = (document.getElementById('am-search').value || '').toLowerCase().trim();
+  var cat  = document.getElementById('am-cat').value;
+  var diff = document.getElementById('am-diff').value;
+  var list = AUTOMATIONS.filter(function(a) {
+    return (!q    || a.name.toLowerCase().indexOf(q) !== -1 || (a.desc||'').toLowerCase().indexOf(q) !== -1 || a.category.toLowerCase().indexOf(q) !== -1)
+        && (!cat  || a.category === cat)
+        && (!diff || a.difficulty === diff)
+        && (!_favOnly || _favs[a.id]);
+  });
+  renderLibraryList(list);
+}
+
+function renderLibraryList(list) {
+  var favs = list.filter(function(a){ return _favs[a.id]; });
+  var rest = list.filter(function(a){ return !_favs[a.id]; });
+  var html = '';
+  if (favs.length) {
+    html += '<div class="am-cat-label">★ Favourites</div>';
+    favs.forEach(function(a){ html += amItemHtml(a); });
+  }
+  var bycat = {};
+  rest.forEach(function(a){ if (!bycat[a.category]) bycat[a.category] = []; bycat[a.category].push(a); });
+  CAT_ORDER.forEach(function(cat) {
+    if (!bycat[cat] || !bycat[cat].length) return;
+    html += '<div class="am-cat-label">' + (CAT_ICONS[cat]||'') + ' ' + escHtml(cat) + '</div>';
+    bycat[cat].forEach(function(a){ html += amItemHtml(a); });
+  });
+  document.getElementById('am-list').innerHTML = html || '<div class="am-no-results">No automations match your filter.</div>';
+  document.getElementById('tb-library').textContent = list.length;
+}
+
+function amItemHtml(a) {
+  var diffIcon = a.difficulty === 'easy' ? '🟢' : a.difficulty === 'medium' ? '🟡' : '🔴';
+  return '<div class="am-item' + (a.id === _currentId ? ' active' : '') + '" id="ami-' + a.id + '" onclick="selectAuto(\'' + a.id + '\')">' +
+    '<div class="am-item-icon">' + a.icon + '</div>' +
+    '<div class="am-item-info">' +
+      '<div class="am-item-name">' + escHtml(a.name) + '</div>' +
+      '<div class="am-item-meta">' + diffIcon + ' ' + escHtml(a.difficulty) + '</div>' +
+    '</div>' +
+    '<div class="am-item-fav" onclick="event.stopPropagation();amToggleFav(\'' + a.id + '\')" title="Favourite">' +
+      (_favs[a.id] ? '★' : '☆') +
+    '</div>' +
+  '</div>';
+}
+
+function amToggleFav(id) {
+  _favs[id] = !_favs[id];
+  if (!_favs[id]) delete _favs[id];
+  localStorage.setItem('ha_auto_favs', JSON.stringify(_favs));
+  amFilter();
+}
+function amToggleFavOnly() {
+  _favOnly = !_favOnly;
+  document.getElementById('am-fav-btn').classList.toggle('active', _favOnly);
+  amFilter();
+}
+
+// ── Select and render automation detail ─────────────────────
+function selectAuto(id) {
+  _currentId = id;
+  var a = AUTOMATIONS.find(function(x){ return x.id === id; });
+  if (!a) return;
+
+  // Highlight sidebar
+  document.querySelectorAll('.am-item').forEach(function(el){ el.classList.remove('active'); });
+  var item = document.getElementById('ami-' + id);
+  if (item) item.classList.add('active');
+
+  var connected = HAConn.state === 'connected';
+  var diffClass = a.difficulty === 'easy' ? 'easy' : a.difficulty === 'medium' ? 'medium' : 'advanced';
+
+  var html = '';
+
+  // Header
+  html += '<div class="am-detail-header">' +
+    '<div class="am-detail-icon">' + a.icon + '</div>' +
+    '<div style="flex:1;">' +
+      '<div class="am-detail-title">' + escHtml(a.name) + '</div>' +
+      '<div class="am-detail-desc">' + escHtml(a.desc||'') + '</div>' +
+      '<div class="am-badge-row">' +
+        '<span class="am-badge">' + escHtml(a.category) + '</span>' +
+        '<span class="am-badge ' + diffClass + '">' + escHtml(a.difficulty) + '</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Breakdown
+  html += '<div class="am-breakdown">';
+  html += '<div class="am-bd-card"><div class="am-bd-head"><span>⚡</span> Triggers</div>' +
+    (a.triggers||[]).map(function(t){ return '<div class="am-bd-item"><div class="am-bd-dot t"></div><span>' + escHtml(t) + '</span></div>'; }).join('') + '</div>';
+  html += '<div class="am-bd-card"><div class="am-bd-head"><span>🔒</span> Conditions</div>' +
+    (a.conditions||[]).map(function(c){ return '<div class="am-bd-item"><div class="am-bd-dot c"></div><span>' + escHtml(c) + '</span></div>'; }).join('') + '</div>';
+  html += '<div class="am-bd-card"><div class="am-bd-head"><span>▶️</span> Actions</div>' +
+    (a.actions||[]).map(function(ac){ return '<div class="am-bd-item"><div class="am-bd-dot a"></div><span>' + escHtml(ac) + '</span></div>'; }).join('') + '</div>';
+  html += '</div>';
+
+  // Entity substitution (only when connected)
+  if (a.entities && a.entities.length) {
+    if (connected) {
+      html += '<div class="am-sub-panel">' +
+        '<div class="am-sub-title">🔧 Map to your entities</div>';
+      a.entities.forEach(function(e, i) {
+        var parts = e.split(' — ');
+        html += '<div class="am-sub-row">' +
+          '<div class="am-sub-label">' + escHtml(parts[0].trim()) + '</div>' +
+          '<select class="am-sub-select" id="sub-' + id + '-' + i + '" onchange="amApplySubs(\'' + id + '\')">' +
+            '<option value="">— keep placeholder —</option>' +
+          '</select>' +
+          (parts[1] ? '<div class="am-sub-hint">' + escHtml(parts[1].trim()) + '</div>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="am-ent-note">' +
+        '<div class="am-ent-note-title">📌 Requires entity setup</div>' +
+        a.entities.map(function(e) {
+          var parts = e.split(' — ');
+          return '<div style="margin-bottom:4px;font-size:11px;"><span class="am-ent-tag">' + escHtml(parts[0].trim()) + '</span>' +
+            (parts[1] ? ' <span style="color:var(--text2)">' + escHtml(parts[1].trim()) + '</span>' : '') + '</div>';
+        }).join('') +
+        '<div style="font-size:11px;color:var(--text2);margin-top:8px;">Connect to HA via ⚙ to map these to your real entities before deploying.</div>' +
+      '</div>';
+    }
+  }
+
+  // YAML
+  html += '<div class="am-yaml-wrap">' +
+    '<div class="am-yaml-head">' +
+      '<div class="am-yaml-title">📄 YAML</div>' +
+      '<div class="am-yaml-btns">' +
+        '<button class="am-yaml-btn" onclick="amCopy(\'' + id + '\')">📋 Copy</button>' +
+        '<button class="am-yaml-btn" onclick="amDownload(\'' + id + '\')">⬇ Download</button>' +
+      '</div>' +
+    '</div>' +
+    '<pre class="am-yaml-pre" id="am-yaml-' + id + '">' + escHtml(a.yaml) + '</pre>' +
+  '</div>';
+
+  // Deploy bar
+  html += '<div class="am-deploy-bar">' +
+    '<button class="am-deploy-btn" id="am-deploy-' + id + '" onclick="amDeploy(\'' + id + '\')"' + (connected ? '' : ' disabled') + '>🚀 Deploy to HA</button>' +
+    '<span class="am-deploy-hint">' + (connected ? 'Pushes directly to your HA instance' : 'Connect via ⚙ in the nav bar to deploy') + '</span>' +
+    '<div class="am-deploy-error" id="am-err-' + id + '" style="display:none;"></div>' +
+  '</div>';
+
+  document.getElementById('am-empty').style.display  = 'none';
+  document.getElementById('am-detail').style.display = 'block';
+  document.getElementById('am-detail').innerHTML = html;
+
+  if (connected && a.entities && a.entities.length) amPopulateSubs(id);
+}
+
+// ── Entity substitution ──────────────────────────────────────
+function amApplySubs(id) {
+  var a = AUTOMATIONS.find(function(x){ return x.id === id; });
+  if (!a) return;
+  var yaml = a.yaml;
+  (a.entities||[]).forEach(function(e, i) {
+    var sel = document.getElementById('sub-' + id + '-' + i);
+    if (sel && sel.value) {
+      var placeholder = e.split(' — ')[0].trim();
+      yaml = yaml.split(placeholder).join(sel.value);
+    }
+  });
+  var pre = document.getElementById('am-yaml-' + id);
+  if (pre) pre.textContent = yaml;
+}
+
+async function amPopulateSubs(id) {
+  var a = AUTOMATIONS.find(function(x){ return x.id === id; });
+  if (!a || !a.entities) return;
+  var res = await HAConn.send({ type:'get_states' });
+  var states = res.ok ? (res.result || []) : [];
+  a.entities.forEach(function(e, i) {
+    var sel = document.getElementById('sub-' + id + '-' + i);
+    if (!sel) return;
+    var hint = (e.split(' — ')[1] || '').toLowerCase();
+    var relevant = states.filter(function(s) {
+      return s.entity_id.startsWith('sensor.') || s.entity_id.startsWith('binary_sensor.') ||
+             s.entity_id.startsWith('switch.') || s.entity_id.startsWith('light.') ||
+             s.entity_id.startsWith('person.') || s.entity_id.startsWith('device_tracker.');
+    });
+    sel.innerHTML = '<option value="">— keep placeholder —</option>' +
+      relevant.map(function(s) {
+        var name = (s.attributes && s.attributes.friendly_name) || s.entity_id;
+        return '<option value="' + escHtml(s.entity_id) + '">' + escHtml(name) + ' (' + escHtml(s.entity_id) + ')</option>';
+      }).join('');
+  });
+}
+
+// ── Copy / Download ──────────────────────────────────────────
+function amCopy(id) {
+  var pre = document.getElementById('am-yaml-' + id);
+  var txt = pre ? pre.textContent : '';
+  navigator.clipboard.writeText(txt).then(function(){ Toast.show('Copied!', 'ok', 3000); });
+}
+function amDownload(id) {
+  var pre = document.getElementById('am-yaml-' + id);
+  var txt = pre ? pre.textContent : '';
+  var a = document.createElement('a');
+  a.href = 'data:text/plain,' + encodeURIComponent(txt);
+  a.download = id + '.yaml'; a.click();
+}
+
+// ── Error helpers ────────────────────────────────────────────
+function _amShowError(id, msg) {
+  var el = document.getElementById('am-err-' + id);
+  if (el) { el.textContent = msg; el.style.display = ''; }
+}
+function _amClearError(id) {
+  var el = document.getElementById('am-err-' + id);
+  if (el) { el.textContent = ''; el.style.display = 'none'; }
+}
+
+// ── Deploy ───────────────────────────────────────────────────
+function amDeploy(id) {
+  var a = AUTOMATIONS.find(function(x){ return x.id === id; });
+  if (!a) return;
+  var pre = document.getElementById('am-yaml-' + id);
+  var yaml = pre ? pre.textContent : a.yaml;
+  var btn  = document.getElementById('am-deploy-' + id);
+  pushAutomation(yaml, btn, id, a.entities||[]);
+}
+
+async function pushAutomation(yamlStr, btn, deployId, entities) {
+  if (HAConn.state !== 'connected') {
+    _amShowError(deployId, 'Not connected to Home Assistant.');
+    return;
+  }
+  _amClearError(deployId);
+  if (btn) { btn.disabled = true; btn.textContent = 'Deploying…'; }
+
+  try {
+    if (typeof jsyaml === 'undefined') throw new Error('js-yaml not loaded.');
+    var config;
+    try { config = jsyaml.load(yamlStr); } catch(pe) { throw new Error('YAML syntax error — ' + pe.message); }
+    if (!config || typeof config !== 'object') throw new Error('YAML did not parse to a valid object.');
+    if (!config.trigger && !config.triggers) throw new Error('Automation has no trigger block.');
+    if (!config.alias) config.alias = 'HA Tools Hub — ' + new Date().toISOString().slice(0,16).replace('T',' ');
+
+    // Step 1: WebSocket
+    var wsRes = await HAConn.send({ type:'config/automation/create', config: config });
+    if (wsRes.ok) { _amOnSuccess(btn, deployId, config.alias, 'WebSocket'); return; }
+
+    // Step 2: Addon file write
+    var existing = await _addonReadFile('/config/automations.yaml');
+    if (existing !== null) {
+      var entry = '- ' + yamlStr.trim().split('\n').join('\n  ');
+      var updated = existing.trimEnd() + (existing.trim() ? '\n\n' : '') + entry + '\n';
+      var wrote = await _addonWriteFile('/config/automations.yaml', updated);
+      if (wrote) {
+        await HAConn.send({ type:'call_service', domain:'automation', service:'reload' });
+        _amOnSuccess(btn, deployId, config.alias, 'File'); return;
+      }
+    }
+
+    // Step 3: REST
+    var resp = await fetch(HAConn.url + '/api/config/automation/config', {
+      method:'POST', headers:{ 'Authorization':'Bearer '+HAConn.token, 'Content-Type':'application/json' },
+      body: JSON.stringify(config)
+    });
+    if (resp.ok) {
+      await HAConn.send({ type:'call_service', domain:'automation', service:'reload' });
+      _amOnSuccess(btn, deployId, config.alias, 'REST'); return;
+    }
+    throw new Error('All deploy paths failed — HTTP ' + resp.status);
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Deploy to HA'; }
+    _amShowError(deployId, e.message || String(e));
+  }
+}
+
+function _amOnSuccess(btn, deployId, alias, method) {
+  if (btn) { btn.textContent = '✓ Deployed!'; setTimeout(function(){ btn.textContent = '🚀 Deploy to HA'; btn.disabled = false; }, 3000); }
+  _amClearError(deployId);
+  Toast.show('"' + (alias||'Automation', 'ok', 3000) + '" deployed via ' + method + '.', 4000);
+  setTimeout(loadLiveAutos, 1500);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  LIVE HA TAB
+// ════════════════════════════════════════════════════════════════
+async function loadLiveAutos() {
+  if (HAConn.state !== 'connected') return;
+  document.getElementById('tb-live').textContent = '⏳';
+
+  try {
+    var statesRes = await HAConn.send({ type:'get_states' });
+    var states = statesRes.ok ? (statesRes.result || []) : [];
+    _liveStates = {};
+    states.forEach(function(s){ if (s.entity_id.startsWith('automation.')) _liveStates[s.entity_id] = s; });
+
+    var listRes = await HAConn.send({ type:'config/automation/list' });
+    if (listRes.ok && Array.isArray(listRes.result)) {
+      _liveAutos = listRes.result.map(function(cfg) {
+        var eid = 'automation.' + (cfg.id||cfg.alias||'').replace(/[^a-z0-9_]/gi,'_').toLowerCase();
+        var st  = _liveStates[eid] || Object.values(_liveStates).find(function(s){
+          return (s.attributes.friendly_name||'').toLowerCase() === (cfg.alias||'').toLowerCase();
+        }) || {};
+        return {
+          id: cfg.id || cfg.alias,
+          alias: cfg.alias || 'Unnamed',
+          description: cfg.description || '',
+          mode: cfg.mode || 'single',
+          state: st.state || 'unknown',
+          lastTriggered: (st.attributes && st.attributes.last_triggered) ? new Date(st.attributes.last_triggered).toLocaleString() : 'Never',
+          entityId: st.entity_id || eid,
+          rawConfig: cfg
+        };
+      });
+    } else {
+      // Fallback: use states only
+      _liveAutos = Object.values(_liveStates).map(function(s) {
+        return {
+          id: s.entity_id,
+          alias: (s.attributes && s.attributes.friendly_name) || s.entity_id.replace('automation.','').replace(/_/g,' '),
+          description: '',
+          mode: 'single',
+          state: s.state || 'unknown',
+          lastTriggered: (s.attributes && s.attributes.last_triggered) ? new Date(s.attributes.last_triggered).toLocaleString() : 'Never',
+          entityId: s.entity_id,
+          rawConfig: null
+        };
+      });
+    }
+    _liveFetched = true;
+    document.getElementById('tb-live').textContent = _liveAutos.length;
+    if (_activeTab === 'live') renderLiveList();
+  } catch(e) {
+    _liveFetched = true;
+    document.getElementById('tb-live').textContent = '!';
+    if (_activeTab === 'live') renderLiveList();
+  }
+}
+
+function renderLiveList() {
+  var listEl = document.getElementById('am-list');
+  var panelEl = document.getElementById('am-live-panel');
+
+  // Only touch the sidebar list when we're actually on the live tab
+  if (_activeTab !== 'live') return;
+
+  if (HAConn.state !== 'connected') {
+    listEl.innerHTML = '<div class="am-no-results">Not connected.<br>Click ⚙ in the nav bar to connect.</div>';
+    panelEl.innerHTML = '<div class="am-empty"><div class="am-empty-icon">📥</div><div class="am-empty-title">Not connected</div><div class="am-empty-sub">Connect to your HA instance via the ⚙ settings icon to load your live automations.</div></div>';
+    return;
+  }
+
+  if (!_liveFetched) {
+    listEl.innerHTML = '<div class="am-no-results">⏳ Loading…</div>';
+    panelEl.innerHTML = '';
+    return;
+  }
+
+  if (!_liveAutos.length) {
+    listEl.innerHTML = '<div class="am-no-results">No automations found in HA.</div>';
+    panelEl.innerHTML = '<div class="am-empty"><div class="am-empty-icon">✨</div><div class="am-empty-title">No automations yet</div><div class="am-empty-sub">Deploy one from the Library tab to get started.</div></div>';
+    return;
+  }
+
+  // Sidebar list
+  listEl.innerHTML = '<div class="am-cat-label">Live HA — ' + _liveAutos.length + ' automations</div>' +
+    _liveAutos.map(function(a) {
+      var dot = a.state === 'on' ? '🟢' : a.state === 'off' ? '⚫' : '🔴';
+      return '<div class="am-item" onclick="selectLive(\'' + escHtml(a.id) + '\')">' +
+        '<div class="am-item-icon">' + dot + '</div>' +
+        '<div class="am-item-info">' +
+          '<div class="am-item-name">' + escHtml(a.alias) + '</div>' +
+          '<div class="am-item-meta">Last run: ' + escHtml(a.lastTriggered) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+  // Panel — show summary cards
+  panelEl.innerHTML = '<div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">' +
+    '<div style="font-size:13px;font-weight:700;">📥 Live Automations</div>' +
+    '<button class="am-btn" onclick="loadLiveAutos()">⟳ Refresh</button>' +
+  '</div>' +
+  _liveAutos.map(function(a) { return liveCard(a); }).join('');
+}
+
+function selectLive(id) {
+  var a = _liveAutos.find(function(x){ return x.id === id; });
+  if (!a) return;
+  var panel = document.getElementById('am-live-panel');
+  if (!panel) return;
+  // Scroll to the card
+  var card = document.getElementById('live-card-' + CSS.escape(id));
+  if (card) card.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function liveCard(a) {
+  var stateClass = a.state === 'on' ? 'on' : a.state === 'off' ? 'off' : 'unavailable';
+  var id = a.id;
+  return '<div class="am-live-item" id="live-card-' + escHtml(id) + '">' +
+    '<div class="am-live-header">' +
+      '<div class="am-live-state ' + stateClass + '"></div>' +
+      '<div class="am-live-name">' + escHtml(a.alias) + '</div>' +
+      '<div class="am-live-controls">' +
+        '<button class="am-btn" onclick="liveToggle(\'' + escHtml(id) + '\')">' + (a.state === 'on' ? 'Disable' : 'Enable') + '</button>' +
+        '<button class="am-btn" onclick="liveTrigger(\'' + escHtml(a.entityId) + '\')" title="Trigger now">▶ Run</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="am-live-meta">' +
+      '<span>State: <strong>' + escHtml(a.state) + '</strong></span>' +
+      '<span>Mode: <strong>' + escHtml(a.mode) + '</strong></span>' +
+      '<span>Last run: <strong>' + escHtml(a.lastTriggered) + '</strong></span>' +
+    '</div>' +
+    (a.description ? '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">' + escHtml(a.description) + '</div>' : '') +
+    '<div class="am-live-actions">' +
+      '<button class="am-btn danger" onclick="liveDelete(\'' + escHtml(id) + '\',\'' + escHtml(a.entityId) + '\')" >🗑 Delete</button>' +
+    '</div>' +
+  '</div>';
+}
+
+async function liveToggle(id) {
+  var a = _liveAutos.find(function(x){ return x.id === id; });
+  if (!a) return;
+  var svc = a.state === 'on' ? 'turn_off' : 'turn_on';
+  await HAConn.send({ type:'call_service', domain:'automation', service:svc, service_data:{ entity_id: a.entityId } });
+  await loadLiveAutos();
+}
+
+async function liveTrigger(entityId) {
+  await HAConn.send({ type:'call_service', domain:'automation', service:'trigger', service_data:{ entity_id: entityId } });
+  Toast.show('Automation triggered.', 'ok', 3000);
+}
+
+async function liveDelete(id, entityId) {
+  if (!confirm('Delete this automation from Home Assistant?\n\nThis cannot be undone.')) return;
+
+  var deleted = false;
+
+  // ── Path 1: Dedicated hub endpoint (no user token needed) ──────
+  var base = (typeof _addonBase === 'function') ? _addonBase() : '';
+  if (base) {
+    try {
+      var r = await fetch(base + 'api/delete-automation?id=' + encodeURIComponent(id), {
+        credentials: 'include'
+      });
+      var d = r.ok ? await r.json() : null;
+      if (d && d.ok) deleted = true;
+    } catch(e) {
+      console.warn('[liveDelete] hub delete failed:', e.message);
+    }
+  }
+
+  // ── Path 2: WS fallback (requires connected user session) ────────
+  if (!deleted && HAConn.state === 'connected') {
+    var res = await HAConn.send({ type:'config/automation/delete', automation_id: id });
+    if (res.ok) deleted = true;
+  }
+
+  if (deleted) {
+    Toast.show('Automation deleted.', 'ok', 3000);
+    await loadLiveAutos();
+  } else {
+    Toast.show('Delete failed — check HA logs.', 'warn', 4000);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CUSTOM BUILDER
+// ════════════════════════════════════════════════════════════════
+var _bTriggers = [], _bConditions = [], _bActions = [];
+
+function showBuilder() { _bTriggers=[]; _bConditions=[]; _bActions=[]; document.getElementById('am-builder').classList.add('open'); document.getElementById('b-yaml-out').style.display='none'; }
+function hideBuilder() { document.getElementById('am-builder').classList.remove('open'); }
+
+function bAdd(list) {
+  var typeEl = document.getElementById('b-' + (list==='triggers'?'trig':list==='conditions'?'cond':'act') + '-type');
+  var valEl  = document.getElementById('b-' + (list==='triggers'?'trig':list==='conditions'?'cond':'act') + '-val');
+  var val = valEl.value.trim();
+  if (!val) { Toast.show('Enter a value first.', 'warn', 3000); return; }
+  var item = { type: typeEl.value, val: val };
+  if (list === 'triggers')   _bTriggers.push(item);
+  if (list === 'conditions') _bConditions.push(item);
+  if (list === 'actions')    _bActions.push(item);
+  valEl.value = '';
+  bRenderTags();
+}
+
+function bRemove(list, idx) {
+  if (list === 'triggers')   _bTriggers.splice(idx, 1);
+  if (list === 'conditions') _bConditions.splice(idx, 1);
+  if (list === 'actions')    _bActions.splice(idx, 1);
+  bRenderTags();
+}
+
+function bRenderTags() {
+  function tags(arr, list) {
+    return arr.map(function(item, i) {
+      return '<div class="am-builder-tag">' + escHtml(item.type + ': ' + item.val) + '<span onclick="bRemove(\'' + list + '\',' + i + ')">✕</span></div>';
+    }).join('');
+  }
+  document.getElementById('b-trig-tags').innerHTML = tags(_bTriggers, 'triggers');
+  document.getElementById('b-cond-tags').innerHTML = tags(_bConditions, 'conditions');
+  document.getElementById('b-act-tags').innerHTML  = tags(_bActions, 'actions');
+}
+
+function bGenerate() {
+  var name = document.getElementById('b-name').value.trim() || 'Custom Automation';
+  var mode = document.getElementById('b-mode').value;
+  var NL = '\n';
+  var yaml = 'alias: "' + name + '"' + NL + 'trigger:' + NL;
+  _bTriggers.forEach(function(t) {
+    yaml += '  - trigger: ' + t.type + NL + '    entity_id: ' + t.val + NL;
+  });
+  if (_bConditions.length) {
+    yaml += 'condition:' + NL;
+    _bConditions.forEach(function(c) {
+      yaml += '  - condition: ' + c.type + NL + '    entity_id: ' + c.val + NL;
+    });
+  }
+  yaml += 'action:' + NL;
+  _bActions.forEach(function(a) {
+    if (a.type === 'notify')    yaml += '  - action: notify.notify' + NL + '    data:' + NL + '      message: "' + a.val + '"' + NL;
+    else if (a.type === 'delay') yaml += '  - delay:' + NL + '      seconds: ' + a.val + NL;
+    else yaml += '  - action: ' + a.type + NL + '    target:' + NL + '      entity_id: ' + a.val + NL;
+  });
+  yaml += 'mode: ' + mode;
+  document.getElementById('b-yaml-pre').textContent = yaml;
+  document.getElementById('b-yaml-out').style.display = 'block';
+}
+
+function bCopy() {
+  navigator.clipboard.writeText(document.getElementById('b-yaml-pre').textContent).then(function(){ Toast.show('Copied!', 'ok', 3000); });
+}
+function bDownload() {
+  var a = document.createElement('a');
+  a.href = 'data:text/plain,' + encodeURIComponent(document.getElementById('b-yaml-pre').textContent);
+  a.download = 'custom_automation.yaml'; a.click();
+}
+async function bDeploy() {
+  await pushAutomation(document.getElementById('b-yaml-pre').textContent, document.getElementById('b-deploy-btn'), 'builder', []);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+HAConn.onStateChange(function(s) {
+  if (s === 'connected') {
+    loadLiveAutos();
+    // Refresh detail panel if one is showing
+    if (_activeTab === 'library' && _currentId) selectAuto(_currentId);
+  }
+  if (_activeTab === 'live') renderLiveList();
+});
+
+var AUTOMATIONS = [
+
+  // ── NOTIFICATIONS ─────────────────────────────────────
+  {
+    id: 'notify-low-battery-all',
+    name: 'Low Battery Alert — All Devices',
+    category: 'Notifications',
+    icon: '🔋',
+    difficulty: 'easy',
+    desc: 'Sends a push notification to every registered mobile device when any tracked device\'s battery drops below 20%. Uses a group notification target so new devices are included automatically.',
+    triggers: [
+      'Any sensor with device_class: battery drops below 20%',
+      'Checks every 30 minutes via time_pattern trigger'
+    ],
+    conditions: [
+      'Battery level is below threshold (20%)',
+      'Device is not charging (optional — avoids false alerts)'
+    ],
+    actions: [
+      'Notify all mobile devices via notify.notify group',
+      'Message includes device name and current battery %',
+      'Sends once per device per session (input_boolean throttle)'
+    ],
+    entities: [
+      'sensor.*_battery_level — all battery sensors',
+      'notify.notify — built-in group notification service'
+    ],
+    yaml: `alias: "Low Battery Alert — All Devices"
+description: >
+  Notifies all mobile apps when any battery sensor drops below 20%.
+  Adjust the threshold and notification target to suit your setup.
+
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.phone_alex_battery_level
+    below: 20
+  - platform: numeric_state
+    entity_id: sensor.phone_partner_battery_level
+    below: 20
+  - platform: numeric_state
+    entity_id: sensor.tablet_battery_level
+    below: 20
+  # Add more battery sensors here as needed
+
+condition:
+  # Prevent repeat alerts within the same hour
+  - condition: template
+    value_template: >
+      {{ (now() - state_attr('automation.low_battery_alert', 'last_triggered') | default(now() - timedelta(hours=2), true)).total_seconds() > 3600 }}
+
+action:
+  - service: notify.notify
+    data:
+      title: "🔋 Low Battery Warning"
+      message: >
+        {{ trigger.to_state.name }} is at
+        {{ trigger.to_state.state | int }}%.
+        Please charge soon.
+      data:
+        # iOS / Android rich notification
+        push:
+          sound: default
+        tag: "battery_{{ trigger.entity_id }}"
+        # Prevents duplicate banners for same device
+        renotify: false
+
+mode: parallel
+max: 10`
+  },
+
+  {
+    id: 'notify-door-left-open',
+    name: 'Door Left Open Reminder',
+    category: 'Notifications',
+    icon: '🚪',
+    difficulty: 'easy',
+    desc: 'Sends a notification if a door or window contact sensor has been open for more than 5 minutes. Repeats every 10 minutes until closed. Useful for front doors, garage doors, or patio doors.',
+    triggers: [
+      'Door/window contact sensor state becomes "on" (open)',
+      'Waits 5 minutes before firing'
+    ],
+    conditions: [
+      'Sensor is still open after the delay',
+      'Time is between 07:00 and 23:00 (avoid night alerts)'
+    ],
+    actions: [
+      'Notify all mobile devices with door name',
+      'Repeat every 10 minutes while door remains open'
+    ],
+    entities: [
+      'binary_sensor.front_door — contact sensor',
+      'notify.notify — notification target'
+    ],
+    yaml: `alias: "Door Left Open Reminder"
+description: Alerts when a door has been open for too long.
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.front_door
+    to: "on"
+    for:
+      minutes: 5
+
+condition:
+  - condition: time
+    after: "07:00:00"
+    before: "23:00:00"
+  # Confirm it's still open (not just was open)
+  - condition: state
+    entity_id: binary_sensor.front_door
+    state: "on"
+
+action:
+  - repeat:
+      while:
+        - condition: state
+          entity_id: binary_sensor.front_door
+          state: "on"
+      sequence:
+        - service: notify.notify
+          data:
+            title: "🚪 Door Still Open"
+            message: >
+              The front door has been open for
+              {{ (now() - states.binary_sensor.front_door.last_changed).seconds // 60 }} minutes.
+        - delay:
+            minutes: 10
+
+mode: single`
+  },
+
+  {
+    id: 'notify-motion-camera',
+    name: 'Motion Detected — Camera Snapshot',
+    category: 'Notifications',
+    icon: '📸',
+    difficulty: 'medium',
+    desc: 'Captures a camera snapshot when motion is detected and sends it as a rich push notification with an image attachment. Works with Frigate, generic cameras, and Reolink/Hikvision via HA integrations.',
+    triggers: [
+      'Motion sensor or binary_sensor becomes "on"',
+      'Or Frigate event via MQTT / Frigate integration'
+    ],
+    conditions: [
+      'Not home — only alert when nobody is present',
+      'Time condition (e.g. not between midnight and 6am to reduce noise)'
+    ],
+    actions: [
+      'Call camera.snapshot to save a still image',
+      'Send notification with image attachment via notify service',
+      'Optional: also trigger a TTS announcement'
+    ],
+    entities: [
+      'binary_sensor.front_door_motion — motion detector',
+      'camera.front_door — camera entity',
+      'notify.mobile_app_phone — specific device notify'
+    ],
+    yaml: `alias: "Motion Detected — Camera Snapshot"
+description: Snapshots camera on motion and sends push with image.
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.front_door_motion
+    to: "on"
+
+condition:
+  - condition: not
+    conditions:
+      - condition: state
+        entity_id: group.all_persons
+        state: home
+  - condition: time
+    after: "06:00:00"
+    before: "23:00:00"
+
+action:
+  # Save snapshot to www folder (accessible via HA URL)
+  - service: camera.snapshot
+    target:
+      entity_id: camera.front_door
+    data:
+      filename: /config/www/snapshots/front_door_latest.jpg
+
+  # Wait briefly for file to be written
+  - delay:
+      seconds: 2
+
+  - service: notify.mobile_app_phone_alex
+    data:
+      title: "📸 Motion at Front Door"
+      message: "Motion detected — tap to view snapshot."
+      data:
+        image: /local/snapshots/front_door_latest.jpg
+        # iOS critical alert (bypasses silent mode)
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+        # Android
+        ttl: 0
+        priority: high
+
+mode: single
+max_exceeded: silent`
+  },
+
+  {
+    id: 'notify-person-arrives',
+    name: 'Person Arrives Home',
+    category: 'Notifications',
+    icon: '👋',
+    difficulty: 'easy',
+    desc: 'Sends a welcome notification and optionally announces on smart speakers when a specific person arrives home. Uses the HA person entity which combines device tracker sources (phone GPS, WiFi, Bluetooth).',
+    triggers: [
+      'person.name transitions from "not_home" to "home"'
+    ],
+    conditions: [
+      'Time is between 06:00 and 23:00',
+      'Person was away for at least 10 minutes (prevents re-triggers)'
+    ],
+    actions: [
+      'Send push notification to that person\'s phone',
+      'Announce on TTS speaker: "Welcome home, Alex!"',
+      'Turn on arrival scene (lights, heating etc.)'
+    ],
+    entities: [
+      'person.alex — HA person entity',
+      'notify.mobile_app_phone_alex — that person\'s phone',
+      'media_player.kitchen_speaker — TTS target'
+    ],
+    yaml: `alias: "Person Arrives Home — Alex"
+description: Welcomes Alex home and triggers arrival scene.
+
+trigger:
+  - platform: state
+    entity_id: person.alex
+    from: not_home
+    to: home
+
+condition:
+  - condition: time
+    after: "06:00:00"
+    before: "23:00:00"
+  # Must have been away at least 10 minutes
+  - condition: template
+    value_template: >
+      {{ (now() - states.person.alex.last_changed).total_seconds() > 600 }}
+
+action:
+  - service: notify.mobile_app_phone_alex
+    data:
+      title: "👋 Welcome Home!"
+      message: "Good to have you back. Lights and heating adjusted."
+
+  - service: tts.google_translate_say
+    target:
+      entity_id: media_player.kitchen_speaker
+    data:
+      message: "Welcome home Alex!"
+      language: en
+
+  - service: scene.turn_on
+    target:
+      entity_id: scene.alex_arrives_home
+
+mode: single`
+  },
+
+  // ── LIGHTING ──────────────────────────────────────────
+  {
+    id: 'light-sunrise-wakeup',
+    name: 'Sunrise Wake-Up Lights',
+    category: 'Lighting',
+    icon: '🌅',
+    difficulty: 'medium',
+    desc: 'Gradually brightens bedroom lights from 1% to 100% over 30 minutes before your alarm, simulating a natural sunrise. Uses warm white that shifts to cooler daylight colour temperature.',
+    triggers: [
+      'Time trigger — 30 minutes before desired wake time',
+      'Or tied to a helper input_datetime for variable wake times'
+    ],
+    conditions: [
+      'Weekday condition (skip weekends if needed)',
+      'Alarm is enabled via input_boolean toggle'
+    ],
+    actions: [
+      'Turn light on at 1% warm white (2700K)',
+      'Use light.turn_on with transition to ramp brightness and colour temp',
+      'Play gentle wake-up music on speaker after lights reach 80%'
+    ],
+    entities: [
+      'light.bedroom_main — bedroom ceiling light',
+      'input_boolean.wake_up_alarm_enabled — on/off switch',
+      'input_datetime.wake_up_time — configurable time helper'
+    ],
+    yaml: `alias: "Sunrise Wake-Up Lights"
+description: >
+  Gradually brightens bedroom lights before wake time.
+  Set input_datetime.wake_up_time to your preferred alarm time.
+
+trigger:
+  - platform: template
+    value_template: >
+      {{ now().strftime('%H:%M') ==
+        (today_at(states('input_datetime.wake_up_time'))
+        - timedelta(minutes=30)).strftime('%H:%M') }}
+
+condition:
+  - condition: state
+    entity_id: input_boolean.wake_up_alarm_enabled
+    state: "on"
+  # Weekdays only — remove condition for every day
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+
+action:
+  # Start dim and warm
+  - service: light.turn_on
+    target:
+      entity_id: light.bedroom_main
+    data:
+      brightness_pct: 1
+      color_temp_kelvin: 2700
+      transition: 0
+
+  # Ramp to full brightness with cooler temp over 30 mins
+  - service: light.turn_on
+    target:
+      entity_id: light.bedroom_main
+    data:
+      brightness_pct: 100
+      color_temp_kelvin: 4000
+      transition: 1800   # 30 minutes in seconds
+
+  # After 25 minutes, start gentle music
+  - delay:
+      minutes: 25
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.bedroom_speaker
+    data:
+      media_content_id: "https://open.spotify.com/playlist/your_wake_playlist"
+      media_content_type: music
+
+mode: single`
+  },
+
+  {
+    id: 'light-motion-auto',
+    name: 'Motion-Activated Lights',
+    category: 'Lighting',
+    icon: '💡',
+    difficulty: 'easy',
+    desc: 'Turns lights on when motion is detected and off again after 5 minutes of no motion. Brightness and colour temperature adapt to time of day — bright and cool during the day, dim and warm at night.',
+    triggers: [
+      'Motion sensor detects movement (state → on)',
+      'Motion clears and 5 minute timer expires (state → off for 5m)'
+    ],
+    conditions: [
+      'Lux sensor below threshold (no point turning on in daylight)',
+      'Lights not already manually overridden'
+    ],
+    actions: [
+      'Turn on with brightness/colour temp based on time of day',
+      'Turn off after no motion for 5 minutes',
+      'Dim to 20% as a warning before turning off fully'
+    ],
+    entities: [
+      'binary_sensor.hallway_motion — PIR/mmWave sensor',
+      'light.hallway — lights to control',
+      'sensor.hallway_lux — ambient light sensor (optional)'
+    ],
+    yaml: `alias: "Motion-Activated Lights — Hallway"
+description: Auto lights with time-of-day brightness.
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.hallway_motion
+    to: "on"
+    id: motion_on
+  - platform: state
+    entity_id: binary_sensor.hallway_motion
+    to: "off"
+    for:
+      minutes: 5
+    id: motion_cleared
+
+condition: []
+
+action:
+  - choose:
+      # ── Motion detected ──
+      - conditions:
+          - condition: trigger
+            id: motion_on
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: light.hallway
+            data:
+              brightness_pct: >
+                {% if now().hour >= 22 or now().hour < 6 %}
+                  10
+                {% elif now().hour >= 20 %}
+                  40
+                {% else %}
+                  100
+                {% endif %}
+              color_temp_kelvin: >
+                {% if now().hour >= 20 or now().hour < 8 %}
+                  2700
+                {% else %}
+                  4000
+                {% endif %}
+              transition: 1
+
+      # ── Motion cleared ──
+      - conditions:
+          - condition: trigger
+            id: motion_cleared
+        sequence:
+          # Dim to 10% as a warning for 60 seconds
+          - service: light.turn_on
+            target:
+              entity_id: light.hallway
+            data:
+              brightness_pct: 10
+              transition: 5
+          - delay:
+              seconds: 60
+          - service: light.turn_off
+            target:
+              entity_id: light.hallway
+            data:
+              transition: 3
+
+mode: restart`
+  },
+
+  {
+    id: 'light-sunset-on',
+    name: 'Lights On at Sunset',
+    category: 'Lighting',
+    icon: '🌇',
+    difficulty: 'easy',
+    desc: 'Turns on living room and exterior lights automatically at sunset. The trigger uses HA\'s built-in sun entity so it adjusts every day with the actual sunset time — no cron scheduling needed.',
+    triggers: [
+      'sun.sun transitions to "below_horizon" (actual sunset)'
+    ],
+    conditions: [
+      'Someone is home (presence check)',
+      'Lights not already on (state check)'
+    ],
+    actions: [
+      'Turn on living room scene',
+      'Turn on exterior/porch lights',
+      'Optional: dim automatically if watching TV (media player check)'
+    ],
+    entities: [
+      'sun.sun — HA built-in sun position entity',
+      'scene.evening_living_room — your evening scene',
+      'light.porch — exterior light'
+    ],
+    yaml: `alias: "Lights On at Sunset"
+description: Activates evening scene and exterior lights at actual sunset.
+
+trigger:
+  - platform: sun
+    event: sunset
+    offset: "+00:00"   # Change to "-00:30" for 30 mins before sunset
+
+condition:
+  # Only if someone is home
+  - condition: not
+    conditions:
+      - condition: state
+        entity_id: group.all_persons
+        state: not_home
+
+action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.evening_living_room
+    data:
+      transition: 3
+
+  - service: light.turn_on
+    target:
+      entity_id:
+        - light.porch
+        - light.garden_path
+    data:
+      brightness_pct: 80
+      color_temp_kelvin: 2700
+      transition: 5
+
+mode: single`
+  },
+
+  // ── SECURITY ──────────────────────────────────────────
+  {
+    id: 'security-alarm-triggered',
+    name: 'Alarm Panel — Intruder Alert',
+    category: 'Security',
+    icon: '🚨',
+    difficulty: 'advanced',
+    desc: 'Full intruder response: flashes lights, sounds a siren, sends photo notifications, and locks smart locks when the alarm panel is triggered. Uses alarm_control_panel entity with HA\'s built-in alarm integration.',
+    triggers: [
+      'alarm_control_panel state changes to "triggered"'
+    ],
+    conditions: [
+      'Alarm panel is not in disarmed or pending state',
+      'Condition to avoid false triggers during arming delay'
+    ],
+    actions: [
+      'Flash all lights red at full brightness',
+      'Sound siren via switch or script',
+      'Capture snapshots from all cameras',
+      'Send critical iOS/Android push notification with snapshot',
+      'Lock all smart locks',
+      'Send TTS alert on all speakers'
+    ],
+    entities: [
+      'alarm_control_panel.home — HA alarm panel entity',
+      'light.all_lights — light group',
+      'switch.indoor_siren — siren switch',
+      'lock.front_door_lock — smart lock'
+    ],
+    yaml: `alias: "Alarm Panel — Intruder Alert"
+description: Full intruder response — lights, siren, notifications, locks.
+
+trigger:
+  - platform: state
+    entity_id: alarm_control_panel.home
+    to: triggered
+
+condition:
+  - condition: state
+    entity_id: alarm_control_panel.home
+    state: triggered
+
+action:
+  # Flash lights red
+  - service: light.turn_on
+    target:
+      entity_id: light.all_lights
+    data:
+      rgb_color: [255, 0, 0]
+      brightness: 255
+      flash: long
+
+  # Sound siren
+  - service: switch.turn_on
+    target:
+      entity_id: switch.indoor_siren
+
+  # Snapshot all cameras
+  - service: camera.snapshot
+    target:
+      entity_id: camera.front_door
+    data:
+      filename: /config/www/snapshots/alarm_front_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg
+
+  - delay:
+      seconds: 2
+
+  # Critical push notification
+  - service: notify.notify
+    data:
+      title: "🚨 ALARM TRIGGERED"
+      message: >
+        Intruder alert at {{ now().strftime('%H:%M on %d %b') }}.
+        Alarm has been triggered at home.
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+        image: /local/snapshots/alarm_front_latest.jpg
+        ttl: 0
+        priority: high
+
+  # Lock all smart locks
+  - service: lock.lock
+    target:
+      entity_id:
+        - lock.front_door_lock
+        - lock.back_door_lock
+
+  # TTS on all speakers
+  - service: tts.google_translate_say
+    target:
+      entity_id: media_player.all_speakers
+    data:
+      message: "Alarm triggered. Authorities have been notified."
+
+mode: single`
+  },
+
+  {
+    id: 'security-no-one-home',
+    name: 'Nobody Home — Away Mode',
+    category: 'Security',
+    icon: '🏠',
+    difficulty: 'easy',
+    desc: 'When the last person leaves home, automatically arms the alarm, turns off all lights, lowers the thermostat, and sends a confirmation notification. Triggered by the HA person/zone system.',
+    triggers: [
+      'All person entities transition to "not_home"',
+      'Uses group.all_persons state change'
+    ],
+    conditions: [
+      'No person entity is in the "home" zone',
+      'Time is after 08:00 (prevents away mode during early morning)'
+    ],
+    actions: [
+      'Arm alarm in away mode',
+      'Turn off all lights and non-essential switches',
+      'Set thermostat to eco/away temperature',
+      'Send departure confirmation notification'
+    ],
+    entities: [
+      'group.all_persons — group of all person entities',
+      'alarm_control_panel.home — alarm panel',
+      'climate.thermostat — your thermostat'
+    ],
+    yaml: `alias: "Nobody Home — Away Mode"
+description: Arms the home when everyone leaves.
+
+trigger:
+  - platform: state
+    entity_id: group.all_persons
+    to: not_home
+    for:
+      minutes: 3   # 3 min delay avoids false triggers from brief exits
+
+condition:
+  - condition: time
+    after: "08:00:00"
+  # Double-check nobody is actually home
+  - condition: state
+    entity_id: group.all_persons
+    state: not_home
+
+action:
+  # Arm alarm
+  - service: alarm_control_panel.alarm_arm_away
+    target:
+      entity_id: alarm_control_panel.home
+    data:
+      code: !secret alarm_code
+
+  # Turn off all lights
+  - service: light.turn_off
+    target:
+      entity_id: all
+
+  # Turn off non-essential switches
+  - service: switch.turn_off
+    target:
+      entity_id:
+        - switch.kitchen_extractor
+        - switch.garden_irrigation
+
+  # Set thermostat to eco
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.thermostat
+    data:
+      preset_mode: away
+
+  # Confirm via notification
+  - service: notify.notify
+    data:
+      title: "🏠 Away Mode Active"
+      message: "All lights off. Alarm armed. Thermostat set to eco."
+
+mode: single`
+  },
+
+  // ── ENERGY ────────────────────────────────────────────
+  {
+    id: 'energy-high-usage-alert',
+    name: 'High Energy Usage Alert',
+    category: 'Energy',
+    icon: '⚡',
+    difficulty: 'medium',
+    desc: 'Monitors total home power draw and sends an alert when it exceeds a threshold (e.g. 4kW). Helps catch accidentally-left-on high-wattage appliances like ovens, tumble dryers, or EV chargers.',
+    triggers: [
+      'sensor.home_power_draw goes above 4000W (numeric_state trigger)',
+      'Sustained for 5 minutes to avoid brief spikes'
+    ],
+    conditions: [
+      'Nobody is actively cooking (optional time/state condition)',
+      'Alert not sent in the last hour (throttle)'
+    ],
+    actions: [
+      'Send notification with current wattage',
+      'List top consuming devices if energy monitoring plugs present',
+      'Optional: turn off non-essential high-wattage devices'
+    ],
+    entities: [
+      'sensor.home_power_draw — clamp meter or smart meter sensor',
+      'sensor.oven_power — individual device monitoring (optional)'
+    ],
+    yaml: `alias: "High Energy Usage Alert"
+description: Alerts when whole-home power draw is unusually high.
+
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.home_power_draw
+    above: 4000
+    for:
+      minutes: 5
+
+condition:
+  # Throttle — don't alert more than once per hour
+  - condition: template
+    value_template: >
+      {% set last = state_attr('automation.high_energy_usage_alert', 'last_triggered') %}
+      {{ last is none or (now() - last).total_seconds() > 3600 }}
+
+action:
+  - service: notify.notify
+    data:
+      title: "⚡ High Energy Usage"
+      message: >
+        Home is currently drawing
+        {{ states('sensor.home_power_draw') | int }} W.
+        That's been above 4kW for 5 minutes.
+        Check if any high-wattage appliances are on unnecessarily.
+      data:
+        actions:
+          - action: "VIEW_ENERGY"
+            title: "View Energy Dashboard"
+
+mode: single`
+  },
+
+  {
+    id: 'energy-solar-excess',
+    name: 'Solar Surplus — Boost Hot Water',
+    category: 'Energy',
+    icon: '☀️',
+    difficulty: 'medium',
+    desc: 'When solar generation exceeds home consumption (i.e. you\'re exporting to grid), automatically diverts surplus power to the hot water immersion heater. Turns off when surplus drops below threshold.',
+    triggers: [
+      'Grid export sensor goes positive (exporting to grid)',
+      'Or solar > consumption calculated via template sensor'
+    ],
+    conditions: [
+      'Hot water is not already at target temperature',
+      'Solar surplus has been sustained for at least 10 minutes'
+    ],
+    actions: [
+      'Turn on hot water immersion heater / boost switch',
+      'Turn off when solar surplus disappears',
+      'Send daily summary of solar divert hours'
+    ],
+    entities: [
+      'sensor.solar_power — solar generation sensor',
+      'sensor.grid_power — negative = import, positive = export',
+      'switch.hot_water_boost — immersion heater switch'
+    ],
+    yaml: `alias: "Solar Surplus — Boost Hot Water"
+description: Diverts solar surplus to hot water immersion heater.
+
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.grid_power
+    above: 500   # Exporting more than 500W
+    for:
+      minutes: 10
+    id: surplus_start
+
+  - platform: numeric_state
+    entity_id: sensor.grid_power
+    below: 200   # Export dropped off
+    id: surplus_end
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: surplus_start
+          - condition: state
+            entity_id: switch.hot_water_boost
+            state: "off"
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.hot_water_boost
+          - service: notify.notify
+            data:
+              title: "☀️ Solar Divert Active"
+              message: >
+                Diverting {{ states('sensor.grid_power') | int }}W
+                solar surplus to hot water.
+
+      - conditions:
+          - condition: trigger
+            id: surplus_end
+          - condition: state
+            entity_id: switch.hot_water_boost
+            state: "on"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.hot_water_boost
+          - service: notify.notify
+            data:
+              title: "☀️ Solar Divert Stopped"
+              message: "Solar surplus below threshold. Hot water boost off."
+
+mode: single`
+  },
+
+  // ── CLIMATE ───────────────────────────────────────────
+  {
+    id: 'climate-preheat-schedule',
+    name: 'Pre-Heat Before Arrival',
+    category: 'Climate',
+    icon: '🌡️',
+    difficulty: 'medium',
+    desc: 'Starts heating the home 30 minutes before someone is expected to arrive (using calendar, commute time, or fixed schedule). Avoids heating an empty home all day while ensuring warmth on arrival.',
+    triggers: [
+      'Fixed time trigger 30 minutes before normal arrival',
+      'Or Google Calendar event: "Leave office" minus commute time'
+    ],
+    conditions: [
+      'Nobody already home (no point pre-heating if occupied)',
+      'Outside temperature is below 18°C (heating season only)',
+      'Heating not already running'
+    ],
+    actions: [
+      'Set thermostat to comfort temperature (e.g. 21°C)',
+      'Switch from Away to Home preset',
+      'Send notification: "Home heating started"'
+    ],
+    entities: [
+      'climate.thermostat — main thermostat',
+      'sensor.outdoor_temperature — outdoor temp sensor',
+      'group.all_persons — presence check'
+    ],
+    yaml: `alias: "Pre-Heat Before Arrival"
+description: Starts heating 30 minutes before expected arrival home.
+
+trigger:
+  # Fixed schedule — adjust to your typical arrival time
+  - platform: time
+    at: "17:30:00"
+
+condition:
+  # Don't heat if already home
+  - condition: state
+    entity_id: group.all_persons
+    state: not_home
+  # Only in heating season
+  - condition: numeric_state
+    entity_id: sensor.outdoor_temperature
+    below: 18
+  # Weekdays only
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+
+action:
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.thermostat
+    data:
+      preset_mode: home
+
+  - service: climate.set_temperature
+    target:
+      entity_id: climate.thermostat
+    data:
+      temperature: 21
+      hvac_mode: heat
+
+  - service: notify.notify
+    data:
+      title: "🌡️ Home Pre-Heating"
+      message: "Heating started — home should be warm by your arrival."
+
+mode: single`
+  },
+
+  {
+    id: 'climate-window-open',
+    name: 'Turn Off Heating When Window Opens',
+    category: 'Climate',
+    icon: '🪟',
+    difficulty: 'easy',
+    desc: 'Pauses heating when a window or door contact sensor opens, and restores the previous temperature when it closes. Prevents wasted heat and saves energy automatically.',
+    triggers: [
+      'binary_sensor window/door contact becomes "on" (open)',
+      'binary_sensor window/door contact becomes "off" (closed)'
+    ],
+    conditions: [
+      'Thermostat is currently heating (HVAC mode = heat)',
+      'Window open for at least 2 minutes (avoids brief opens)'
+    ],
+    actions: [
+      'Store current target temperature in a variable/helper',
+      'Turn off thermostat while window is open',
+      'Restore temperature when window closes'
+    ],
+    entities: [
+      'binary_sensor.living_room_window — contact sensor',
+      'climate.living_room_thermostat — room thermostat',
+      'input_number.saved_thermostat_temp — helper to store temp'
+    ],
+    yaml: `alias: "Pause Heating — Window Open"
+description: Turns off thermostat when window opens, restores on close.
+
+trigger:
+  - platform: state
+    entity_id: binary_sensor.living_room_window
+    to: "on"
+    for:
+      minutes: 2
+    id: window_opened
+
+  - platform: state
+    entity_id: binary_sensor.living_room_window
+    to: "off"
+    id: window_closed
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: window_opened
+          - condition: state
+            entity_id: climate.living_room_thermostat
+            state: heat
+        sequence:
+          # Save current temperature before turning off
+          - service: input_number.set_value
+            target:
+              entity_id: input_number.saved_thermostat_temp
+            data:
+              value: "{{ state_attr('climate.living_room_thermostat', 'temperature') }}"
+          - service: climate.turn_off
+            target:
+              entity_id: climate.living_room_thermostat
+
+      - conditions:
+          - condition: trigger
+            id: window_closed
+        sequence:
+          # Restore saved temperature
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.living_room_thermostat
+            data:
+              temperature: "{{ states('input_number.saved_thermostat_temp') | float }}"
+              hvac_mode: heat
+
+mode: single`
+  },
+
+  // ── PRESENCE ──────────────────────────────────────────
+  {
+    id: 'presence-goodnight',
+    name: 'Goodnight Routine',
+    category: 'Presence',
+    icon: '🌙',
+    difficulty: 'easy',
+    desc: 'Triggered by a voice command, dashboard button, or NFC tag tap. Turns off all lights, locks doors, arms the alarm in night mode, and dims bedroom light for bedtime reading.',
+    triggers: [
+      'input_boolean.goodnight_trigger turns on',
+      'Or NFC tag scanned (event: tag_scanned)',
+      'Or voice command via HA Assist / Alexa / Google'
+    ],
+    conditions: [
+      'Time is after 21:00 (prevent accidental triggers)',
+      'All persons are home (night mode requires everyone home)'
+    ],
+    actions: [
+      'Turn off all lights except bedroom',
+      'Dim bedroom to 10% warm white',
+      'Lock all smart locks',
+      'Arm alarm in night mode',
+      'Set thermostat to night setback temperature'
+    ],
+    entities: [
+      'input_boolean.goodnight_trigger — virtual trigger switch',
+      'light.all_lights — whole-home light group',
+      'alarm_control_panel.home — alarm panel'
+    ],
+    yaml: `alias: "Goodnight Routine"
+description: Full goodnight sequence — lights, locks, alarm, thermostat.
+
+trigger:
+  - platform: state
+    entity_id: input_boolean.goodnight_trigger
+    to: "on"
+
+condition:
+  - condition: time
+    after: "21:00:00"
+
+action:
+  # Turn off everything except bedroom
+  - service: light.turn_off
+    target:
+      entity_id: all
+    data:
+      transition: 3
+
+  # Dim bedroom to reading level
+  - delay:
+      seconds: 1
+  - service: light.turn_on
+    target:
+      entity_id: light.bedroom_main
+    data:
+      brightness_pct: 10
+      color_temp_kelvin: 2700
+      transition: 2
+
+  # Lock doors
+  - service: lock.lock
+    target:
+      entity_id:
+        - lock.front_door_lock
+        - lock.back_door_lock
+
+  # Arm in night mode
+  - service: alarm_control_panel.alarm_arm_night
+    target:
+      entity_id: alarm_control_panel.home
+
+  # Thermostat night setback
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.thermostat
+    data:
+      preset_mode: sleep
+
+  # Reset the trigger switch
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.goodnight_trigger
+
+mode: single`
+  },
+
+  // ── TIME-BASED ────────────────────────────────────────
+  {
+    id: 'time-morning-routine',
+    name: 'Morning Routine',
+    category: 'Time-based',
+    icon: '☀️',
+    difficulty: 'medium',
+    desc: 'A comprehensive morning automation: gradually turns on lights, starts the kettle, reads today\'s weather and calendar aloud on a smart speaker, and sets the thermostat to day mode.',
+    triggers: [
+      'Time trigger at wake-up time (or linked to input_datetime helper)'
+    ],
+    conditions: [
+      'Weekdays only (or configurable via input_select)',
+      'Someone is home',
+      'Morning routine enabled via input_boolean'
+    ],
+    actions: [
+      'Gradual light ramp in bedroom and hallway',
+      'Turn on kettle switch',
+      'TTS weather and calendar briefing on kitchen speaker',
+      'Set thermostat to day/home preset'
+    ],
+    entities: [
+      'light.bedroom_main — bedroom light',
+      'switch.kettle — smart plug on kettle',
+      'media_player.kitchen_speaker — TTS target',
+      'climate.thermostat — thermostat'
+    ],
+    yaml: `alias: "Morning Routine"
+description: Wake-up sequence with lights, kettle, and weather briefing.
+
+trigger:
+  - platform: time
+    at: input_datetime.wake_up_time
+
+condition:
+  - condition: state
+    entity_id: input_boolean.morning_routine_enabled
+    state: "on"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+
+action:
+  # Lights on — bedroom
+  - service: light.turn_on
+    target:
+      entity_id: light.bedroom_main
+    data:
+      brightness_pct: 60
+      color_temp_kelvin: 3000
+      transition: 60
+
+  # After 5 minutes, hallway and kitchen lights
+  - delay:
+      minutes: 5
+  - service: light.turn_on
+    target:
+      entity_id:
+        - light.hallway
+        - light.kitchen
+    data:
+      brightness_pct: 100
+      color_temp_kelvin: 4000
+      transition: 5
+
+  # Kettle on
+  - service: switch.turn_on
+    target:
+      entity_id: switch.kettle
+
+  # Thermostat to day mode
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.thermostat
+    data:
+      preset_mode: home
+
+  # Weather briefing after 10 minutes
+  - delay:
+      minutes: 10
+  - service: tts.google_translate_say
+    target:
+      entity_id: media_player.kitchen_speaker
+    data:
+      message: >
+        Good morning! Today is {{ now().strftime('%A, %d %B') }}.
+        The weather is {{ states('weather.home') }}
+        with a high of
+        {{ state_attr('weather.home', 'forecast')[0].temperature | int }}
+        degrees.
+        Have a great day!
+
+mode: single`
+  },
+
+  {
+    id: 'time-school-run',
+    name: 'School Run Reminder',
+    category: 'Time-based',
+    icon: '🎒',
+    difficulty: 'easy',
+    desc: 'Flashes lights and announces a reminder on smart speakers 10 minutes before school pick-up time. Only active on school days (weekdays, term time). Can be toggled off during school holidays.',
+    triggers: [
+      'Time trigger 10 minutes before pick-up time'
+    ],
+    conditions: [
+      'Weekdays only',
+      'School run enabled via input_boolean (disable for holidays)',
+      'Someone is home to receive the reminder'
+    ],
+    actions: [
+      'Flash kitchen lights twice as visual alert',
+      'TTS announcement on kitchen/living room speakers',
+      'Send push notification to relevant family members'
+    ],
+    entities: [
+      'input_boolean.school_run_enabled — holiday toggle',
+      'light.kitchen — visual flash target',
+      'media_player.kitchen_speaker — TTS speaker'
+    ],
+    yaml: `alias: "School Run Reminder"
+description: 10-minute reminder before school pick-up.
+
+trigger:
+  - platform: time
+    at: "14:50:00"   # Adjust to 10 mins before your pick-up time
+
+condition:
+  - condition: state
+    entity_id: input_boolean.school_run_enabled
+    state: "on"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+
+action:
+  # Flash lights as visual cue
+  - service: light.turn_on
+    target:
+      entity_id: light.kitchen
+    data:
+      flash: short
+
+  # Announcement
+  - service: tts.google_translate_say
+    target:
+      entity_id:
+        - media_player.kitchen_speaker
+        - media_player.living_room_speaker
+    data:
+      message: "School pick-up in 10 minutes! Time to get ready."
+
+  # Push notification
+  - service: notify.notify
+    data:
+      title: "🎒 School Run"
+      message: "Pick-up in 10 minutes!"
+
+mode: single`
+  },
+
+  // ── MULTI-DEVICE ──────────────────────────────────────
+  {
+    id: 'multi-tv-scene',
+    name: 'Movie Mode — TV Turns On',
+    category: 'Multi-device',
+    icon: '🎬',
+    difficulty: 'medium',
+    desc: 'When the TV turns on (detected via smart plug power monitoring or media_player entity), automatically dims the lights, closes the blinds, and sets the thermostat to a comfortable viewing temperature.',
+    triggers: [
+      'media_player.living_room_tv state changes to "playing"',
+      'Or smart plug power sensor exceeds 50W (TV on standby < 5W)'
+    ],
+    conditions: [
+      'Time is after 18:00 (daytime TV doesn\'t need dim lights)',
+      'More than 1 person is home (social viewing mode)'
+    ],
+    actions: [
+      'Dim living room lights to 15% warm white',
+      'Close motorised blinds/curtains',
+      'Set thermostat to 20°C comfortable viewing temp',
+      'Turn off non-essential lights in other rooms'
+    ],
+    entities: [
+      'media_player.living_room_tv — TV media player',
+      'light.living_room — living room lights',
+      'cover.living_room_blinds — motorised blinds'
+    ],
+    yaml: `alias: "Movie Mode — TV Turns On"
+description: Sets a cinema atmosphere when the TV starts playing.
+
+trigger:
+  - platform: state
+    entity_id: media_player.living_room_tv
+    to: playing
+    id: tv_on
+  - platform: state
+    entity_id: media_player.living_room_tv
+    to:
+      - "off"
+      - idle
+    id: tv_off
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: tv_on
+          - condition: time
+            after: "18:00:00"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: light.living_room
+            data:
+              brightness_pct: 15
+              color_temp_kelvin: 2700
+              transition: 5
+
+          - service: cover.close_cover
+            target:
+              entity_id: cover.living_room_blinds
+
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.thermostat
+            data:
+              temperature: 20
+
+      - conditions:
+          - condition: trigger
+            id: tv_off
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: light.living_room
+            data:
+              brightness_pct: 70
+              color_temp_kelvin: 3500
+              transition: 5
+
+          - service: cover.open_cover
+            target:
+              entity_id: cover.living_room_blinds
+
+mode: single`
+  },
+
+  {
+    id: 'multi-washing-done',
+    name: 'Washing Machine Finished',
+    category: 'Multi-device',
+    icon: '🫧',
+    difficulty: 'medium',
+    desc: 'Detects when the washing machine finishes a cycle using a smart plug\'s power monitoring sensor, then sends a notification. More reliable than timers as it reacts to actual power consumption dropping to standby levels.',
+    triggers: [
+      'sensor.washing_machine_power drops below 5W (cycle complete)',
+      'Sustained for 5 minutes (avoids mid-cycle pauses)'
+    ],
+    conditions: [
+      'Washing machine was running (power was above 10W at some point)',
+      'Avoids false trigger at startup before first wash'
+    ],
+    actions: [
+      'Send push notification: "Washing done!"',
+      'Optionally announce on speakers',
+      'Optional: add reminder to move to dryer after 30 minutes'
+    ],
+    entities: [
+      'sensor.washing_machine_power — smart plug power sensor',
+      'notify.notify — notification service'
+    ],
+    yaml: `alias: "Washing Machine Finished"
+description: Notifies when wash cycle completes via power monitoring.
+
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.washing_machine_power
+    below: 5
+    for:
+      minutes: 5
+
+condition:
+  # Only trigger if it was actually running before (>200W at some point)
+  # Use a helper to track this — or simplify by removing condition
+  - condition: state
+    entity_id: input_boolean.washing_machine_was_running
+    state: "on"
+
+action:
+  - service: notify.notify
+    data:
+      title: "🫧 Washing Done!"
+      message: "The washing machine has finished. Time to hang it out!"
+      data:
+        actions:
+          - action: "REMIND_30"
+            title: "Remind me in 30 min"
+
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.washing_machine_was_running
+
+  # Optional: TTS announcement
+  - service: tts.google_translate_say
+    target:
+      entity_id: media_player.kitchen_speaker
+    data:
+      message: "The washing machine has finished its cycle."
+
+mode: single`
+  }
+
+,
+
+  // ── SCENES ──────────────────────────────────────────────────
+  {
+    id: 'scene-movie-mode',
+    name: 'Movie Mode Scene',
+    category: 'Scenes',
+    icon: '🎬',
+    difficulty: 'easy',
+    desc: 'Activates a movie scene when the TV turns on — dims lights, closes blinds, silences notifications. Reverses when TV turns off.',
+    triggers: ['media_player state changes to playing', 'Optional: input_boolean.movie_mode turned on'],
+    conditions: ['Time is between 18:00 and 23:59', 'Someone is home'],
+    actions: ['Activate scene.movie_mode (dim lights, close cover)', 'Set media player volume', 'Optional: disable motion lighting'],
+    yaml: `alias: Movie Mode Scene
+description: Dim lights and close blinds when TV starts playing
+trigger:
+  - platform: state
+    entity_id: media_player.living_room_tv
+    to: playing
+condition:
+  - condition: time
+    after: "18:00:00"
+    before: "23:59:59"
+  - condition: state
+    entity_id: group.household
+    state: home
+action:
+  - scene: scene.movie_mode
+  - service: media_player.volume_set
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      volume_level: 0.4
+mode: single`
+  },
+  {
+    id: 'scene-good-morning',
+    name: 'Good Morning Scene',
+    category: 'Scenes',
+    icon: '🌅',
+    difficulty: 'easy',
+    desc: 'Triggers a "Good Morning" scene at wake-up time — raises blinds, sets lights to energising colour temperature, starts kettle plug.',
+    triggers: ['Time trigger at configurable wake time', 'Optional: presence — first person wakes (motion in bedroom)'],
+    conditions: ['Only on weekdays (or configurable)', 'Someone is home'],
+    actions: ['Activate scene.good_morning', 'Open covers/blinds', 'Turn on kitchen plug (kettle)'],
+    yaml: `alias: Good Morning Scene
+description: Rise and shine routine
+trigger:
+  - platform: time
+    at: "07:00:00"
+condition:
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+  - condition: state
+    entity_id: group.household
+    state: home
+action:
+  - scene: scene.good_morning
+  - service: cover.open_cover
+    target:
+      area_id: bedroom
+  - service: switch.turn_on
+    target:
+      entity_id: switch.kitchen_kettle_plug
+mode: single`
+  },
+  {
+    id: 'scene-away-mode',
+    name: 'Away Mode Scene',
+    category: 'Scenes',
+    icon: '🚪',
+    difficulty: 'medium',
+    desc: 'Activates a full away scene when everyone leaves — turns off all non-essential devices, enables security mode, sets thermostat to eco.',
+    triggers: ['All tracked people leave home zone'],
+    conditions: ['All person entities are away', 'Not in guest mode'],
+    actions: ['Activate scene.away_mode', 'Enable alarm', 'Set climate to eco mode', 'Turn off all lights'],
+    yaml: `alias: Away Mode Scene
+description: Secure and eco mode when nobody is home
+trigger:
+  - platform: state
+    entity_id: group.household
+    to: not_home
+    for:
+      minutes: 5
+condition:
+  - condition: state
+    entity_id: group.household
+    state: not_home
+action:
+  - scene: scene.away_mode
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.home
+    data:
+      preset_mode: eco
+  - service: alarm_control_panel.alarm_arm_away
+    target:
+      entity_id: alarm_control_panel.home
+mode: single`
+  },
+  {
+    id: 'scene-bedtime',
+    name: 'Bedtime Routine Scene',
+    category: 'Scenes',
+    icon: '😴',
+    difficulty: 'easy',
+    desc: 'Wind-down routine — dims all lights to warm, locks doors, checks windows are closed, sets thermostat to night mode.',
+    triggers: ['Time trigger (e.g. 22:30)', 'Optional: voice command or button press'],
+    conditions: ['Optional: someone is home'],
+    actions: ['Activate scene.bedtime', 'Lock all door locks', 'Check window sensors and notify if any open', 'Set climate to night preset'],
+    yaml: `alias: Bedtime Routine
+description: Wind down and secure the home for sleep
+trigger:
+  - platform: time
+    at: "22:30:00"
+action:
+  - scene: scene.bedtime
+  - service: lock.lock
+    target:
+      area_id: entryway
+  - if:
+      - condition: state
+        entity_id: binary_sensor.back_door_window
+        state: "on"
+    then:
+      - service: notify.notify
+        data:
+          message: "Window or door is still open — check before sleeping"
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.home
+    data:
+      preset_mode: sleep
+mode: single`
+  },
+
+  // ── MEDIA ───────────────────────────────────────────────────
+  {
+    id: 'media-pause-on-call',
+    name: 'Pause Media When Phone Rings',
+    category: 'Media',
+    icon: '📵',
+    difficulty: 'medium',
+    desc: 'Automatically pauses all media players when your phone rings. Resumes when the call ends.',
+    triggers: ['sensor.phone_state changes to ringing'],
+    conditions: ['Media player is currently playing'],
+    actions: ['Pause all active media players', 'Resume when sensor changes back to idle'],
+    yaml: `alias: Pause Media on Phone Call
+description: Pause playback when phone rings, resume after
+trigger:
+  - platform: state
+    entity_id: sensor.your_phone_phone_state
+    to: ringing
+    id: ringing
+  - platform: state
+    entity_id: sensor.your_phone_phone_state
+    to: idle
+    id: idle
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: ringing
+        sequence:
+          - service: media_player.media_pause
+            target:
+              area_id: living_room
+      - conditions:
+          - condition: trigger
+            id: idle
+        sequence:
+          - service: media_player.media_play
+            target:
+              area_id: living_room
+mode: queued`
+  },
+  {
+    id: 'media-volume-time',
+    name: 'Auto-Limit Volume at Night',
+    category: 'Media',
+    icon: '🔈',
+    difficulty: 'easy',
+    desc: 'Prevents media players from exceeding a set volume between quiet hours (22:00–08:00). Resets at morning.',
+    triggers: ['media_player volume changes above threshold during quiet hours'],
+    conditions: ['Time is between 22:00 and 08:00'],
+    actions: ['Reduce volume to maximum allowed level', 'Send quiet notification'],
+    yaml: `alias: Night Volume Limiter
+description: Cap volume during quiet hours
+trigger:
+  - platform: numeric_state
+    entity_id: media_player.living_room_tv
+    above: 0.4
+    attribute: volume_level
+condition:
+  - condition: time
+    after: "22:00:00"
+    before: "08:00:00"
+action:
+  - service: media_player.volume_set
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      volume_level: 0.4
+  - service: notify.notify
+    data:
+      message: "Volume reduced for quiet hours"
+mode: single`
+  },
+  {
+    id: 'media-xbox-scene',
+    name: 'Xbox On — Gaming Scene',
+    category: 'Media',
+    icon: '🎮',
+    difficulty: 'easy',
+    desc: 'Triggers a gaming ambience scene when Xbox turns on. Dims lights to gaming preset, disables doorbells.',
+    triggers: ['binary_sensor.xbox_live or media_player xbox state changes to on/playing'],
+    conditions: ['Time is appropriate (not sleeping hours)', 'Someone is home'],
+    actions: ['Activate scene.gaming_mode', 'Set notification DND on phones', 'Optional: turn on LED strips'],
+    yaml: `alias: Xbox Gaming Scene
+description: Set mood lighting when Xbox turns on
+trigger:
+  - platform: state
+    entity_id: media_player.xbox
+    to: "on"
+condition:
+  - condition: state
+    entity_id: group.household
+    state: home
+  - condition: time
+    after: "10:00:00"
+    before: "23:30:00"
+action:
+  - scene: scene.gaming_mode
+  - service: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.gaming_mode
+mode: single`
+  },
+
+  // ── PRESENCE (ADVANCED) ─────────────────────────────────────
+  {
+    id: 'presence-guest-mode',
+    name: 'Guest Mode Toggle',
+    category: 'Presence',
+    icon: '🏠',
+    difficulty: 'medium',
+    desc: 'When guest mode is enabled, adjusts automations to guest-friendly defaults — no private notifications, warmer lighting, later quiet hours.',
+    triggers: ['input_boolean.guest_mode changes to on/off'],
+    conditions: [],
+    actions: ['Activate or deactivate guest scene', 'Adjust notification targets', 'Update quiet hours schedule'],
+    yaml: `alias: Guest Mode
+description: Adjust home behaviour for guests
+trigger:
+  - platform: state
+    entity_id: input_boolean.guest_mode
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.guest_mode
+            state: "on"
+        sequence:
+          - scene: scene.guest_mode
+          - service: notify.notify
+            data:
+              message: "Guest mode enabled — home adjusted for visitors"
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.guest_mode
+            state: "off"
+        sequence:
+          - scene: scene.normal_mode
+mode: single`
+  },
+  {
+    id: 'presence-vehicle',
+    name: 'Vehicle Arriving Alert',
+    category: 'Presence',
+    icon: '🛵',
+    difficulty: 'medium',
+    desc: 'Detects when a tracked vehicle or scooter arrives home via device tracker. Opens garage if present, turns on outside lights.',
+    triggers: ['device_tracker.vehicle transitions to home zone'],
+    conditions: ['Outside lighting conditions (lux sensor or time)'],
+    actions: ['Turn on driveway / outside lights', 'Optional: open garage cover', 'Send arrival notification'],
+    yaml: `alias: Vehicle Arriving Home
+description: Lights and optional garage on vehicle arrival
+trigger:
+  - platform: state
+    entity_id: device_tracker.your_vehicle
+    to: home
+condition:
+  - condition: or
+    conditions:
+      - condition: sun
+        after: sunset
+      - condition: sun
+        before: sunrise
+action:
+  - service: light.turn_on
+    target:
+      area_id: driveway
+    data:
+      brightness_pct: 100
+  - service: notify.notify
+    data:
+      message: "Vehicle has arrived home"
+mode: single`
+  },
+
+  // ── DOOR / WINDOW ───────────────────────────────────────────
+  {
+    id: 'door-notify-open',
+    name: 'Door / Window Left Open',
+    category: 'Door & Window',
+    icon: '🚪',
+    difficulty: 'easy',
+    desc: 'Sends a notification if any door or window is left open for more than 10 minutes. Great for security and energy savings.',
+    triggers: ['Any binary_sensor with device_class door/window stays open'],
+    conditions: ['Sensor has been open longer than 10 minutes'],
+    actions: ['Notify mobile devices with which door/window is open', 'Repeat every 10 mins while still open'],
+    yaml: `alias: Door Left Open Alert
+description: Notify if any door or window stays open
+trigger:
+  - platform: state
+    entity_id: binary_sensor.front_door
+    to: "on"
+    for:
+      minutes: 10
+  - platform: state
+    entity_id: binary_sensor.back_door
+    to: "on"
+    for:
+      minutes: 10
+action:
+  - service: notify.notify
+    data:
+      message: "{{ trigger.to_state.attributes.friendly_name }} has been open for 10 minutes"
+      title: "Door/Window Alert"
+mode: parallel
+max: 5`
+  },
+  {
+    id: 'door-camera-snapshot',
+    name: 'Front Door — Camera Snapshot on Open',
+    category: 'Door & Window',
+    icon: '📸',
+    difficulty: 'medium',
+    desc: 'Takes a camera snapshot when the front door opens and sends it as a push notification. Works with EZVIZ, Ring, or any HA-compatible camera.',
+    triggers: ['binary_sensor.front_door changes to on (open)'],
+    conditions: ['Optional: only when nobody is home (away mode)'],
+    actions: ['Take camera snapshot', 'Send notification with image attachment'],
+    yaml: `alias: Front Door Camera Snapshot
+description: Snapshot and notify on door open
+trigger:
+  - platform: state
+    entity_id: binary_sensor.front_door
+    to: "on"
+action:
+  - service: camera.snapshot
+    target:
+      entity_id: camera.front_door
+    data:
+      filename: /config/www/snapshots/front_door_latest.jpg
+  - delay:
+      seconds: 1
+  - service: notify.notify
+    data:
+      title: "Front Door Opened"
+      message: "Someone is at the front door"
+      data:
+        image: /local/snapshots/front_door_latest.jpg
+mode: single`
+  },
+
+  // ── ENERGY ──────────────────────────────────────────────────
+  {
+    id: 'energy-smart-plug-schedule',
+    name: 'Smart Plug — Cost-Efficient Schedule',
+    category: 'Energy',
+    icon: '⚡',
+    difficulty: 'easy',
+    desc: 'Runs high-power devices (dishwasher, washer, EV charger) only during off-peak electricity hours (22:00–06:00). Uses input_boolean to queue.',
+    triggers: ['Time trigger at off-peak start (22:00)', 'input_boolean.device_queued turns on'],
+    conditions: ['input_boolean.device_queued is on'],
+    actions: ['Turn on target smart plug', 'Notify when complete', 'Turn off plug after timeout'],
+    yaml: `alias: Off-Peak Smart Plug Schedule
+description: Run appliances during cheap-rate hours
+trigger:
+  - platform: time
+    at: "22:00:00"
+condition:
+  - condition: state
+    entity_id: input_boolean.dishwasher_queued
+    state: "on"
+action:
+  - service: switch.turn_on
+    target:
+      entity_id: switch.dishwasher_plug
+  - wait_for_trigger:
+      - platform: state
+        entity_id: switch.dishwasher_plug
+        to: "off"
+    timeout:
+      hours: 4
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.dishwasher_queued
+  - service: notify.notify
+    data:
+      message: "Dishwasher has finished its off-peak cycle"
+mode: single`
+  },
+
+  // ── BITCOIN / UMBREL ────────────────────────────────────────
+  {
+    id: 'bitcoin-price-alert',
+    name: 'Bitcoin Price Milestone Alert',
+    category: 'Bitcoin',
+    icon: '₿',
+    difficulty: 'medium',
+    desc: 'Sends a push notification when Bitcoin crosses a price milestone (up or down). Uses a template sensor tracking a price feed.',
+    triggers: ['sensor.bitcoin_price crosses above or below a numeric threshold'],
+    conditions: ['Alert not sent in last 4 hours (rate limit)'],
+    actions: ['Send notification with price and percentage change', 'Log to persistent notification'],
+    yaml: `alias: Bitcoin Price Alert
+description: Notify on BTC price milestones
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.bitcoin_price
+    above: 100000
+    id: above_100k
+  - platform: numeric_state
+    entity_id: sensor.bitcoin_price
+    below: 50000
+    id: below_50k
+action:
+  - variables:
+      price: "{{ states('sensor.bitcoin_price') | float | round(0) }}"
+  - service: notify.notify
+    data:
+      title: "₿ Bitcoin Alert"
+      message: >
+        BTC is now ${String.fromCharCode(123,123)} price | int ${String.fromCharCode(125,125)}.
+        {% if trigger.id == 'above_100k' %}🚀 Above $100,000!{% else %}📉 Below $50,000{% endif %}
+  - service: persistent_notification.create
+    data:
+      title: "Bitcoin Price Alert"
+      message: "BTC crossed threshold at ${String.fromCharCode(123,123)} price | int ${String.fromCharCode(125,125)}"
+mode: single`
+  },
+  {
+    id: 'bitcoin-wallet-check',
+    name: 'Umbrel Wallet Balance Change Alert',
+    category: 'Bitcoin',
+    icon: '🔔',
+    difficulty: 'medium',
+    desc: 'Notifies when your Umbrel Lightning wallet balance changes significantly — useful for tracking payments received or channel rebalancing.',
+    triggers: ['sensor.umbrel_wallet_balance changes by more than 1000 sats'],
+    conditions: [],
+    actions: ['Calculate difference', 'Send notification with old and new balance in sats and BTC'],
+    yaml: `alias: Wallet Balance Change Alert
+description: Notify on significant Lightning wallet changes
+trigger:
+  - platform: state
+    entity_id: sensor.umbrel_wallet_balance
+variables:
+  old_bal: "{{ trigger.from_state.state | int(0) }}"
+  new_bal: "{{ trigger.to_state.state | int(0) }}"
+  diff: "{{ (new_bal - old_bal) | abs }}"
+condition:
+  - condition: template
+    value_template: "{{ diff > 1000 }}"
+action:
+  - service: notify.notify
+    data:
+      title: "⚡ Wallet Balance Changed"
+      message: >
+        {{ '+' if new_bal > old_bal else '-' }}{{ diff | int }} sats
+        ({{ '%0.8f' % (diff / 100000000) }} BTC)
+        New balance: {{ new_bal | int }} sats
+mode: single`
+  },
+
+  // ── SEASONAL / WEATHER ──────────────────────────────────────
+  {
+    id: 'seasonal-cold-snap',
+    name: 'Freeze Warning — Pipe Protection',
+    category: 'Seasonal',
+    icon: '🥶',
+    difficulty: 'medium',
+    desc: 'Alerts when outside temperature drops near freezing. Can trigger a frost-protection heating boost to prevent pipes freezing.',
+    triggers: ['weather or outdoor temperature sensor drops below 3°C'],
+    conditions: ['Heating is not already running'],
+    actions: ['Send freeze warning notification', 'Optional: boost heating above minimum', 'Turn on any heat tape smart plugs'],
+    yaml: `alias: Freeze Warning
+description: Protect pipes when temperature drops near 0°C
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.outdoor_temperature
+    below: 3
+condition:
+  - condition: state
+    entity_id: climate.home
+    state: "off"
+action:
+  - service: notify.notify
+    data:
+      title: "🥶 Freeze Warning"
+      message: >
+        Outside temperature is {{ states('sensor.outdoor_temperature') }}°C —
+        risk of frozen pipes. Consider boosting heating.
+  - service: climate.set_temperature
+    target:
+      entity_id: climate.home
+    data:
+      temperature: 14
+      hvac_mode: heat
+mode: single`
+  },
+  {
+    id: 'seasonal-rain-cover',
+    name: 'Rain Alert — Close Windows / Covers',
+    category: 'Seasonal',
+    icon: '🌧️',
+    difficulty: 'easy',
+    desc: 'Detects incoming rain from a weather entity or rain sensor. Closes smart covers/blinds and sends a reminder to close manual windows.',
+    triggers: ['weather.home condition changes to rainy/pouring', 'Optional: rain sensor binary_sensor turns on'],
+    conditions: ['Covers are currently open or partially open'],
+    actions: ['Close all cover entities', 'Send notification to close any manual windows'],
+    yaml: `alias: Rain — Close Covers
+description: Close smart covers when rain is detected
+trigger:
+  - platform: state
+    entity_id: weather.home
+    to:
+      - rainy
+      - pouring
+action:
+  - service: cover.close_cover
+    target:
+      area_id: outdoor
+  - service: notify.notify
+    data:
+      title: "🌧️ Rain Detected"
+      message: "Covers closed. Don't forget to close any manual windows!"
+mode: single`
+  },
+
+  // ── SCRIPTS & HELPERS ───────────────────────────────────────
+  {
+    id: 'helper-counter-reset',
+    name: 'Daily Counter Reset',
+    category: 'Helpers',
+    icon: '🔢',
+    difficulty: 'easy',
+    desc: 'Resets all counter helpers to zero at midnight. Useful for daily step counts, trigger counts, usage meters.',
+    triggers: ['Time trigger at 00:00:00'],
+    conditions: [],
+    actions: ['Reset all counter entities', 'Optional: log previous day value to input_text'],
+    yaml: `alias: Daily Counter Reset
+description: Reset all counters at midnight
+trigger:
+  - platform: time
+    at: "00:00:00"
+action:
+  - service: counter.reset
+    target:
+      entity_id:
+        - counter.daily_motion_triggers
+        - counter.daily_door_opens
+        - counter.daily_notifications_sent
+mode: single`
+  },
+  {
+    id: 'helper-input-select-scene',
+    name: 'Input Select — Scene Switcher',
+    category: 'Helpers',
+    icon: '🎛️',
+    difficulty: 'easy',
+    desc: 'Uses an input_select dropdown to switch between named scenes. Great for a dashboard button group that activates different room moods.',
+    triggers: ['input_select.room_mode changes state'],
+    conditions: [],
+    actions: ['Activate the scene matching the selected option'],
+    yaml: `alias: Scene Switcher via Input Select
+description: Activate scene based on dropdown selection
+trigger:
+  - platform: state
+    entity_id: input_select.living_room_mode
+action:
+  - service: scene.turn_on
+    target:
+      entity_id: >
+        scene.{{ trigger.to_state.state | lower | replace(' ', '_') }}
+mode: single`
+  }
+,
+// ── LIGHTING (additions) ─────────────────────────────────────
+  {
+    id: 'lighting-adaptive',
+    name: 'Adaptive Lighting — Circadian Rhythm',
+    category: 'Lighting',
+    icon: '🌈',
+    difficulty: 'medium',
+    desc: 'Automatically shifts light colour temperature and brightness throughout the day — cool energising white in the morning, warm amber in the evening, dim red at night. Mimics natural sunlight to support your body clock.',
+    triggers: ['time_pattern every 30 minutes', 'Optional: sun.sun elevation changes'],
+    conditions: ['Lights are currently on', 'Not in manual override mode'],
+    actions: ['Calculate colour temperature based on time of day', 'Set all lights to appropriate CCT and brightness', 'Skip if manual override input_boolean is on'],
+    entities: ['light.* — all dimmable lights', 'input_boolean.adaptive_lighting_override'],
+    yaml: `alias: Adaptive Lighting — Circadian Rhythm
+description: Shift light warmth and brightness with the time of day
+trigger:
+  - platform: time_pattern
+    minutes: "/30"
+condition:
+  - condition: state
+    entity_id: input_boolean.adaptive_lighting_override
+    state: "off"
+action:
+  - variables:
+      hour: "{{ now().hour + now().minute / 60 }}"
+      cct: >
+        {% if hour < 7 %}2200
+        {% elif hour < 9 %}3000
+        {% elif hour < 12 %}4500
+        {% elif hour < 17 %}5000
+        {% elif hour < 20 %}3500
+        {% elif hour < 22 %}2700
+        {% else %}2200{% endif %}
+      bri: >
+        {% if hour < 7 %}15
+        {% elif hour < 9 %}60
+        {% elif hour < 17 %}100
+        {% elif hour < 20 %}70
+        {% elif hour < 22 %}40
+        {% else %}20{% endif %}
+  - service: light.turn_on
+    target:
+      area_id: living_room
+    data:
+      kelvin: "{{ cct | int }}"
+      brightness_pct: "{{ bri | int }}"
+      transition: 120
+mode: single`
+  },
+  {
+    id: 'lighting-lux',
+    name: 'Auto Lights — Lux Sensor Control',
+    category: 'Lighting',
+    icon: '☀️',
+    difficulty: 'medium',
+    desc: 'Uses a light level (lux) sensor to automatically turn lights on or off based on natural light, not just time of day. Far more reliable than sun-based triggers on cloudy days.',
+    triggers: ['Lux sensor drops below threshold (cloudy/evening)', 'Lux sensor rises above threshold (daylight returns)'],
+    conditions: ['Someone is home', 'Not in sleep mode'],
+    actions: ['Turn on/off appropriate lights', 'Set brightness proportionally to how dark it is'],
+    entities: ['sensor.*_illuminance — lux sensor', 'light.* — target lights'],
+    yaml: `alias: Lux-Based Automatic Lights
+description: Use real light level sensor rather than time
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.living_room_illuminance
+    below: 50
+    for:
+      minutes: 2
+    id: too_dark
+  - platform: numeric_state
+    entity_id: sensor.living_room_illuminance
+    above: 200
+    for:
+      minutes: 5
+    id: bright_enough
+condition:
+  - condition: state
+    entity_id: group.household
+    state: home
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: too_dark
+        sequence:
+          - service: light.turn_on
+            target:
+              area_id: living_room
+            data:
+              brightness_pct: 80
+              kelvin: 3500
+      - conditions:
+          - condition: trigger
+            id: bright_enough
+        sequence:
+          - service: light.turn_off
+            target:
+              area_id: living_room
+mode: single`
+  },
+  {
+    id: 'lighting-party-sync',
+    name: 'Music Sync — Flash Lights to Beat',
+    category: 'Lighting',
+    icon: '🎛️',
+    difficulty: 'advanced',
+    desc: 'Pulses RGB lights in sync with music playing from a media player. Uses the media player state and a rhythm input to create a party atmosphere. Works best with Hue, LIFX or Govee lights.',
+    triggers: ['input_button.music_sync_trigger pressed', 'media_player state changes to playing'],
+    conditions: ['input_boolean.party_mode is on'],
+    actions: ['Cycle lights through party colour palette', 'Randomise timing for natural feel'],
+    entities: ['light.* — RGB capable lights', 'input_boolean.party_mode', 'media_player.*'],
+    yaml: `alias: Music Sync Party Lights
+description: Pulse lights with music — requires party mode enabled
+trigger:
+  - platform: state
+    entity_id: input_boolean.party_mode
+    to: "on"
+condition: []
+action:
+  - repeat:
+      while:
+        - condition: state
+          entity_id: input_boolean.party_mode
+          state: "on"
+      sequence:
+        - service: light.turn_on
+          target:
+            area_id: living_room
+          data:
+            rgb_color:
+              - "{{ range(50,255) | random }}"
+              - "{{ range(0,100) | random }}"
+              - "{{ range(100,255) | random }}"
+            brightness: 255
+            transition: 0.3
+        - delay:
+            milliseconds: 400
+mode: restart`
+  },
+
+  // ── SECURITY (additions) ──────────────────────────────────────
+  {
+    id: 'security-stranger-zone',
+    name: 'Unknown Device on Network Alert',
+    category: 'Security',
+    icon: '🕵️',
+    difficulty: 'medium',
+    desc: 'Alerts you when an unrecognised device connects to your home network. Uses the router integration or device tracker to detect new MAC addresses that are not in your known device list.',
+    triggers: ['device_tracker entity appears with state home', 'New entity added to device_tracker domain'],
+    conditions: ['Device is not in approved list (input_select or group)'],
+    actions: ['Send notification with device name and IP', 'Log to persistent notification for review'],
+    entities: ['device_tracker.* — all tracked devices', 'notify.notify'],
+    yaml: `alias: Unknown Network Device Alert
+description: Notify when unrecognised device joins network
+trigger:
+  - platform: event
+    event_type: state_changed
+    event_data:
+      new_state:
+        state: home
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.entity_id.startswith('device_tracker.') and
+         trigger.event.data.old_state is none }}
+action:
+  - service: notify.notify
+    data:
+      title: "🕵️ New Device on Network"
+      message: >
+        Unknown device detected: {{ trigger.event.data.entity_id }}
+        Check your router admin panel.
+  - service: persistent_notification.create
+    data:
+      title: "New Network Device"
+      message: "{{ trigger.event.data.entity_id }} joined at {{ now().strftime('%H:%M %d/%m/%Y') }}"
+mode: queued
+max: 5`
+  },
+  {
+    id: 'security-panic-button',
+    name: 'Panic Button — Full Alert Mode',
+    category: 'Security',
+    icon: '🚨',
+    difficulty: 'medium',
+    desc: 'A single button press (physical or dashboard) triggers a full alert — flashes all lights red, sounds a siren if available, sends emergency notifications to all contacts, and logs the event.',
+    triggers: ['input_button.panic_button pressed', 'Optional: physical button via ZHA/ZWave'],
+    conditions: [],
+    actions: ['Flash all lights red', 'Trigger siren entity if available', 'Notify all mobile devices with location', 'Create persistent log entry'],
+    entities: ['input_button.panic_button', 'light.* — all lights', 'siren.*', 'notify.notify'],
+    yaml: `alias: Panic Button — Full Alert
+description: Emergency alert mode — all lights, siren, notifications
+trigger:
+  - platform: state
+    entity_id: input_button.panic_button
+action:
+  - parallel:
+      - sequence:
+          - repeat:
+              count: 10
+              sequence:
+                - service: light.turn_on
+                  target:
+                    area_id: all
+                  data:
+                    rgb_color: [255, 0, 0]
+                    brightness: 255
+                - delay:
+                    milliseconds: 500
+                - service: light.turn_off
+                  target:
+                    area_id: all
+                - delay:
+                    milliseconds: 500
+      - sequence:
+          - service: notify.notify
+            data:
+              title: "🚨 PANIC ALERT"
+              message: "Panic button activated at {{ now().strftime('%H:%M') }}"
+          - service: persistent_notification.create
+            data:
+              title: "🚨 Panic Button Activated"
+              message: "Triggered at {{ now().strftime('%H:%M:%S %d/%m/%Y') }}"
+mode: single`
+  },
+
+  // ── CLIMATE (additions) ───────────────────────────────────────
+  {
+    id: 'climate-humidity',
+    name: 'Bathroom Humidity — Auto Extractor Fan',
+    category: 'Climate',
+    icon: '💧',
+    difficulty: 'easy',
+    desc: 'Automatically turns the bathroom extractor fan on when humidity spikes (shower/bath running) and off again once it drops back to normal. Prevents mould and condensation.',
+    triggers: ['Humidity sensor rises above 70%', 'Humidity sensor drops back below 60%'],
+    conditions: [],
+    actions: ['Turn on/off extractor fan smart plug or switch', 'Optional: notify if fan runs for more than 30 mins (stuck shower?)'],
+    entities: ['sensor.bathroom_humidity', 'switch.bathroom_fan'],
+    yaml: `alias: Bathroom Humidity Fan Control
+description: Auto fan when humidity spikes from shower or bath
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.bathroom_humidity
+    above: 70
+    id: humid
+  - platform: numeric_state
+    entity_id: sensor.bathroom_humidity
+    below: 60
+    for:
+      minutes: 3
+    id: dry
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: humid
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.bathroom_fan
+      - conditions:
+          - condition: trigger
+            id: dry
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.bathroom_fan
+mode: single`
+  },
+  {
+    id: 'climate-open-window',
+    name: 'Smart Ventilation — CO2 / Air Quality',
+    category: 'Climate',
+    icon: '🌬️',
+    difficulty: 'medium',
+    desc: 'Monitors indoor CO2 or air quality sensor and reminds you to open a window when levels get high. Optionally auto-opens smart windows/covers. Keeps the air fresh without wasting energy.',
+    triggers: ['CO2 sensor exceeds 1000 ppm', 'Air quality sensor drops to Poor or Unhealthy'],
+    conditions: ['Not already ventilating'],
+    actions: ['Send notification recommending ventilation', 'Optional: open smart windows/covers', 'Close again when CO2 drops below 800 ppm'],
+    entities: ['sensor.*_co2 or sensor.*_air_quality', 'notify.notify', 'cover.* (optional)'],
+    yaml: `alias: Smart Ventilation — CO2 Alert
+description: Remind or auto-ventilate when CO2 is high
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.living_room_co2
+    above: 1000
+    id: high_co2
+  - platform: numeric_state
+    entity_id: sensor.living_room_co2
+    below: 800
+    id: ok_co2
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: high_co2
+        sequence:
+          - service: notify.notify
+            data:
+              title: "🌬️ Open a Window"
+              message: >
+                CO2 level is {{ states('sensor.living_room_co2') | int }} ppm.
+                Ventilation recommended.
+          - service: cover.open_cover
+            target:
+              area_id: living_room
+      - conditions:
+          - condition: trigger
+            id: ok_co2
+        sequence:
+          - service: cover.close_cover
+            target:
+              area_id: living_room
+mode: single`
+  },
+
+  // ── NETWORK & DEVICES ─────────────────────────────────────────
+  {
+    id: 'network-router-reboot',
+    name: 'Auto Router Reboot — Scheduled Weekly',
+    category: 'Network',
+    icon: '📡',
+    difficulty: 'easy',
+    desc: 'Reboots your router or modem via a smart plug on a weekly schedule (e.g. 3am Sunday). Helps maintain connection quality and prevents memory leaks in consumer routers.',
+    triggers: ['Time trigger — weekly at 03:00 on Sunday'],
+    conditions: ['Nobody is actively using the network (optional check)'],
+    actions: ['Turn off router smart plug', 'Wait 10 seconds', 'Turn back on', 'Send notification confirming reboot'],
+    entities: ['switch.router_plug', 'notify.notify'],
+    yaml: `alias: Weekly Router Reboot
+description: Scheduled router restart for connection quality
+trigger:
+  - platform: time
+    at: "03:00:00"
+condition:
+  - condition: time
+    weekday:
+      - sun
+action:
+  - service: switch.turn_off
+    target:
+      entity_id: switch.router_plug
+  - delay:
+      seconds: 10
+  - service: switch.turn_on
+    target:
+      entity_id: switch.router_plug
+  - delay:
+      seconds: 60
+  - service: notify.notify
+    data:
+      title: "📡 Router Rebooted"
+      message: "Weekly router restart completed at {{ now().strftime('%H:%M') }}"
+mode: single`
+  },
+  {
+    id: 'network-internet-down',
+    name: 'Internet Down — Local Notification',
+    category: 'Network',
+    icon: '🔌',
+    difficulty: 'medium',
+    desc: 'Detects when internet connectivity is lost using a binary sensor (ping to 8.8.8.8 or via a network integration). Sends a local notification and logs it. Also notifies when it comes back.',
+    triggers: ['binary_sensor.internet_access changes to off', 'binary_sensor.internet_access changes to on'],
+    conditions: [],
+    actions: ['Log outage with timestamp', 'Notify on local devices (not cloud — it is offline)', 'Log restoration time and calculate duration'],
+    entities: ['binary_sensor.internet_access (ping integration)', 'notify.mobile_app_local'],
+    yaml: `alias: Internet Connectivity Monitor
+description: Detect and log internet outages
+trigger:
+  - platform: state
+    entity_id: binary_sensor.internet_access
+    to: "off"
+    id: down
+  - platform: state
+    entity_id: binary_sensor.internet_access
+    to: "on"
+    id: up
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: down
+        sequence:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: input_datetime.last_internet_outage
+            data:
+              datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+          - service: persistent_notification.create
+            data:
+              title: "🔌 Internet Down"
+              message: "Connection lost at {{ now().strftime('%H:%M:%S') }}"
+      - conditions:
+          - condition: trigger
+            id: up
+        sequence:
+          - service: persistent_notification.create
+            data:
+              title: "✅ Internet Restored"
+              message: "Connection restored at {{ now().strftime('%H:%M:%S') }}"
+mode: single`
+  },
+
+  // ── HEALTH & WELLBEING ────────────────────────────────────────
+  {
+    id: 'health-hydration',
+    name: 'Hydration Reminder',
+    category: 'Health',
+    icon: '💧',
+    difficulty: 'easy',
+    desc: 'Sends a gentle reminder to drink water every 2 hours during waking hours. Pauses if you are asleep or not home. Simple but genuinely useful for desk workers.',
+    triggers: ['time_pattern every 2 hours between 08:00 and 22:00'],
+    conditions: ['Someone is home', 'Not in sleep mode'],
+    actions: ['Send notification to mobile devices', 'Optional: flash a light briefly as a non-intrusive cue'],
+    entities: ['notify.notify', 'group.household', 'input_boolean.sleep_mode (optional)'],
+    yaml: `alias: Hydration Reminder
+description: Gentle water reminder every 2 hours during the day
+trigger:
+  - platform: time_pattern
+    hours: "/2"
+condition:
+  - condition: time
+    after: "08:00:00"
+    before: "22:00:00"
+  - condition: state
+    entity_id: group.household
+    state: home
+action:
+  - service: notify.notify
+    data:
+      title: "💧 Time to drink water"
+      message: "Stay hydrated — it is {{ now().strftime('%H:%M') }}"
+mode: single`
+  },
+  {
+    id: 'health-posture',
+    name: 'Desk Posture / Break Reminder',
+    category: 'Health',
+    icon: '🧘',
+    difficulty: 'easy',
+    desc: 'Reminds you to stand up, stretch or take a screen break every 45–60 minutes during work hours. Ties into your presence to only run when you are at your desk.',
+    triggers: ['time_pattern — every 50 minutes during work hours'],
+    conditions: ['Weekday', 'Work hours (08:00–18:00)', 'PC/desk presence sensor active'],
+    actions: ['Send notification with a short stretch tip', 'Optional: flash desk lamp briefly'],
+    entities: ['notify.notify', 'binary_sensor.desk_presence (optional)'],
+    yaml: `alias: Desk Break Reminder
+description: Stand up and stretch every 50 minutes during work hours
+trigger:
+  - platform: time_pattern
+    minutes: "/50"
+condition:
+  - condition: time
+    after: "08:00:00"
+    before: "18:00:00"
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+action:
+  - variables:
+      tips:
+        - "Stand up and stretch for 2 minutes"
+        - "Roll your shoulders and neck"
+        - "Look at something 6 metres away for 20 seconds"
+        - "Walk to another room and back"
+        - "Do 10 standing calf raises"
+  - service: notify.notify
+    data:
+      title: "🧘 Break Time"
+      message: "{{ tips | random }} — you have been sitting for ~50 minutes."
+mode: single`
+  },
+
+  // ── PLANTS & GARDEN ───────────────────────────────────────────
+  {
+    id: 'plants-soil-moisture',
+    name: 'Plant Watering Reminder',
+    category: 'Plants',
+    icon: '🌱',
+    difficulty: 'easy',
+    desc: 'Monitors a soil moisture sensor and notifies you when your plant needs watering. Works with Xiaomi Mi Flora, Ecowitt and similar sensors. Never forget to water again.',
+    triggers: ['sensor.*_moisture drops below 20%'],
+    conditions: ['Not already notified in the last 8 hours'],
+    actions: ['Send notification naming the specific plant', 'Log the dry event for tracking watering frequency'],
+    entities: ['sensor.*_moisture — soil moisture sensors', 'notify.notify'],
+    yaml: `alias: Plant Watering Reminder
+description: Notify when soil moisture is low
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.monstera_moisture
+    below: 20
+  - platform: numeric_state
+    entity_id: sensor.fiddle_leaf_moisture
+    below: 20
+action:
+  - service: notify.notify
+    data:
+      title: "🌱 Plant Needs Water"
+      message: >
+        {{ trigger.to_state.attributes.friendly_name | replace(' Moisture', '') }}
+        soil moisture is {{ trigger.to_state.state | int }}%.
+        Time to water!
+mode: parallel
+max: 5`
+  },
+  {
+    id: 'plants-garden-frost',
+    name: 'Garden Frost Warning — Protect Plants',
+    category: 'Plants',
+    icon: '❄️',
+    difficulty: 'easy',
+    desc: 'Sends an evening warning when overnight temperature is forecast to drop near freezing so you can bring tender plants inside or cover them. Uses your weather integration.',
+    triggers: ['weather.home forecast temperature drops below 2°C overnight'],
+    conditions: ['Time is between 18:00 and 21:00 (advance warning)'],
+    actions: ['Send notification warning of frost risk', 'Optionally close garden covers/blinds'],
+    entities: ['weather.home', 'notify.notify'],
+    yaml: `alias: Garden Frost Warning
+description: Evening alert when overnight frost is likely
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.outdoor_temperature
+    below: 3
+condition:
+  - condition: time
+    after: "18:00:00"
+    before: "21:00:00"
+action:
+  - service: notify.notify
+    data:
+      title: "❄️ Frost Warning Tonight"
+      message: >
+        Outside temperature is {{ states('sensor.outdoor_temperature') }}°C.
+        Protect any tender plants before bed.
+mode: single`
+  },
+
+  // ── VEHICLE ───────────────────────────────────────────────────
+  {
+    id: 'vehicle-charge-off-peak',
+    name: 'EV Charger — Off-Peak Smart Charging',
+    category: 'Vehicle',
+    icon: '⚡',
+    difficulty: 'medium',
+    desc: 'Starts EV charging automatically at the cheapest off-peak rate (e.g. Octopus Go midnight tariff) and stops at the end of the cheap window or when target charge is reached.',
+    triggers: ['Time trigger at off-peak start (e.g. 00:30)', 'EV plugged in (binary_sensor)'],
+    conditions: ['EV is plugged in', 'Battery is below target charge level'],
+    actions: ['Start charger', 'Stop at off-peak window end (e.g. 05:30)', 'Notify if charge target not met'],
+    entities: ['switch.ev_charger', 'sensor.ev_battery_level', 'binary_sensor.ev_plugged_in'],
+    yaml: `alias: EV Off-Peak Charging
+description: Start and stop EV charge during cheap-rate window
+trigger:
+  - platform: time
+    at: "00:30:00"
+    id: start
+  - platform: time
+    at: "05:30:00"
+    id: stop
+condition:
+  - condition: state
+    entity_id: binary_sensor.ev_plugged_in
+    state: "on"
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: start
+          - condition: numeric_state
+            entity_id: sensor.ev_battery_level
+            below: 80
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.ev_charger
+          - service: notify.notify
+            data:
+              message: "EV charging started (off-peak)"
+      - conditions:
+          - condition: trigger
+            id: stop
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.ev_charger
+          - service: notify.notify
+            data:
+              message: >
+                EV charging stopped. Battery: {{ states('sensor.ev_battery_level') }}%
+mode: single`
+  },
+  {
+    id: 'vehicle-left-unlocked',
+    name: 'Vehicle Left Unlocked Alert',
+    category: 'Vehicle',
+    icon: '🔓',
+    difficulty: 'easy',
+    desc: 'Notifies you if your vehicle is still unlocked 10 minutes after you arrive home. Works with Tesla, BMW, Volkswagen and any HA-connected vehicle integration.',
+    triggers: ['device_tracker.vehicle arrives home AND lock.vehicle is unlocked for 10 min'],
+    conditions: ['Vehicle is home', 'Lock state is unlocked'],
+    actions: ['Send notification with option to lock remotely', 'Optionally auto-lock after 15 min'],
+    entities: ['device_tracker.vehicle', 'lock.vehicle_door_lock', 'notify.notify'],
+    yaml: `alias: Vehicle Left Unlocked
+description: Alert if car is still unlocked after arriving home
+trigger:
+  - platform: state
+    entity_id: lock.vehicle_door_lock
+    to: unlocked
+    for:
+      minutes: 10
+condition:
+  - condition: state
+    entity_id: device_tracker.vehicle
+    state: home
+action:
+  - service: notify.notify
+    data:
+      title: "🔓 Vehicle Unlocked"
+      message: "Your vehicle has been unlocked for 10 minutes at home."
+mode: single`
+  },
+
+  // ── NOTIFICATIONS (additions) ─────────────────────────────────
+  {
+    id: 'notify-ha-update',
+    name: 'HA Update Available — Notify',
+    category: 'Notifications',
+    icon: '🔄',
+    difficulty: 'easy',
+    desc: 'Sends a notification when a new Home Assistant core, supervisor or OS update is available. Keeps you informed without having to check the update panel manually.',
+    triggers: ['update.home_assistant_core changes to on (update available)', 'update.home_assistant_supervisor changes to on'],
+    conditions: [],
+    actions: ['Notify with version number and what is being updated', 'Include a deep link to the update page'],
+    entities: ['update.home_assistant_core', 'update.home_assistant_supervisor', 'update.home_assistant_operating_system'],
+    yaml: `alias: HA Update Available
+description: Notify when Home Assistant has an update ready
+trigger:
+  - platform: state
+    entity_id:
+      - update.home_assistant_core
+      - update.home_assistant_supervisor
+      - update.home_assistant_operating_system
+    to: "on"
+action:
+  - service: notify.notify
+    data:
+      title: "🔄 HA Update Available"
+      message: >
+        {{ trigger.to_state.attributes.friendly_name }}:
+        {{ trigger.to_state.attributes.installed_version }} →
+        {{ trigger.to_state.attributes.latest_version }}
+      data:
+        url: /config/updates
+mode: queued
+max: 3`
+  },
+  {
+    id: 'notify-backup-done',
+    name: 'HA Backup Completed — Confirm',
+    category: 'Notifications',
+    icon: '💾',
+    difficulty: 'easy',
+    desc: 'Confirms when an automated backup completes successfully, or alerts if one fails or has not run in over 24 hours. Gives peace of mind that your config is protected.',
+    triggers: ['sensor.backup_state changes to backed_up', 'sensor.backup_last_successful_automatic_backup (time-based)'],
+    conditions: [],
+    actions: ['Notify on success with timestamp', 'Alert if backup sensor shows failure or is overdue'],
+    entities: ['sensor.backup_state', 'notify.notify'],
+    yaml: `alias: Backup Status Notification
+description: Confirm successful backups or alert on failure
+trigger:
+  - platform: state
+    entity_id: sensor.backup_state
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'backed_up' }}"
+        sequence:
+          - service: notify.notify
+            data:
+              title: "💾 Backup Complete"
+              message: "HA backup completed at {{ now().strftime('%H:%M %d/%m/%Y') }}"
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'failed' }}"
+        sequence:
+          - service: notify.notify
+            data:
+              title: "⚠️ Backup Failed"
+              message: "HA backup failed at {{ now().strftime('%H:%M') }}. Check the backup panel."
+mode: single`
+  },
+
+  // ── TIME-BASED (additions) ────────────────────────────────────
+  {
+    id: 'time-bedtime-check',
+    name: 'Late Night Checklist — Locks, Lights, Plugs',
+    category: 'Time-based',
+    icon: '🌙',
+    difficulty: 'medium',
+    desc: 'At a set time each night runs through a checklist — verifies doors are locked, turns off all non-essential lights and plugs, sets the thermostat, and sends a summary of anything that needed attention.',
+    triggers: ['Time trigger at 23:00 (configurable)'],
+    conditions: ['Someone is home'],
+    actions: ['Check all door locks — lock any unlocked', 'Turn off all lights except bedroom', 'Turn off non-essential smart plugs', 'Set thermostat to night mode', 'Send summary notification'],
+    entities: ['lock.*', 'light.*', 'switch.*', 'climate.home', 'notify.notify'],
+    yaml: `alias: Late Night Checklist
+description: Lock up, lights off, thermostat — automated bedtime routine
+trigger:
+  - platform: time
+    at: "23:00:00"
+condition:
+  - condition: state
+    entity_id: group.household
+    state: home
+action:
+  - variables:
+      issues: []
+  - service: lock.lock
+    target:
+      entity_id:
+        - lock.front_door
+        - lock.back_door
+  - service: light.turn_off
+    target:
+      area_id:
+        - living_room
+        - kitchen
+        - hallway
+  - service: switch.turn_off
+    target:
+      entity_id:
+        - switch.tv_plug
+        - switch.kettle_plug
+        - switch.desk_lamp_plug
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.home
+    data:
+      preset_mode: sleep
+  - service: notify.notify
+    data:
+      title: "🌙 Goodnight — All Done"
+      message: "Doors locked, lights off, heating in sleep mode."
+mode: single`
+  },
+  {
+    id: 'time-weekend-lie-in',
+    name: 'Weekend Lie-In Mode',
+    category: 'Time-based',
+    icon: '🛏️',
+    difficulty: 'easy',
+    desc: 'On weekends, suppresses morning automations (lights, alarms, reminders) until a later time. Detects Friday/Saturday night and delays all morning routines by 2 hours automatically.',
+    triggers: ['Time trigger — 09:00 on Saturday and Sunday (instead of normal 07:00)'],
+    conditions: ['Weekend day', 'input_boolean.lie_in_mode is on (or auto-set on Friday evening)'],
+    actions: ['Run normal morning routine at the later weekend time', 'Optionally auto-enable on Friday at 22:00'],
+    entities: ['input_boolean.lie_in_mode', 'scene.good_morning', 'light.*'],
+    yaml: `alias: Weekend Lie-In Mode
+description: Delay morning routines on Saturday and Sunday
+trigger:
+  - platform: time
+    at: "09:00:00"
+condition:
+  - condition: time
+    weekday:
+      - sat
+      - sun
+action:
+  - scene: scene.good_morning
+  - service: cover.open_cover
+    target:
+      area_id: bedroom
+  - service: notify.notify
+    data:
+      message: "Good morning — weekend rise time. Have a great day!"
+mode: single`
+  },
+
+  // ── MULTI-DEVICE (additions) ──────────────────────────────────
+  {
+    id: 'multi-arriving-home',
+    name: 'Full Arriving Home Routine',
+    category: 'Multi-device',
+    icon: '🏡',
+    difficulty: 'medium',
+    desc: 'When you arrive home, triggers a full welcome routine — turns on lights to preferred brightness, sets the heating/cooling to comfort, plays your favourite playlist, and disarms the alarm. Personalised per person.',
+    triggers: ['person.alex transitions to home zone'],
+    conditions: ['Nobody else was already home (first arrival)', 'Time is within reasonable hours'],
+    actions: ['Disarm alarm', 'Turn on welcome lights', 'Start music on preferred speaker', 'Set thermostat to comfort mode', 'Send arrival confirmation notification'],
+    entities: ['person.*', 'alarm_control_panel.*', 'light.*', 'media_player.*', 'climate.*'],
+    yaml: `alias: Arriving Home Routine
+description: Full welcome automation when first person arrives
+trigger:
+  - platform: state
+    entity_id: person.alex
+    to: home
+condition:
+  - condition: state
+    entity_id: group.household
+    state: not_home
+    for:
+      minutes: 5
+action:
+  - service: alarm_control_panel.alarm_disarm
+    target:
+      entity_id: alarm_control_panel.home
+    data:
+      code: !secret alarm_code
+  - service: light.turn_on
+    target:
+      area_id: hallway
+    data:
+      brightness_pct: 80
+      kelvin: 3000
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.kitchen_speaker
+    data:
+      media_content_id: "spotify:playlist:37i9dQZF1DX4sWSpwq3LiO"
+      media_content_type: music
+  - service: climate.set_preset_mode
+    target:
+      entity_id: climate.home
+    data:
+      preset_mode: comfort
+mode: single`
+  },
+  {
+    id: 'multi-scentsy-schedule',
+    name: 'Scentsy Warmer — Room Schedule',
+    category: 'Multi-device',
+    icon: '🕯️',
+    difficulty: 'easy',
+    desc: 'Turns your Scentsy wax warmer on when you are home in the evening and off at night or when you leave. Prevents it running unattended and saves the wax for when it can be enjoyed.',
+    triggers: ['Time trigger at 17:30 (evening on)', 'Time trigger at 22:30 (night off)', 'group.household changes to not_home (away off)'],
+    conditions: [],
+    actions: ['Turn Scentsy smart plug on or off', 'Never runs when nobody is home'],
+    entities: ['switch.scentsy_plug', 'group.household'],
+    yaml: `alias: Scentsy Warmer Schedule
+description: Scentsy on in the evening, off at night and when away
+trigger:
+  - platform: time
+    at: "17:30:00"
+    id: on
+  - platform: time
+    at: "22:30:00"
+    id: off
+  - platform: state
+    entity_id: group.household
+    to: not_home
+    id: away
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: on
+          - condition: state
+            entity_id: group.household
+            state: home
+        sequence:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.scentsy_plug
+      - conditions:
+          - alias: Off at night or when away
+            condition: trigger
+            id:
+              - "off"
+              - away
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.scentsy_plug
+mode: single`
+  }
+];
+
+amFilter();
+</script>
+</body>
+</html>

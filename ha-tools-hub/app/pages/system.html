@@ -497,16 +497,23 @@
     }
 
     try {
-      // Fetch all data in parallel via server proxy
+      // Fetch all data in parallel via server proxy.
+      // Registries use /api/registry (dedicated endpoint, proven reliable).
+      // Other WS commands use /api/ws-command.
+      function reg(type) {
+        return fetch(base + 'api/registry?type=' + type, { credentials: 'include' })
+          .then(function(r){ return r.json(); })
+          .catch(function(){ return { ok: false, result: null }; });
+      }
       var results = await Promise.all([
         fetch(base + 'api/entity-states', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {ok:false,states:[]}; }),
         wsCmd('config_entries/list'),
         wsCmd('get_config'),
-        wsCmd('config/device_registry/list'),
-        wsCmd('config/entity_registry/list'),
+        reg('devices'),
+        reg('entities'),
         wsCmd('blueprint/list'),
-        wsCmd('config/area_registry/list'),
-        wsCmd('config/floor_registry/list'),
+        reg('areas'),
+        reg('floors'),
         wsCmd('repairs/list/issues'),
         wsCmd('lovelace/dashboards/list'),
         wsCmd('system_health/info'),
@@ -562,13 +569,9 @@
       }
 
       // ── Registries ───────────────────────────────────────────
-      var devRaw = devRegResp.ok ? devRegResp.result : null;
-      _devRegistry = Array.isArray(devRaw) ? devRaw
-                   : (devRaw && Array.isArray(devRaw.devices) ? devRaw.devices : []);
-
-      var entRaw = entRegResp.ok ? entRegResp.result : null;
-      _entRegistry = Array.isArray(entRaw) ? entRaw
-                   : (entRaw && Array.isArray(entRaw.entity_entries) ? entRaw.entity_entries : []);
+      // /api/registry returns {ok, result: <array>} directly — no shape unwrapping needed.
+      _devRegistry = (devRegResp.ok && Array.isArray(devRegResp.result)) ? devRegResp.result : [];
+      _entRegistry = (entRegResp.ok && Array.isArray(entRegResp.result)) ? entRegResp.result : [];
 
       // ── Blueprint list ────────────────────────────────────────
       var _bpRaw = bpResp.ok ? (bpResp.result || {}) : {};

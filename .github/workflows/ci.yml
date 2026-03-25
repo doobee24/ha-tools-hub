@@ -1,7 +1,6 @@
 # ════════════════════════════════════════════════════════════════
 #  HA Tools Hub — CI Workflow
 #  Runs on every push and pull request to main.
-#  Validates addon structure, config, and HTML page integrity.
 # ════════════════════════════════════════════════════════════════
 
 name: CI — Addon Validation
@@ -19,14 +18,24 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      # ── 1. Validate config.yaml ─────────────────────────────────
+      - name: Debug - show working directory
+        run: |
+          echo "Working directory: $(pwd)"
+          echo "Files at root:"
+          ls -la
+          echo ""
+          echo "app/ contents:"
+          ls -la app/ || echo "No app/ folder found"
+
       - name: Validate config.yaml
         run: |
-          echo "Checking config.yaml..."
           if [ ! -f config.yaml ]; then
-            echo "❌ config.yaml not found"
+            echo "❌ config.yaml not found at $(pwd)"
+            ls -la
             exit 1
           fi
           for field in name version slug ingress; do
@@ -38,7 +47,6 @@ jobs:
           VERSION=$(grep '^version:' config.yaml | sed 's/version: *"//' | sed 's/"//')
           echo "✓ config.yaml valid — version: $VERSION"
 
-      # ── 2. Validate Dockerfile ──────────────────────────────────
       - name: Validate Dockerfile
         run: |
           if [ ! -f Dockerfile ]; then
@@ -47,64 +55,46 @@ jobs:
           fi
           echo "✓ Dockerfile present"
 
-      # ── 3. Validate required app files ─────────────────────────
       - name: Check required app structure
         run: |
-          echo "Checking app structure..."
-          REQUIRED=(
-            "app/server.py"
-            "app/assets/css/main.css"
-            "app/assets/js/main.js"
-          )
+          REQUIRED=("app/server.py" "app/assets/css/main.css" "app/assets/js/main.js")
           for f in "${REQUIRED[@]}"; do
             if [ ! -f "$f" ]; then
-              echo "❌ Missing required file: $f"
+              echo "❌ Missing: $f"
               exit 1
             fi
             echo "✓ $f"
           done
 
-      # ── 4. Validate HTML pages ──────────────────────────────────
       - name: Check HTML pages
         run: |
-          echo "Checking HTML pages..."
           PAGE_COUNT=0
           for f in app/pages/*.html; do
             [ -e "$f" ] || { echo "❌ No HTML pages found in app/pages/"; exit 1; }
-            if [ ! -s "$f" ]; then
-              echo "❌ Empty page: $f"
-              exit 1
-            fi
-            SIZE=$(wc -c < "$f")
-            echo "✓ $(basename $f) — ${SIZE} bytes"
+            [ -s "$f" ] || { echo "❌ Empty page: $f"; exit 1; }
+            echo "✓ $(basename $f) — $(wc -c < $f) bytes"
             PAGE_COUNT=$((PAGE_COUNT + 1))
           done
           echo "Total pages: $PAGE_COUNT"
 
-      # ── 5. Python syntax check ──────────────────────────────────
       - name: Python syntax check
         run: |
           python3 -m py_compile app/server.py
           echo "✓ server.py syntax OK"
 
-      # ── 6. Credential leak scan ──────────────────────────────────
-      - name: Scan for credential leaks
+      - name: Credential scan
         run: |
-          echo "Scanning for credentials..."
           if grep -rn 'ghp_[A-Za-z0-9]\{36\}\|github_pat_[A-Za-z0-9_]\{82\}' app/ 2>/dev/null; then
-            echo "❌ GitHub token found hardcoded in source!"
+            echo "❌ GitHub token hardcoded in source!"
             exit 1
           fi
-          echo "✓ No credential leaks detected"
+          echo "✓ No credential leaks"
 
-      # ── 7. Summary ──────────────────────────────────────────────
-      - name: CI Summary
+      - name: Summary
         run: |
-          echo ""
           echo "════════════════════════════════════"
           echo "  HA Tools Hub — CI PASSED ✅"
-          echo "════════════════════════════════════"
-          echo "  Version: $(grep '^version:' config.yaml | sed 's/version: *"//' | sed 's/"//')"
+          echo "  Version: $(grep '^version:' config.yaml | sed 's/version: *"//' | sed 's/\"//')"
           echo "  Pages:   $(ls app/pages/*.html 2>/dev/null | wc -l)"
           echo "  Commit:  ${{ github.sha }}"
           echo "════════════════════════════════════"

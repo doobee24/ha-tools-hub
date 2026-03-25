@@ -317,7 +317,7 @@
       <!-- Connection controls -->
       <div class="sa-sidebar-section" id="sa-conn-panel">
         <div style="display:flex;flex-direction:column;gap:5px;">
-          <button class="sa-ctrl-btn sa-ctrl-primary" id="sa-btn-analyse" onclick="runAnalysis()">&#128269; Refresh</button>
+          <button class="sa-ctrl-btn sa-ctrl-primary" id="sa-btn-analyse" onclick="HAConn.addonMode ? addonRunAnalysis() : runAnalysis()">&#128269; Refresh</button>
           <div style="display:flex;gap:5px;">
             <button class="sa-ctrl-btn sa-ctrl-warn"   id="sa-btn-disconnect" onclick="saDisconnect()" style="display:none;flex:1">&#9167; Disconnect</button>
             <button class="sa-ctrl-btn sa-ctrl-danger" id="sa-btn-forget"     onclick="saForget()" style="flex:1">&#128465; Forget</button>
@@ -434,11 +434,21 @@
     if (s === 'connected') {
       BrandIcon.warmToken(ver);
       if (btnDisc) btnDisc.style.display = '';
-      setTimeout(runAnalysis, 300);
+      // In addon mode data is already loaded via addonRunAnalysis on page load.
+      // Only run the WebSocket path when NOT in addon mode.
+      if (!HAConn.addonMode) setTimeout(runAnalysis, 300);
     } else {
       if (btnDisc) btnDisc.style.display = 'none';
     }
   });
+
+  // ── Addon-mode auto-load ────────────────────────────────────────
+  // When running as an HA addon via ingress, skip the WebSocket/token
+  // requirement entirely. Load all data via server.py proxy endpoints
+  // using the SUPERVISOR_TOKEN — fires immediately, no user action needed.
+  if (HAConn.addonMode) {
+    setTimeout(addonRunAnalysis, 400);
+  }
 
   // ── Platform selection ─────────────────────────────────────────
   // ── Sidebar toggle (mobile) ────────────────────────────────────
@@ -637,6 +647,184 @@
     } catch (e) {
       showBanner('sa-err', '❌ Analysis failed: ' + (e.message || String(e)) + (e.stack ? ' — ' + e.stack.split('\n')[1] : ''));
       console.error('runAnalysis error:', e);
+    }
+  }
+
+  // ── Addon-mode analysis (no user token required) ───────────────
+  // Used when running as an HA addon via ingress. All data comes from
+  // server.py which uses the SUPERVISOR_TOKEN — no WebSocket or
+  // long-lived token needed from the browser.
+  async function addonRunAnalysis() {
+    showBanner('sa-info', '⏳ Analysing Home Assistant…');
+    var base = HAConn.addonBase();
+
+    // Helper: call a server proxy WS command endpoint
+    async function wsCmd(type) {
+      try {
+        var r = await fetch(base + 'api/ws-command?type=' + encodeURIComponent(type), { credentials: 'include' });
+        if (!r.ok) return { ok: false, result: null };
+        var d = await r.json();
+        return { ok: d.ok, result: d.result };
+      } catch(e) { return { ok: false, result: null }; }
+    }
+
+    // Helper: call a server proxy REST endpoint
+    async function restProxy(path) {
+      try {
+        var r = await fetch(base + 'api/proxy?path=' + encodeURIComponent(path), { credentials: 'include' });
+        if (!r.ok) return { ok: false, data: null };
+        var d = await r.json();
+        return { ok: d.ok, data: d.data };
+      } catch(e) { return { ok: false, data: null }; }
+    }
+
+    try {
+      // Fetch all data in parallel via server proxy
+      var results = await Promise.all([
+        fetch(base + 'api/entity-states', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {ok:false,states:[]}; }),
+        wsCmd('config_entries/list'),
+        wsCmd('get_config'),
+        wsCmd('config/device_registry/list'),
+        wsCmd('config/entity_registry/list'),
+        wsCmd('blueprint/list'),
+        wsCmd('config/area_registry/list'),
+        wsCmd('config/floor_registry/list'),
+        wsCmd('repairs/list/issues'),
+        wsCmd('lovelace/dashboards/list'),
+        wsCmd('system_health/info'),
+        fetch(base + 'api/ha-info', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; })
+      ]);
+
+      var statesResp   = results[0];
+      var entriesResp  = results[1];
+      var configResp   = results[2];
+      var devRegResp   = results[3];
+      var entRegResp   = results[4];
+      var bpResp       = results[5];
+      var areaResp     = results[6];
+      var floorResp    = results[7];
+      var repairsResp  = results[8];
+      var dashResp     = results[9];
+      var shResp       = results[10];
+      var haInfoResp   = results[11];
+
+      // ── Normalise states ──────────────────────────────────────
+      // /api/entity-states returns slim {entity_id, state, name, attributes, ...}
+      // runAnalysis expects the same shape from get_states (full HA state objects)
+      var states = [];
+      if (statesResp.ok && Array.isArray(statesResp.states)) {
+        states = statesResp.states.map(function(s) {
+          return { entity_id: s.entity_id, state: s.state, attributes: s.attributes || {} };
+        });
+      }
+
+      // ── Normalise config_entries ──────────────────────────────
+      var rawEnt = entriesResp.ok ? entriesResp.result : null;
+      var entries = [];
+      if (Array.isArray(rawEnt))                        entries = rawEnt;
+      else if (rawEnt && Array.isArray(rawEnt.entries)) entries = rawEnt.entries;
+
+      // Fallback: try REST proxy if WS gave nothing
+      if (!entries.length) {
+        var restPaths = ['/api/config/config_entries/entry', '/api/config/config_entries'];
+        for (var _rpi = 0; _rpi < restPaths.length && !entries.length; _rpi++) {
+          var rr = await restProxy(restPaths[_rpi]);
+          if (rr.ok && rr.data) {
+            if (Array.isArray(rr.data))                        entries = rr.data;
+            else if (rr.data && Array.isArray(rr.data.entries)) entries = rr.data.entries;
+          }
+        }
+      }
+
+      // ── Normalise config (version etc.) ──────────────────────
+      var config = configResp.ok ? (configResp.result || {}) : {};
+      // Fall back to /api/ha-info for version if get_config gave nothing
+      if (!config.version && haInfoResp.ok && haInfoResp.version) {
+        config.version = haInfoResp.version;
+      }
+
+      // ── Registries ───────────────────────────────────────────
+      var devRaw = devRegResp.ok ? devRegResp.result : null;
+      _devRegistry = Array.isArray(devRaw) ? devRaw
+                   : (devRaw && Array.isArray(devRaw.devices) ? devRaw.devices : []);
+
+      var entRaw = entRegResp.ok ? entRegResp.result : null;
+      _entRegistry = Array.isArray(entRaw) ? entRaw
+                   : (entRaw && Array.isArray(entRaw.entity_entries) ? entRaw.entity_entries : []);
+
+      // ── Blueprint list ────────────────────────────────────────
+      var _bpRaw = bpResp.ok ? (bpResp.result || {}) : {};
+      var blueprintList = [];
+      Object.keys(_bpRaw).forEach(function(domain) {
+        Object.keys(_bpRaw[domain]).forEach(function(path) {
+          blueprintList.push(Object.assign({ _domain: domain, _path: path }, _bpRaw[domain][path]));
+        });
+      });
+
+      // ── Other registries ──────────────────────────────────────
+      var areaRegistry  = areaResp.ok  ? (areaResp.result  || []) : [];
+      var floorRegistry = floorResp.ok ? (floorResp.result || []) : [];
+
+      var repairsRaw = repairsResp.ok ? (repairsResp.result || {}) : {};
+      var repairIssues = Array.isArray(repairsRaw) ? repairsRaw
+                       : Array.isArray(repairsRaw.issues) ? repairsRaw.issues : [];
+
+      var dashboards  = dashResp.ok ? (dashResp.result || []) : [];
+      var systemHealth = (shResp.ok && shResp.result) ? shResp.result : {};
+
+      if (!states.length && !entries.length) {
+        showBanner('sa-err', '❌ No data — Supervisor token may lack permissions.');
+        return;
+      }
+
+      // ── Version ───────────────────────────────────────────────
+      var version = config.version || '';
+      if (!version) {
+        var updateEnt = states.find(function(s) { return s.entity_id === 'update.home_assistant_core_update'; });
+        if (updateEnt) version = (updateEnt.attributes || {}).installed_version || '';
+      }
+
+      var autos = states.filter(function(s) { return s.entity_id.startsWith('automation.'); }).length;
+      showBanner('sa-ok', '✅ HA ' + (version || 'online') + ' · ' + states.length + ' entities · ' + entries.length + ' integrations');
+      setTimeout(hideBanner, 2000);
+
+      // ── Quick stats ───────────────────────────────────────────
+      var helpers    = states.filter(function(s) { return ['input_boolean','input_number','input_select','input_text','input_datetime','input_button','counter','timer','schedule','todo'].indexOf(s.entity_id.split('.')[0]) !== -1; }).length;
+      var scenes     = states.filter(function(s) { return s.entity_id.startsWith('scene.'); }).length;
+      var scripts    = states.filter(function(s) { return s.entity_id.startsWith('script.'); }).length;
+      var people     = states.filter(function(s) { return s.entity_id.startsWith('person.'); }).length;
+      var unavail    = states.filter(function(s) { return s.state === 'unavailable' || s.state === 'unknown'; }).length;
+      var domainCount = Object.keys((function(){ var d={}; states.forEach(function(s){ d[s.entity_id.split('.')[0]]=1; }); return d; })()).length;
+      var updates    = states.filter(function(s) { return s.entity_id.startsWith('update.') && s.state === 'on'; }).length;
+      var zones      = states.filter(function(s) { return s.entity_id.startsWith('zone.'); }).length;
+      var calendars  = states.filter(function(s) { return s.entity_id.startsWith('calendar.'); }).length;
+
+      setStat('qs-entities',     states.length);
+      setStat('qs-devices',      _devRegistry.length);
+      setStat('qs-integrations', entries.length);
+      setStat('qs-domains',      domainCount);
+      setStat('qs-unavailable',  unavail);
+      setStat('qs-helpers',      helpers);
+      setStat('qs-scenes',       scenes);
+      setStat('qs-scripts',      scripts);
+      setStat('qs-blueprints',   blueprintList.length || '—');
+      setStat('qs-people',       people);
+      setStat('qs-automations',  autos);
+      setStat('qs-updates',      updates || '✓');
+      setStat('qs-zones',        zones);
+      setStat('qs-calendars',    calendars);
+      setStat('qs-areas',        areaRegistry.length);
+      setStat('qs-repairs',      repairIssues.length || '✓');
+      setStat('qs-syshealth',    Object.keys(systemHealth).length || '—');
+      setStat('qs-dashboards',   dashboards.length);
+      setStat('qs-version',      version || '?');
+      document.getElementById('sa-quick-stats').style.display = '';
+
+      renderAnalysis(states, entries, config, version, blueprintList, areaRegistry, floorRegistry, repairIssues, dashboards, systemHealth);
+
+    } catch(e) {
+      showBanner('sa-err', '❌ Addon analysis failed: ' + (e.message || String(e)));
+      console.error('addonRunAnalysis error:', e);
     }
   }
 

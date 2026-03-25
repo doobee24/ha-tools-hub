@@ -260,6 +260,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             '/api/connection-info':   self.handle_connection_info,
             '/api/proxy':             self.handle_proxy,
             '/api/registry':          self.handle_registry,
+            '/api/ws-command':        self.handle_ws_command,
             '/api/config-patch':      self.handle_config_patch,
             '/api/system-stats':      self.handle_system_stats,
             '/api/delete-automation':  self.handle_delete_automation,
@@ -394,6 +395,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': True, 'result': result})
         except Exception as e:
             print(f'[hub] Registry WS error ({reg_type}): {e}', flush=True)
+            self.send_json({'ok': False, 'error': str(e)})
+
+    # ── /api/ws-command?type=<ws_type> ───────────────────────────
+    # Run any HA WebSocket command server-side via SUPERVISOR_TOKEN.
+    # Allows pages to get data without a user-level WS token.
+    # Allowlist restricts to safe read-only commands only.
+    SAFE_WS_COMMANDS = {
+        'config_entries/list', 'get_config', 'blueprint/list',
+        'repairs/list/issues', 'lovelace/dashboards/list',
+        'system_health/info', 'get_states',
+        'config/area_registry/list', 'config/floor_registry/list',
+        'config/device_registry/list', 'config/entity_registry/list',
+    }
+    def handle_ws_command(self):
+        params   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        cmd_type = params.get('type', [None])[0]
+        if not cmd_type:
+            self.send_json({'ok': False, 'error': 'No type specified'})
+            return
+        if cmd_type not in self.SAFE_WS_COMMANDS:
+            self.send_json({'ok': False, 'error': f'Command not allowed: {cmd_type}'})
+            return
+        try:
+            result = supervisor_ws_command(cmd_type)
+            self.send_json({'ok': True, 'result': result})
+        except Exception as e:
+            print(f'[hub] ws-command error ({cmd_type}): {e}', flush=True)
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/entity-states ───────────────────────────────────────

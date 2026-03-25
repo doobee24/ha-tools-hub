@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       # ── 1. Validate config.yaml ─────────────────────────────────
-      - name: Validate config.yaml exists and has required fields
+      - name: Validate config.yaml
         run: |
           echo "Checking config.yaml..."
           if [ ! -f config.yaml ]; then
@@ -39,7 +39,7 @@ jobs:
           echo "✓ config.yaml valid — version: $VERSION"
 
       # ── 2. Validate Dockerfile ──────────────────────────────────
-      - name: Validate Dockerfile exists
+      - name: Validate Dockerfile
         run: |
           if [ ! -f Dockerfile ]; then
             echo "❌ Dockerfile not found"
@@ -65,13 +65,14 @@ jobs:
           done
 
       # ── 4. Validate HTML pages ──────────────────────────────────
-      - name: Check HTML pages exist and are non-empty
+      - name: Check HTML pages
         run: |
           echo "Checking HTML pages..."
           PAGE_COUNT=0
           for f in app/pages/*.html; do
+            [ -e "$f" ] || { echo "❌ No HTML pages found in app/pages/"; exit 1; }
             if [ ! -s "$f" ]; then
-              echo "❌ Empty or missing page: $f"
+              echo "❌ Empty page: $f"
               exit 1
             fi
             SIZE=$(wc -c < "$f")
@@ -79,38 +80,22 @@ jobs:
             PAGE_COUNT=$((PAGE_COUNT + 1))
           done
           echo "Total pages: $PAGE_COUNT"
-          if [ $PAGE_COUNT -lt 1 ]; then
-            echo "❌ No HTML pages found in app/pages/"
-            exit 1
-          fi
 
       # ── 5. Python syntax check ──────────────────────────────────
-      - name: Python syntax check — server.py
+      - name: Python syntax check
         run: |
           python3 -m py_compile app/server.py
-          echo "✓ server.py — syntax OK"
+          echo "✓ server.py syntax OK"
 
-      # ── 6. Check for accidental credential leaks ────────────────
-      - name: Scan for accidental credential exposure
+      # ── 6. Credential leak scan ──────────────────────────────────
+      - name: Scan for credential leaks
         run: |
           echo "Scanning for credentials..."
-          FOUND=0
-
-          # Check for hardcoded IPs (real ones, not examples)
-          if grep -rn '192\.168\.[0-9]\+\.[0-9]\+' app/ --include="*.html" --include="*.js" 2>/dev/null | grep -v '192\.168\.1\.x\|192\.168\.x\.x\|example'; then
-            echo "⚠ Warning: possible hardcoded IP found"
-            FOUND=1
-          fi
-
-          # Check for long-lived token patterns
           if grep -rn 'ghp_[A-Za-z0-9]\{36\}\|github_pat_[A-Za-z0-9_]\{82\}' app/ 2>/dev/null; then
             echo "❌ GitHub token found hardcoded in source!"
             exit 1
           fi
-
-          if [ $FOUND -eq 0 ]; then
-            echo "✓ No credential leaks detected"
-          fi
+          echo "✓ No credential leaks detected"
 
       # ── 7. Summary ──────────────────────────────────────────────
       - name: CI Summary

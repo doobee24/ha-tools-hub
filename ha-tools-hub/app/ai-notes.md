@@ -239,3 +239,57 @@ Snapshots stored at `/data/snapshots/<ISO-timestamp>.json` (Supervisor auto-moun
 - `GET /api/snapshot/delta` — compare two most recent snapshots, return structured diff
 
 *Last updated: Phase 3 complete — Delta Tracker built and deployed. Phase 4 (ai-notes update) auto-complete.*
+
+---
+
+## 10. Addon-First Architecture — Standing Rule (All Future Pages)
+
+**HA-Tools-Hub is an HA addon. It always runs inside ingress. It always has the Supervisor token. This is a fixed architectural constant, not a runtime condition.**
+
+### Rules — non-negotiable for every page:
+
+| Rule | Detail |
+|---|---|
+| No WebSocket dependency | `HAConn.send()` must never be used in any page. Supervisor token proxy is the only data path. |
+| No token prompts | No connection popup, no URL field, no long-lived token input anywhere in the app. |
+| No `addonMode` checks | Never gate on `HAConn.addonMode`. It is always true. Write code that assumes it unconditionally. |
+| No `onStateChange` handlers | WebSocket connection state is irrelevant. Remove from any page that has it. |
+| No disconnect/forget buttons | No credentials are stored. These controls have no meaning in this app. |
+| Auto-load on page ready | Every page fires its data fetch in `setTimeout(fn, 400)` on DOMContentLoaded — no user action required. |
+| All data via server.py | Use `HAConn.addonFetch()`, `HAConn.addonRegistry()`, or `/api/ws-command`, `/api/proxy`, `/api/registry`, `/api/entity-states`, `/api/system-stats`. |
+| Refresh button always calls addon fn | `onclick="addonRunAnalysis()"` — never conditionally. |
+
+### Data endpoint mapping (server.py → browser):
+
+| Data needed | Server endpoint |
+|---|---|
+| Entity states | `GET /api/entity-states` |
+| Entity registry | `GET /api/registry?type=entities` |
+| Device registry | `GET /api/registry?type=devices` |
+| Area registry | `GET /api/registry?type=areas` |
+| Floor registry | `GET /api/registry?type=floors` |
+| Config entries / integrations | `GET /api/ws-command?type=config_entries/list` |
+| HA core config (version etc.) | `GET /api/ws-command?type=get_config` |
+| Blueprints | `GET /api/ws-command?type=blueprint/list` |
+| Repairs | `GET /api/ws-command?type=repairs/list/issues` |
+| Dashboards | `GET /api/ws-command?type=lovelace/dashboards/list` |
+| System health | `GET /api/ws-command?type=system_health/info` |
+| Any HA REST endpoint | `GET /api/proxy?path=/api/...` |
+| HA version + addon info | `GET /api/ha-info` |
+| Hardware/system stats | `GET /api/system-stats` |
+
+### Correct page boot pattern:
+```javascript
+// On every page — unconditional, no checks
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(loadPageData, 400);
+});
+
+async function loadPageData() {
+  var base = HAConn.addonBase();
+  // fetch from server.py endpoints via base + 'api/...'
+  // credentials: 'include' on every fetch
+}
+```
+
+*Established: Session of 2026-03-25. Reason: HAConn WebSocket path requires a user-level token that does not exist in fresh browser sessions. Addon always has SUPERVISOR_TOKEN via server.py — this is the correct and only data path.*

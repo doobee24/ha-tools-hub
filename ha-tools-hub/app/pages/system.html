@@ -317,11 +317,7 @@
       <!-- Connection controls -->
       <div class="sa-sidebar-section" id="sa-conn-panel">
         <div style="display:flex;flex-direction:column;gap:5px;">
-          <button class="sa-ctrl-btn sa-ctrl-primary" id="sa-btn-analyse" onclick="HAConn.addonMode ? addonRunAnalysis() : runAnalysis()">&#128269; Refresh</button>
-          <div style="display:flex;gap:5px;">
-            <button class="sa-ctrl-btn sa-ctrl-warn"   id="sa-btn-disconnect" onclick="saDisconnect()" style="display:none;flex:1">&#9167; Disconnect</button>
-            <button class="sa-ctrl-btn sa-ctrl-danger" id="sa-btn-forget"     onclick="saForget()" style="flex:1">&#128465; Forget</button>
-          </div>
+          <button class="sa-ctrl-btn sa-ctrl-primary" id="sa-btn-analyse" onclick="addonRunAnalysis()">&#128269; Refresh</button>
         </div>
         <div id="sa-ctrl-msg" style="font-size:10px;margin-top:6px;color:var(--text2);min-height:14px;"></div>
       </div>
@@ -428,27 +424,10 @@
   // Note: hacs is intentionally kept visible — it is user-installed,
   // not a HA system component, even though it ships as a config entry.
 
-  // ── HAConn state listener ──────────────────────────────────────
-  HAConn.onStateChange(function(s, msg, ver) {
-    var btnDisc = document.getElementById('sa-btn-disconnect');
-    if (s === 'connected') {
-      BrandIcon.warmToken(ver);
-      if (btnDisc) btnDisc.style.display = '';
-      // In addon mode data is already loaded via addonRunAnalysis on page load.
-      // Only run the WebSocket path when NOT in addon mode.
-      if (!HAConn.addonMode) setTimeout(runAnalysis, 300);
-    } else {
-      if (btnDisc) btnDisc.style.display = 'none';
-    }
-  });
-
-  // ── Addon-mode auto-load ────────────────────────────────────────
-  // When running as an HA addon via ingress, skip the WebSocket/token
-  // requirement entirely. Load all data via server.py proxy endpoints
-  // using the SUPERVISOR_TOKEN — fires immediately, no user action needed.
-  if (HAConn.addonMode) {
-    setTimeout(addonRunAnalysis, 400);
-  }
+  // ── Auto-load on page ready ─────────────────────────────────────
+  // HA-Tools-Hub always runs as an addon via ingress with SUPERVISOR_TOKEN.
+  // All data loads through server.py proxy — no WebSocket or user token needed.
+  setTimeout(addonRunAnalysis, 400);
 
   // ── Platform selection ─────────────────────────────────────────
   // ── Sidebar toggle (mobile) ────────────────────────────────────
@@ -464,29 +443,6 @@
   }
 
   // ── Sidebar controls ───────────────────────────────────────────
-  function saDisconnect() {
-    HAConn.disconnect();
-    clearAnalysis();
-    document.getElementById('sa-quick-stats').style.display = 'none';
-    ctrlMsg('Disconnected', 'var(--orange)');
-  }
-
-  function saForget() {
-    HubModal.show({
-      title: 'Forget credentials?',
-      body: 'This will clear your saved HA URL and token from browser storage. You will need to reconnect.',
-      confirmLabel: 'Forget',
-      onConfirm: function() {
-        localStorage.removeItem('ha_tools_conn');
-        localStorage.removeItem('ha_tools_oauth');
-        localStorage.removeItem('ha_tools_pkce');
-        HAConn.disconnect();
-        clearAnalysis();
-        document.getElementById('sa-quick-stats').style.display = 'none';
-        ctrlMsg('✅ Credentials cleared', 'var(--green)');
-      }
-    });
-  }
 
   function ctrlMsg(msg, colour) {
     var el = document.getElementById('sa-ctrl-msg');

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ha-tools-hub · Git Verification Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0b0f17;
+    --surface:   #111722;
+    --border:    #1e2a3a;
+    --accent:    #00c2ff;
+    --ok:        #00e5a0;
+    --warn:      #ffb730;
+    --fail:      #ff4560;
+    --text:      #cdd9e8;
+    --muted:     #4a5a72;
+    --card-bg:   #131c2b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,194,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,194,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; width: 100%; max-width: 780px; }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+  }
+
+  .header-left h1 span { color: var(--accent); }
+
+  .header-left p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .run-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .run-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .run-btn:active { transform: translateY(0); }
+
+  .banner {
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 28px;
+    border: 1px solid transparent;
+    transition: all 0.4s;
+  }
+  .banner.ok   { background: rgba(0,229,160,0.07); border-color: rgba(0,229,160,0.25); }
+  .banner.warn { background: rgba(255,183,48,0.07); border-color: rgba(255,183,48,0.25); }
+  .banner.fail { background: rgba(255,69,96,0.07);  border-color: rgba(255,69,96,0.25); }
+  .banner.idle { background: rgba(255,255,255,0.03); border-color: var(--border); }
+
+  .banner-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+
+  .banner-text h2 { font-size: 1.1rem; font-weight: 800; color: #fff; }
+  .banner-text p  { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+  .pill-row { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+  .pill.ok   { background: rgba(0,229,160,0.15);  color: var(--ok); }
+  .pill.warn { background: rgba(255,183,48,0.15); color: var(--warn); }
+  .pill.fail { background: rgba(255,69,96,0.15);  color: var(--fail); }
+
+  .checks { display: flex; flex-direction: column; gap: 12px; }
+
+  .check-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 14px;
+    align-items: start;
+    transition: border-color 0.3s, transform 0.2s;
+    cursor: default;
+    animation: fadeUp 0.3s ease both;
+  }
+  .check-card:hover { transform: translateX(3px); }
+  .check-card.ok   { border-left: 3px solid var(--ok); }
+  .check-card.warn { border-left: 3px solid var(--warn); }
+  .check-card.fail { border-left: 3px solid var(--fail); }
+  .check-card.idle { border-left: 3px solid var(--muted); }
+
+  .check-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+
+  .check-body h3 {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .check-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--accent);
+    background: rgba(0,194,255,0.07);
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 7px;
+  }
+
+  .check-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .status-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .status-dot.ok   { background: rgba(0,229,160,0.15);  color: var(--ok); }
+  .status-dot.warn { background: rgba(255,183,48,0.15); color: var(--warn); }
+  .status-dot.fail { background: rgba(255,69,96,0.15);  color: var(--fail); }
+  .status-dot.idle { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+  .timestamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 28px;
+  }
+
+  .instructions {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .instructions h3 {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .instructions ol {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .instructions li {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.73rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .instructions code {
+    background: rgba(0,194,255,0.08);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="header-left">
+      <h1>ha-tools-hub <span>·</span> Git Verifier</h1>
+      <p>github.com/doobee24/ha-tools-hub</p>
+    </div>
+    <button class="run-btn" onclick="loadStatus()">↻ Refresh</button>
+  </header>
+
+  <div class="instructions">
+    <h3>How to use</h3>
+    <ol>
+      <li>Run <code>node git_verify.js</code> in your project folder</li>
+      <li>This generates <code>git_status.js</code> (NOT JSON)</li>
+      <li>Open this HTML file directly — no server required</li>
+      <li>Click <strong>↻ Refresh</strong> after re-running the script</li>
+    </ol>
+  </div>
+
+  <div id="banner" class="banner idle">
+    <div class="banner-icon">⏳</div>
+    <div class="banner-text">
+      <h2>Waiting for results...</h2>
+      <p>Run <code>node git_verify.js</code> then refresh</p>
+    </div>
+  </div>
+
+  <div id="checks" class="checks"></div>
+  <div id="timestamp" class="timestamp"></div>
+
+</div>
+
+<!-- Load generated results -->
+<script src="git_status.js"></script>
+
+<script>
+const ICONS = { ok: "✓", warn: "!", fail: "✕", idle: "–" };
+const BANNER_TEXT = {
+  ok:   { icon: "✅", title: "All Checks Passed", sub: "Repository is fully set up and verified." },
+  warn: { icon: "⚠️", title: "Warnings Detected",  sub: "Some checks need attention — see details below." },
+  fail: { icon: "❌", title: "Faults Found",        sub: "One or more checks failed — see details below." },
+};
+
+function loadStatus() {
+  if (!window.GIT_STATUS) {
+    const banner = document.getElementById("banner");
+    banner.className = "banner idle";
+    banner.innerHTML = `
+      <div class="banner-icon">📂</div>
+      <div class="banner-text">
+        <h2>No results file found</h2>
+        <p>Run <strong>node git_verify.js</strong> then refresh</p>
+      </div>`;
+    return;
+  }
+
+  render(window.GIT_STATUS);
+}
+
+function render(data) {
+  const overall = data.overall || "idle";
+  const b = BANNER_TEXT[overall];
+  const s = data.summary || {};
+
+  const banner = document.getElementById("banner");
+  banner.className = `banner ${overall}`;
+  banner.innerHTML = `
+    <div class="banner-icon">${b.icon}</div>
+    <div class="banner-text">
+      <h2>${b.title}</h2>
+      <p>${b.sub}</p>
+    </div>
+    <div class="pill-row">
+      ${s.passed  ? `<span class="pill ok">${s.passed} PASSED</span>`  : ""}
+      ${s.warned  ? `<span class="pill warn">${s.warned} WARN</span>`  : ""}
+      ${s.failed  ? `<span class="pill fail">${s.failed} FAILED</span>` : ""}
+    </div>`;
+
+  const container = document.getElementById("checks");
+  container.innerHTML = "";
+
+  (data.checks || []).forEach(c => {
+    const card = document.createElement("div");
+    card.className = `check-card ${c.status}`;
+    card.innerHTML = `
+      <div class="check-num">#${String(c.id).padStart(2,"0")}</div>
+      <div class="check-body">
+        <h3>${c.name}</h3>
+        <span class="check-cmd">${c.command}</span>
+        <p class="check-detail">${c.detail}</p>
+      </div>
+      <div class="status-dot ${c.status}">${ICONS[c.status]}</div>`;
+    container.appendChild(card);
+  });
+
+  const runAt = data.run_at ? new Date(data.run_at).toLocaleString() : "unknown";
+  document.getElementById("timestamp").textContent = `Last verification run: ${runAt}`;
+}
+
+loadStatus();
+</script>
+
+</body>
+</html>

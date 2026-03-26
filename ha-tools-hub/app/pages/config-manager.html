@@ -2077,9 +2077,27 @@ function crFilter(query) {
 function crCopy(i) {
   var el = document.getElementById('cr-yaml-' + i);
   if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(function() {
+  var text = el.textContent;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function() {
+      if (typeof Toast !== 'undefined') Toast.show('Copied', 'ok', 1500);
+    }).catch(function(){ crCopyFallback(text); });
+  } else {
+    crCopyFallback(text);
+  }
+}
+
+function crCopyFallback(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
     if (typeof Toast !== 'undefined') Toast.show('Copied', 'ok', 1500);
-  }).catch(function(){});
+  } catch(e) {}
+  document.body.removeChild(ta);
 }
 
 function crExpand(i) {
@@ -2242,24 +2260,35 @@ function crExportById(id) {
 }
 
 function _crOpenExport(key, content) {
-  var payload = JSON.stringify({ v: 1, key: key, content: content, ts: Date.now() });
-  var code    = 'HATH-v1:' + btoa(unescape(encodeURIComponent(payload)));
+  try {
+    var payload = JSON.stringify({ v: 1, key: key, content: content, ts: Date.now() });
+    // Use TextEncoder → Uint8Array → base64 to handle any Unicode content safely
+    var bytes   = new TextEncoder().encode(payload);
+    var binary  = '';
+    bytes.forEach(function(b){ binary += String.fromCharCode(b); });
+    var code    = 'HATH-v1:' + btoa(binary);
 
-  document.getElementById('cr-export-key').textContent  = key + ':';
-  document.getElementById('cr-export-code').textContent = code;
-  document.getElementById('cr-export-copy-status').style.display = 'none';
-  document.getElementById('cr-export-overlay').classList.add('open');
+    document.getElementById('cr-export-key').textContent  = key + ':';
+    document.getElementById('cr-export-code').textContent = code;
+    document.getElementById('cr-export-copy-status').style.display = 'none';
+    document.getElementById('cr-export-overlay').classList.add('open');
+  } catch(e) {
+    alert('Export failed: ' + e.message);
+  }
 }
 
 function crCopyExportCode() {
   var code = document.getElementById('cr-export-code').textContent;
-  navigator.clipboard.writeText(code).then(function() {
+  var done = function() {
     var st = document.getElementById('cr-export-copy-status');
     st.style.display = '';
     setTimeout(function(){ st.style.display = 'none'; }, 2000);
-  }).catch(function(){
-    if (typeof Toast !== 'undefined') Toast.show('Copy failed — select manually', 'warn', 2000);
-  });
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(done).catch(function(){ crCopyFallback(code); done(); });
+  } else {
+    crCopyFallback(code); done();
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2269,17 +2298,21 @@ function crCopyExportCode() {
 var _importDecoded = null;  // { key, content } after successful decode
 
 function crOpenImport() {
-  _importDecoded = null;
-  document.getElementById('cr-import-input').value  = '';
-  document.getElementById('cr-import-err').style.display = 'none';
-  document.getElementById('cr-import-preview').classList.remove('show');
-  document.getElementById('cr-import-conflict').classList.remove('show');
-  document.getElementById('cr-import-write-btn').style.display  = 'none';
-  document.getElementById('cr-import-append-btn').style.display = 'none';
-  document.getElementById('cr-import-replace-btn').style.display= 'none';
-  document.getElementById('cr-import-status').textContent = '';
-  document.getElementById('cr-import-overlay').classList.add('open');
-  setTimeout(function(){ document.getElementById('cr-import-input').focus(); }, 100);
+  try {
+    _importDecoded = null;
+    document.getElementById('cr-import-input').value  = '';
+    document.getElementById('cr-import-err').style.display = 'none';
+    document.getElementById('cr-import-preview').classList.remove('show');
+    document.getElementById('cr-import-conflict').classList.remove('show');
+    document.getElementById('cr-import-write-btn').style.display  = 'none';
+    document.getElementById('cr-import-append-btn').style.display = 'none';
+    document.getElementById('cr-import-replace-btn').style.display= 'none';
+    document.getElementById('cr-import-status').textContent = '';
+    document.getElementById('cr-import-overlay').classList.add('open');
+    setTimeout(function(){ document.getElementById('cr-import-input').focus(); }, 100);
+  } catch(e) {
+    alert('Import dialog error: ' + e.message);
+  }
 }
 
 function crCloseImport() {
@@ -2317,7 +2350,10 @@ function crImportValidate(raw) {
   var b64 = code.slice('HATH-v1:'.length);
   var payload;
   try {
-    payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    var binary = atob(b64);
+    var bytes  = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    payload = JSON.parse(new TextDecoder().decode(bytes));
   } catch(e) {
     errEl.textContent = '❌ Could not decode — code may be truncated or corrupted.';
     errEl.style.display = '';

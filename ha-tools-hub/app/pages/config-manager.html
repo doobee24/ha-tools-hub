@@ -286,6 +286,90 @@
       color:var(--text1); font-size:12px; outline:none;
     }
     .cm-input:focus { border-color:var(--accent); }
+    /* ── Config Reader ── */
+    .cr-toolbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .cr-search {
+      flex: 1; min-width: 180px; max-width: 320px;
+      padding: 7px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text1); font-size: 12px;
+    }
+    .cr-search:focus { outline: none; border-color: var(--accent); }
+    .cr-files-info {
+      font-size: 11px; color: var(--text2);
+      padding: 4px 10px; background: var(--surface2);
+      border-radius: 6px; border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .cr-files-info:hover { color: var(--accent); border-color: var(--accent); }
+    .cr-sections { display: flex; flex-direction: column; gap: 8px; }
+    .cr-section {
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; background: var(--surface);
+      transition: border-color .15s;
+    }
+    .cr-section:hover { border-color: var(--accent); }
+    .cr-section.cr-open { border-color: var(--accent); }
+    .cr-section-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; cursor: pointer;
+      user-select: none;
+    }
+    .cr-section-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+    .cr-section-meta { flex: 1; min-width: 0; }
+    .cr-section-key {
+      font-size: 13px; font-weight: 800; color: var(--text1);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .cr-section-desc { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .cr-section-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 12px;
+      background: var(--surface2); color: var(--text2);
+      border: 1px solid var(--border); white-space: nowrap;
+    }
+    .cr-section.cr-open .cr-section-badge {
+      background: rgba(74,144,217,0.12); color: var(--accent);
+      border-color: rgba(74,144,217,0.25);
+    }
+    .cr-chevron {
+      font-size: 10px; color: var(--text2);
+      transition: transform .2s; flex-shrink: 0;
+    }
+    .cr-section.cr-open .cr-chevron { transform: rotate(180deg); }
+    .cr-section-body { display: none; padding: 0 16px 14px; }
+    .cr-section.cr-open .cr-section-body { display: block; }
+    .cr-yaml {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 11px; line-height: 1.7; color: var(--text1);
+      overflow-x: auto; white-space: pre; max-height: 400px;
+      overflow-y: auto;
+    }
+    .cr-yaml-actions {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .cr-btn {
+      padding: 5px 12px; border-radius: 7px; font-size: 11px;
+      font-weight: 700; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text2); transition: all .15s;
+    }
+    .cr-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .cr-empty { padding: 40px 20px; text-align: center; color: var(--text2); font-size: 13px; }
+    .cr-loading { padding: 40px 20px; text-align: center; color: var(--text2); font-size: 13px; }
+    .cr-error { padding: 16px; background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.2); border-radius: 8px; font-size: 12px; color: var(--red); margin-bottom: 16px; }
+    .cr-files-panel {
+      display: none; margin-bottom: 16px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px;
+      font-size: 11px; color: var(--text2); line-height: 1.8;
+    }
+    .cr-files-panel.open { display: block; }
   </style>
 </head>
 <body>
@@ -304,7 +388,12 @@
 
   <aside class="hub-sidebar">
     <div class="cm-nav">
-      <div class="cm-nav-btn active" data-tab="gallery" onclick="cmNav('gallery',this)">
+      <div class="cm-nav-btn active" data-tab="reader" onclick="cmNav('reader',this)">
+        <span class="cm-nav-icon">📄</span> Config Reader
+        <span class="cm-nav-badge" id="nb-reader">—</span>
+      </div>
+      <div class="cm-nav-divider"></div>
+      <div class="cm-nav-btn" data-tab="gallery" onclick="cmNav('gallery',this)">
         <span class="cm-nav-icon">🏪</span> Gallery
         <span class="cm-nav-badge" id="nb-gallery">0</span>
       </div>
@@ -329,8 +418,22 @@
 
   <main class="hub-main" style="padding:0;">
 
+    <!-- ══ CONFIG READER ══ -->
+    <div class="cm-panel active" id="cm-panel-reader" style="padding:20px;">
+      <div class="cr-toolbar">
+        <input class="cr-search" id="cr-search" placeholder="🔍 Filter sections…" oninput="crFilter(this.value)">
+        <button class="cr-btn" onclick="crLoad()" style="white-space:nowrap;">↻ Refresh</button>
+        <span class="cr-files-info" id="cr-files-info" onclick="crToggleFiles()" title="Show included files">📂 0 files</span>
+      </div>
+      <div class="cr-files-panel" id="cr-files-panel"></div>
+      <div id="cr-error"></div>
+      <div id="cr-sections" class="cr-sections">
+        <div class="cr-loading">⏳ Loading configuration…</div>
+      </div>
+    </div>
+
     <!-- ══ GALLERY ══ -->
-    <div class="cm-panel active" id="cm-panel-gallery" style="padding:20px;">
+    <div class="cm-panel" id="cm-panel-gallery" style="padding:20px;">
       <div class="cm-cats" id="cm-cats"></div>
       <div class="cm-grid" id="cm-grid"></div>
     </div>
@@ -1446,20 +1549,8 @@ async function cmSyncFromFile() {
   updateNavBadges();
 }
 
-// ════════════════════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════════════════════
 // ── Auto-load on page ready ─────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  if (s === 'connected') {
-    setStatus('Connected · HA ' + (ver||''), 'var(--green)');
-    cmSyncFromFile();
-  } else if (s === 'connecting') {
-    setStatus('Connecting…', 'var(--orange)');
-  } else {
-    setStatus('');
-  }
-});
+// (handled in the DOMContentLoaded block at end of script)
 
 loadLocal();
 
@@ -1681,6 +1772,242 @@ async function cmRestartHA() {
 
 renderGallery('all');
 updateNavBadges();
+
+// ════════════════════════════════════════════════════════════════
+//  CONFIG READER
+// ════════════════════════════════════════════════════════════════
+
+var _crSections  = [];   // [{key, content, entries, icon, desc}]
+var _crFiles     = [];
+var _crRaw       = '';
+
+// Domain metadata — icon and human description for known HA keys
+var CR_DOMAIN_META = {
+  homeassistant:        { icon: '🏠', desc: 'Core HA settings — name, location, units, customize' },
+  default_config:       { icon: '⚙️', desc: 'Loads a sensible default set of integrations' },
+  frontend:             { icon: '🎨', desc: 'UI themes and extra JS modules' },
+  http:                 { icon: '🌐', desc: 'HTTP server settings — CORS, SSL, trusted proxies' },
+  logger:               { icon: '📋', desc: 'Log levels per component' },
+  recorder:             { icon: '💾', desc: 'History database — what to record, how long to keep' },
+  history:              { icon: '📈', desc: 'History graph settings' },
+  logbook:              { icon: '📓', desc: 'Logbook event filtering' },
+  automation:           { icon: '⚡', desc: 'Automation rules' },
+  script:               { icon: '📜', desc: 'Callable scripts' },
+  scene:                { icon: '🎭', desc: 'Saved scenes / states' },
+  sensor:               { icon: '📡', desc: 'Sensor entities (template, REST, MQTT, etc.)' },
+  binary_sensor:        { icon: '🔘', desc: 'Binary sensor entities (on/off)' },
+  switch:               { icon: '🔌', desc: 'Switch entities' },
+  light:                { icon: '💡', desc: 'Light entities' },
+  cover:                { icon: '🚪', desc: 'Cover entities (blinds, garage doors, etc.)' },
+  input_boolean:        { icon: '☑️', desc: 'Toggle helpers' },
+  input_number:         { icon: '🔢', desc: 'Number slider helpers' },
+  input_select:         { icon: '📋', desc: 'Dropdown select helpers' },
+  input_text:           { icon: '✏️', desc: 'Text input helpers' },
+  input_datetime:       { icon: '📅', desc: 'Date/time helpers' },
+  input_button:         { icon: '🔲', desc: 'Button helpers' },
+  template:             { icon: '🔧', desc: 'Template entities (sensors, binary sensors, etc.)' },
+  group:                { icon: '👥', desc: 'Entity groups' },
+  person:               { icon: '🧑', desc: 'Person tracking' },
+  zone:                 { icon: '📍', desc: 'Location zones' },
+  notify:               { icon: '🔔', desc: 'Notification services' },
+  alert:                { icon: '🚨', desc: 'Alert automation rules' },
+  camera:               { icon: '📷', desc: 'Camera entities' },
+  media_player:         { icon: '🎵', desc: 'Media player entities' },
+  climate:              { icon: '🌡️', desc: 'Climate / thermostat entities' },
+  alarm_control_panel:  { icon: '🔒', desc: 'Alarm panel entities' },
+  vacuum:               { icon: '🤖', desc: 'Vacuum robot entities' },
+  fan:                  { icon: '💨', desc: 'Fan entities' },
+  lock:                 { icon: '🔑', desc: 'Lock entities' },
+  mqtt:                 { icon: '📨', desc: 'MQTT broker and entity config' },
+  rest:                 { icon: '🌍', desc: 'REST API integrations' },
+  rest_command:         { icon: '📤', desc: 'REST command services' },
+  shell_command:        { icon: '💻', desc: 'Shell command services' },
+  command_line:         { icon: '⌨️', desc: 'Command line entities' },
+  timer:                { icon: '⏱️', desc: 'Timer helpers' },
+  counter:              { icon: '🔢', desc: 'Counter helpers' },
+  schedule:             { icon: '📅', desc: 'Schedule helpers' },
+  todo:                 { icon: '✅', desc: 'To-do list helpers' },
+  calendar:             { icon: '📆', desc: 'Calendar entities' },
+  conversation:         { icon: '💬', desc: 'Conversation / voice assistant config' },
+  cloud:                { icon: '☁️', desc: 'Nabu Casa cloud settings' },
+  mobile_app:           { icon: '📱', desc: 'Mobile app companion config' },
+  lovelace:             { icon: '🖥️', desc: 'Lovelace dashboard config' },
+  panel_iframe:         { icon: '🪟', desc: 'Iframe panels in the sidebar' },
+  panel_custom:         { icon: '🧩', desc: 'Custom sidebar panels' },
+  tts:                  { icon: '🔊', desc: 'Text-to-speech config' },
+  stt:                  { icon: '🎤', desc: 'Speech-to-text config' },
+  wake_word:            { icon: '👂', desc: 'Wake word detection' },
+  energy:               { icon: '⚡', desc: 'Energy dashboard config' },
+  utility_meter:        { icon: '🔋', desc: 'Utility meter helpers' },
+  weather:              { icon: '⛅', desc: 'Weather entities' },
+  sun:                  { icon: '☀️', desc: 'Sun position integration' },
+  device_tracker:       { icon: '📍', desc: 'Device tracker entities' },
+  geo_location:         { icon: '🗺️', desc: 'Geo-location entities' },
+  number:               { icon: '🔢', desc: 'Number entities' },
+  select:               { icon: '📋', desc: 'Select entities' },
+  text:                 { icon: '📝', desc: 'Text entities' },
+  button:               { icon: '🔲', desc: 'Button entities' },
+  update:               { icon: '🔄', desc: 'Update entities' },
+  image:                { icon: '🖼️', desc: 'Image entities' },
+  event:                { icon: '📣', desc: 'Event entities' },
+  tag:                  { icon: '🏷️', desc: 'NFC tag / QR code config' },
+  homeassistant_alerts: { icon: '⚠️', desc: 'HA alert notifications' },
+  backup:               { icon: '💾', desc: 'Backup configuration' },
+  network:              { icon: '🔗', desc: 'Network configuration' },
+  zeroconf:             { icon: '📡', desc: 'mDNS / Zeroconf discovery' },
+  bluetooth:            { icon: '🔵', desc: 'Bluetooth discovery and proxy' },
+  usb:                  { icon: '🔌', desc: 'USB device configuration' },
+  proximity:            { icon: '📏', desc: 'Proximity tracking' },
+  stream:               { icon: '📹', desc: 'Stream integration for cameras' },
+  ffmpeg:               { icon: '🎞️', desc: 'FFmpeg media processing' },
+  image_processing:     { icon: '🔍', desc: 'Image processing / facial recognition' },
+  telegram_bot:         { icon: '✈️', desc: 'Telegram bot integration' },
+  google_assistant:     { icon: '🎙️', desc: 'Google Assistant integration' },
+  alexa:                { icon: '🔵', desc: 'Amazon Alexa integration' },
+  homekit:              { icon: '🍎', desc: 'Apple HomeKit bridge' },
+  hacs:                 { icon: '🛒', desc: 'HACS — community store config' },
+};
+
+function crMeta(key) {
+  return CR_DOMAIN_META[key] || { icon: '📄', desc: 'Custom or third-party configuration block' };
+}
+
+async function crLoad() {
+  var container = document.getElementById('cr-sections');
+  var errEl     = document.getElementById('cr-error');
+  container.innerHTML = '<div class="cr-loading">⏳ Reading configuration…</div>';
+  errEl.innerHTML = '';
+
+  try {
+    var base = HAConn.addonBase();
+    var r    = await fetch(base + 'api/config-read', { credentials: 'include' });
+    var d    = await r.json();
+
+    if (!d.ok) {
+      errEl.innerHTML = '<div class="cr-error">❌ ' + escHtml(d.error || 'Failed to read config') + '</div>';
+      container.innerHTML = '';
+      return;
+    }
+
+    _crSections = d.sections || [];
+    _crFiles    = d.files    || [];
+    _crRaw      = d.raw      || '';
+
+    // Update file info badge
+    var fi = document.getElementById('cr-files-info');
+    if (fi) fi.textContent = '📂 ' + _crFiles.length + ' file' + (_crFiles.length !== 1 ? 's' : '');
+
+    // Populate files panel
+    var fp = document.getElementById('cr-files-panel');
+    if (fp) fp.innerHTML = '<strong style="display:block;margin-bottom:6px;color:var(--text1);">Included files:</strong>'
+      + _crFiles.map(function(f){ return '<div>' + escHtml(f) + '</div>'; }).join('');
+
+    // Update nav badge
+    var nb = document.getElementById('nb-reader');
+    if (nb) nb.textContent = _crSections.length;
+
+    // Show any read errors
+    if (d.errors && d.errors.length) {
+      errEl.innerHTML = '<div class="cr-error">⚠️ Could not read ' + d.errors.length
+        + ' file(s): ' + d.errors.map(function(e){ return escHtml(e.path); }).join(', ') + '</div>';
+    }
+
+    crRender(_crSections);
+
+  } catch(e) {
+    errEl.innerHTML = '<div class="cr-error">❌ ' + escHtml(e.message) + '</div>';
+    container.innerHTML = '';
+  }
+}
+
+function crRender(sections) {
+  var container = document.getElementById('cr-sections');
+  if (!sections.length) {
+    container.innerHTML = '<div class="cr-empty">No sections found in configuration.yaml</div>';
+    return;
+  }
+
+  container.innerHTML = sections.map(function(sec, i) {
+    var meta    = crMeta(sec.key);
+    var entries = sec.entries || 0;
+    var badge   = entries > 0 ? entries + ' entr' + (entries === 1 ? 'y' : 'ies') : 'present';
+    return '<div class="cr-section" id="cr-sec-' + i + '">'
+      + '<div class="cr-section-head" onclick="crToggle(' + i + ')">'
+      + '<span class="cr-section-icon">' + meta.icon + '</span>'
+      + '<div class="cr-section-meta">'
+      + '<div class="cr-section-key">' + escHtml(sec.key) + ':</div>'
+      + '<div class="cr-section-desc">' + escHtml(meta.desc) + '</div>'
+      + '</div>'
+      + '<span class="cr-section-badge">' + badge + '</span>'
+      + '<span class="cr-chevron">▼</span>'
+      + '</div>'
+      + '<div class="cr-section-body">'
+      + '<div class="cr-yaml" id="cr-yaml-' + i + '">' + escHtml(sec.content) + '</div>'
+      + '<div class="cr-yaml-actions">'
+      + '<button class="cr-btn" onclick="crCopy(' + i + ')">📋 Copy</button>'
+      + '<button class="cr-btn" onclick="crExpand(' + i + ')">⛶ Full screen</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function crToggle(i) {
+  var sec = document.getElementById('cr-sec-' + i);
+  if (sec) sec.classList.toggle('cr-open');
+}
+
+function crFilter(query) {
+  if (!query.trim()) { crRender(_crSections); return; }
+  var q = query.toLowerCase();
+  var filtered = _crSections.filter(function(s) {
+    return s.key.toLowerCase().includes(q)
+        || (s.content || '').toLowerCase().includes(q);
+  });
+  crRender(filtered);
+}
+
+function crCopy(i) {
+  var el = document.getElementById('cr-yaml-' + i);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function() {
+    if (typeof Toast !== 'undefined') Toast.show('Copied', 'ok', 1500);
+  }).catch(function(){});
+}
+
+function crExpand(i) {
+  var sec = _crSections[i];
+  if (!sec) return;
+  // Open a full-screen modal with the raw YAML
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;display:flex;align-items:center;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(900px,94vw);height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+  box.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);">'
+    + '<div style="font-size:13px;font-weight:800;font-family:monospace;">' + escHtml(sec.key) + ':</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="border:none;background:none;color:var(--text2);font-size:20px;cursor:pointer;">✕</button>'
+    + '</div>'
+    + '<div style="flex:1;overflow:auto;padding:16px;">'
+    + '<pre style="font-family:JetBrains Mono,Fira Code,monospace;font-size:12px;line-height:1.7;color:var(--text1);margin:0;">' + escHtml(sec.content) + '</pre>'
+    + '</div>';
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function crToggleFiles() {
+  var fp = document.getElementById('cr-files-panel');
+  if (fp) fp.classList.toggle('open');
+}
+
+// ── Fix DOMContentLoaded init ─────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  loadLocal();
+  renderGallery('all');
+  updateNavBadges();
+  cmInitSettings();
+  crLoad();  // auto-load config reader on page open
+});
 </script>
 
 <!-- ── Snippet Edit Modal ─────────────────────────────────────── -->

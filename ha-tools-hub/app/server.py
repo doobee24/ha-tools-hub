@@ -387,6 +387,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         dispatch = {
             '/api/ha-info':           self.handle_ha_info,
+            '/api/config-read':       self.handle_config_read,
             '/api/read-file':         self.handle_read_file,
             '/api/entity-states':     self.handle_entity_states,
             '/api/preview-dashboard': self.handle_preview_dashboard,
@@ -615,6 +616,157 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except urllib.error.HTTPError as e:
             err = e.read().decode('utf-8', errors='replace')
             self.send_json({'ok': False, 'error': f'HTTP {e.code}: {err[:200]}'})
+
+    # ── /api/config-read ─────────────────────────────────────────
+    # Reads configuration.yaml and recursively resolves !include and
+    # !include_dir_merge_named directives. Returns structured JSON:
+    #   sections: [{key, source, content, entries}]  — one per top-level domain
+    #   raw:      full merged text of all resolved files
+    #   files:    list of all files read (for diagnostics)
+    #   errors:   any files that couldn't be read
+    def handle_config_read(self):
+        import os as _os, re as _re
+
+        CONFIG_ROOT = '/config'
+        MAX_DEPTH   = 8   # guard against circular includes
+        files_read  = []
+        errors      = []
+
+        def read_file(path):
+            try:
+                with open(path, encoding='utf-8') as f:
+                    return f.read()
+            except Exception as e:
+                errors.append({'path': path, 'error': str(e)})
+                return ''
+
+        def resolve_includes(content, base_dir, depth=0):
+            """Replace !include and !include_dir_merge_named with actual content."""
+            if depth > MAX_DEPTH:
+                return content
+
+            lines   = content.splitlines(keepends=True)
+            result  = []
+
+            for line in lines:
+                # !include_dir_merge_named <dir>
+                m = _re.match(r'^(\s*)(\S+):\s+!include_dir_merge_named\s+(\S+)', line)
+                if m:
+                    indent   = m.group(1)
+                    key      = m.group(2)
+                    rel_dir  = m.group(3)
+                    abs_dir  = _os.path.join(base_dir, rel_dir)
+                    result.append(line)   # keep original line as comment anchor
+                    if _os.path.isdir(abs_dir):
+                        for fname in sorted(_os.listdir(abs_dir)):
+                            if fname.endswith(('.yaml', '.yml')):
+                                fpath = _os.path.join(abs_dir, fname)
+                                files_read.append(fpath)
+                                sub = read_file(fpath)
+                                sub = resolve_includes(sub, _os.path.dirname(fpath), depth + 1)
+                                # Indent the sub-file content under the key
+                                for sline in sub.splitlines(keepends=True):
+                                    result.append(indent + '  ' + sline if sline.strip() else sline)
+                    continue
+
+                # !include_dir_list <dir>
+                m = _re.match(r'^(\s*)(\S+):\s+!include_dir_list\s+(\S+)', line)
+                if m:
+                    indent   = m.group(1)
+                    rel_dir  = m.group(3)
+                    abs_dir  = _os.path.join(base_dir, rel_dir)
+                    result.append(line)
+                    if _os.path.isdir(abs_dir):
+                        for fname in sorted(_os.listdir(abs_dir)):
+                            if fname.endswith(('.yaml', '.yml')):
+                                fpath = _os.path.join(abs_dir, fname)
+                                files_read.append(fpath)
+                                sub = read_file(fpath)
+                                sub = resolve_includes(sub, _os.path.dirname(fpath), depth + 1)
+                                for sline in sub.splitlines(keepends=True):
+                                    result.append(indent + '  - ' + sline if sline.strip() else sline)
+                    continue
+
+                # !include <file>
+                m = _re.match(r'^(\s*)(\S+):\s+!include\s+(\S+)', line)
+                if m:
+                    indent  = m.group(1)
+                    rel_file = m.group(3)
+                    abs_file = _os.path.join(base_dir, rel_file)
+                    result.append(line)
+                    if _os.path.isfile(abs_file):
+                        files_read.append(abs_file)
+                        sub = read_file(abs_file)
+                        sub = resolve_includes(sub, _os.path.dirname(abs_file), depth + 1)
+                        for sline in sub.splitlines(keepends=True):
+                            result.append(indent + '  ' + sline if sline.strip() else sline)
+                    continue
+
+                result.append(line)
+
+            return ''.join(result)
+
+        def parse_sections(content):
+            """
+            Split resolved YAML into top-level domain sections.
+            Returns list of {key, content, line_start, line_end}.
+            Each section is everything under a top-level key (zero-indent key:).
+            """
+            lines    = content.splitlines()
+            sections = []
+            current  = None
+
+            for i, line in enumerate(lines):
+                # Top-level key: starts at column 0, not a comment, not blank
+                if line and not line.startswith(' ') and not line.startswith('\t') and not line.startswith('#'):
+                    m = _re.match(r'^([a-zA-Z0-9_]+)\s*:', line)
+                    if m:
+                        if current is not None:
+                            current['content'] = '\n'.join(lines[current['line_start']:i]).rstrip()
+                            sections.append(current)
+                        current = {
+                            'key':        m.group(1),
+                            'line_start': i,
+                            'line_end':   None,
+                        }
+
+            if current is not None:
+                current['content'] = '\n'.join(lines[current['line_start']:]).rstrip()
+                sections.append(current)
+
+            # Count meaningful entries per section (lines starting with - or a key at indent 2)
+            for sec in sections:
+                sec_lines = sec['content'].splitlines()
+                # Count list items (lines starting with exactly 2 spaces + dash)
+                list_items = sum(1 for l in sec_lines if _re.match(r'^  -', l))
+                # Count sub-keys (lines starting with exactly 2 spaces + word + colon)
+                sub_keys   = sum(1 for l in sec_lines if _re.match(r'^  [a-zA-Z0-9_]+\s*:', l))
+                sec['entries'] = list_items or sub_keys or (1 if len(sec_lines) > 1 else 0)
+                del sec['line_start']
+                del sec['line_end']
+
+            return sections
+
+        try:
+            root_file = _os.path.join(CONFIG_ROOT, 'configuration.yaml')
+            files_read.append(root_file)
+            raw_root  = read_file(root_file)
+            if not raw_root:
+                self.send_json({'ok': False, 'error': 'configuration.yaml not found or empty'})
+                return
+
+            resolved = resolve_includes(raw_root, CONFIG_ROOT)
+            sections = parse_sections(resolved)
+
+            self.send_json({
+                'ok':       True,
+                'sections': sections,
+                'raw':      resolved,
+                'files':    files_read,
+                'errors':   errors,
+            })
+        except Exception as e:
+            self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/read-file ───────────────────────────────────────────
     def handle_read_file(self):

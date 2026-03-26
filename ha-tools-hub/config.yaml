@@ -6,7 +6,7 @@
 # ════════════════════════════════════════════════════════════════
 name: "HA Tools Hub"
 description: "Tool Companion Hub for HA"
-version: "0.03d"
+version: "0.04a"
 slug: "ha_tools_hub"
 init: false
 arch:

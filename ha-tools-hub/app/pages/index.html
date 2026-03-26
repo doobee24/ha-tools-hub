@@ -580,8 +580,8 @@
       var base = HAConn.addonBase();
       var [statesR, devicesR, entriesR, infoR] = await Promise.all([
         fetch(base + 'api/entity-states', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
-        HAConn.addonWsCmd('config/device_registry/list'),
-        HAConn.addonWsCmd('config_entries/list'),
+        fetch(base + 'api/registry?type=devices', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+        HAConn.addonFetch('/api/config/config_entries/entry').catch(function(){ return null; }),
         fetch(base + 'api/ha-info', { credentials: 'include' }).then(function(r){ return r.json(); }).catch(function(){ return {}; })
       ]);
 
@@ -592,18 +592,14 @@
         document.getElementById('ix-sb-ents').textContent = entCount;
       }
 
-      if (devicesR.ok && devicesR.result) {
-        var devs = Array.isArray(devicesR.result) ? devicesR.result : (devicesR.result.devices || []);
-        document.getElementById('stat-devices').textContent = devs.length;
+      if (devicesR.ok && Array.isArray(devicesR.result)) {
+        document.getElementById('stat-devices').textContent = devicesR.result.length;
         document.getElementById('stat-devices').classList.remove('ix-loading');
-        document.getElementById('ix-sb-devs').textContent = devs.length;
+        document.getElementById('ix-sb-devs').textContent = devicesR.result.length;
       }
 
-      if (entriesR.ok && entriesR.result) {
-        var raw = Array.isArray(entriesR.result) ? entriesR.result : (entriesR.result.entries || []);
-        var domains = {};
-        raw.forEach(function(e) { if (e.domain) domains[e.domain] = true; });
-        document.getElementById('stat-integrations').textContent = Object.keys(domains).length;
+      if (Array.isArray(entriesR)) {
+        document.getElementById('stat-integrations').textContent = entriesR.length;
         document.getElementById('stat-integrations').classList.remove('ix-loading');
       }
 

@@ -1,6 +1,6 @@
 # ════════════════════════════════════════════════════════════════
 #  HA Tools Hub — server.py
-#  Python HTTP backend: Supervisor API proxy, WS registry bridge,
+#  Python HTTP backend: Supervisor API proxy, persistent WS bridge,
 #  ingress connection info, generic REST proxy, file read/write,
 #  preview dashboard, IP restriction (172.30.32.2 only).
 #  Copyright © 2026 HA Tools Hub. All rights reserved.
@@ -17,6 +17,9 @@ import http.server
 import socketserver
 import threading
 import traceback
+import time
+import random
+import base64
 
 PORT    = 8099
 APP_DIR = '/app'
@@ -61,134 +64,258 @@ def supervisor_post(path, payload=None, timeout=10):
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
-# ── Supervisor WebSocket helper ──────────────────────────────────
-# Used server-side to call WS commands (registry lists etc.) via the
-# supervisor proxy. The SUPERVISOR_TOKEN works for WS when the addon
-# is a LOCAL addon (installed from /config/addons/).
-def supervisor_ws_command(command_type, extra=None, timeout=12):
-    """
-    Opens a raw WebSocket to ws://supervisor/core/websocket, authenticates
-    with the SUPERVISOR_TOKEN, sends one command, returns the result.
-    Implemented without external deps using raw sockets + HTTP upgrade.
-    """
-    import base64, hashlib, random, time
 
-    token = get_token()
-    if not token:
-        raise RuntimeError('No SUPERVISOR_TOKEN')
+# ════════════════════════════════════════════════════════════════
+#  Persistent HA WebSocket Connection
+# ════════════════════════════════════════════════════════════════
+#
+#  Replaces per-request supervisor_ws_command() with a single
+#  long-lived authenticated WS connection to supervisor/core/websocket.
+#
+#  Architecture:
+#  - One socket, opened once at startup (and reconnected on drop).
+#  - A background reader thread continuously drains incoming frames
+#    and dispatches results to callers waiting via threading.Event.
+#  - Callers use HA_WS.command(type) which sends a command with a
+#    unique ID and blocks until the matching result arrives.
+#  - Thread-safe: a lock guards sends; the result dict + events are
+#    per-command so concurrent callers never interfere.
+#  - Multiple commands can be in-flight simultaneously — HA's WS
+#    protocol uses the 'id' field to match responses to requests.
+#
+class HAWebSocket:
+    RECONNECT_DELAY = 2   # seconds between reconnect attempts
+    COMMAND_TIMEOUT = 15  # seconds to wait for a result
 
-    # Build WebSocket handshake
-    ws_key    = base64.b64encode(bytes(random.getrandbits(8) for _ in range(16))).decode()
-    handshake = (
-        'GET /core/websocket HTTP/1.1\r\n'
-        'Host: supervisor\r\n'
-        'Upgrade: websocket\r\n'
-        'Connection: Upgrade\r\n'
-        f'Sec-WebSocket-Key: {ws_key}\r\n'
-        'Sec-WebSocket-Version: 13\r\n'
-        '\r\n'
-    ).encode()
+    def __init__(self):
+        self._sock       = None
+        self._lock       = threading.Lock()       # guards sends + state transitions
+        self._results    = {}                     # id → {'event': Event, 'data': any}
+        self._next_id    = 1
+        self._connected  = False
+        self._reader     = None
+        self._stop       = False
+        self._connect_lock = threading.Lock()     # prevents concurrent reconnects
 
-    sock = socket.create_connection(('supervisor', 80), timeout=timeout)
-    try:
-        sock.sendall(handshake)
+    # ── Public API ───────────────────────────────────────────────
 
-        # Read HTTP response headers
-        resp = b''
-        while b'\r\n\r\n' not in resp:
-            chunk = sock.recv(4096)
-            if not chunk:
-                raise RuntimeError('WS handshake failed — no response')
-            resp += chunk
-        if b'101' not in resp:
-            raise RuntimeError(f'WS upgrade failed: {resp[:200]}')
+    def command(self, cmd_type, extra=None, timeout=None):
+        """
+        Send a WS command and return the result.
+        Reconnects automatically if the connection is down.
+        Raises RuntimeError on auth failure, timeout, or HA error.
+        """
+        timeout = timeout or self.COMMAND_TIMEOUT
+        self._ensure_connected()
 
-        def ws_send(payload_str):
-            data = payload_str.encode('utf-8')
-            length = len(data)
-            mask   = bytes(random.getrandbits(8) for _ in range(4))
-            masked = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
-            if length <= 125:
-                header = bytes([0x81, 0x80 | length]) + mask
-            elif length <= 65535:
-                header = bytes([0x81, 0xFE]) + struct.pack('>H', length) + mask
-            else:
-                header = bytes([0x81, 0xFF]) + struct.pack('>Q', length) + mask
-            sock.sendall(header + masked)
+        with self._lock:
+            cmd_id      = self._next_id
+            self._next_id += 1
+            event       = threading.Event()
+            self._results[cmd_id] = {'event': event, 'data': None, 'error': None}
 
-        def ws_read_frame():
-            """Read one WS frame, return (fin, opcode, payload_bytes)."""
-            header = b''
-            while len(header) < 2:
-                header += sock.recv(2 - len(header))
-            fin    = (header[0] & 0x80) != 0
-            opcode = header[0] & 0x0F
-            length = header[1] & 0x7F
-            if length == 126:
-                ext = b''
-                while len(ext) < 2: ext += sock.recv(2 - len(ext))
-                length = struct.unpack('>H', ext)[0]
-            elif length == 127:
-                ext = b''
-                while len(ext) < 8: ext += sock.recv(8 - len(ext))
-                length = struct.unpack('>Q', ext)[0]
-            payload = b''
-            while len(payload) < length:
-                chunk = sock.recv(min(65536, length - len(payload)))
-                if not chunk:
-                    raise RuntimeError(f'WS frame truncated: got {len(payload)}/{length} bytes')
-                payload += chunk
-            return fin, opcode, payload
-
-        def ws_recv():
-            """Read a complete WS message, reassembling continuation frames."""
-            message = b''
-            while True:
-                fin, opcode, payload = ws_read_frame()
-                if opcode == 0x9:
-                    # Ping — send pong and keep reading
-                    sock.sendall(bytes([0x8A, len(payload)]) + payload)
-                    continue
-                if opcode == 0x8:
-                    raise RuntimeError('WS connection closed by server')
-                # Text (0x1), binary (0x2), or continuation (0x0)
-                message += payload
-                if fin:
-                    break
-            try:
-                return json.loads(message.decode('utf-8'))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                # Try latin-1 as fallback for unexpected encodings
-                return json.loads(message.decode('latin-1'))
-
-        # Auth flow
-        msg = ws_recv()  # auth_required
-        if msg.get('type') != 'auth_required':
-            raise RuntimeError(f'Expected auth_required, got: {msg.get("type")}')
-
-        ws_send(json.dumps({'type': 'auth', 'access_token': token}))
-        auth_resp = ws_recv()
-        if auth_resp.get('type') != 'auth_ok':
-            raise RuntimeError(f'WS auth failed: {auth_resp.get("message", auth_resp.get("type"))}')
-
-        # Send command
-        cmd = {'type': command_type, 'id': 1}
+        cmd = {'type': cmd_type, 'id': cmd_id}
         if extra:
             cmd.update(extra)
-        ws_send(json.dumps(cmd))
 
-        # Wait for result
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            result = ws_recv()
-            if result.get('id') == 1:
-                if result.get('success') is False:
-                    raise RuntimeError(result.get('error', {}).get('message', 'WS command failed'))
-                return result.get('result')
-        raise RuntimeError('WS command timed out')
-    finally:
-        try: sock.close()
-        except: pass
+        try:
+            self._ws_send(json.dumps(cmd))
+        except Exception as e:
+            with self._lock:
+                self._results.pop(cmd_id, None)
+            self._mark_disconnected()
+            raise RuntimeError(f'WS send failed: {e}')
+
+        if not event.wait(timeout):
+            with self._lock:
+                self._results.pop(cmd_id, None)
+            raise RuntimeError(f'WS command timed out after {timeout}s: {cmd_type}')
+
+        with self._lock:
+            entry = self._results.pop(cmd_id, {})
+
+        if entry.get('error'):
+            raise RuntimeError(entry['error'])
+        return entry['data']
+
+    # ── Connection management ────────────────────────────────────
+
+    def _ensure_connected(self):
+        if self._connected:
+            return
+        with self._connect_lock:
+            if self._connected:
+                return
+            self._connect()
+
+    def _connect(self):
+        """Open socket, do WS upgrade, authenticate, start reader thread."""
+        token = get_token()
+        if not token:
+            raise RuntimeError('No SUPERVISOR_TOKEN')
+
+        ws_key = base64.b64encode(
+            bytes(random.getrandbits(8) for _ in range(16))
+        ).decode()
+        handshake = (
+            'GET /core/websocket HTTP/1.1\r\n'
+            'Host: supervisor\r\n'
+            'Upgrade: websocket\r\n'
+            'Connection: Upgrade\r\n'
+            f'Sec-WebSocket-Key: {ws_key}\r\n'
+            'Sec-WebSocket-Version: 13\r\n'
+            '\r\n'
+        ).encode()
+
+        sock = socket.create_connection(('supervisor', 80), timeout=10)
+        sock.settimeout(None)  # blocking reads in the reader thread
+        sock.sendall(handshake)
+
+        # Read HTTP upgrade response
+        buf = b''
+        while b'\r\n\r\n' not in buf:
+            chunk = sock.recv(4096)
+            if not chunk:
+                sock.close()
+                raise RuntimeError('WS handshake — connection closed')
+            buf += chunk
+        if b'101' not in buf:
+            sock.close()
+            raise RuntimeError(f'WS upgrade failed: {buf[:200]}')
+
+        self._sock = sock
+
+        # Auth handshake — synchronous before starting reader thread
+        auth_req  = self._read_frame_sync()
+        if auth_req.get('type') != 'auth_required':
+            sock.close()
+            raise RuntimeError(f'Expected auth_required, got: {auth_req.get("type")}')
+
+        self._ws_send(json.dumps({'type': 'auth', 'access_token': token}))
+        auth_resp = self._read_frame_sync()
+        if auth_resp.get('type') != 'auth_ok':
+            sock.close()
+            raise RuntimeError(f'WS auth failed: {auth_resp.get("message", auth_resp.get("type"))}')
+
+        self._connected = True
+        self._reader = threading.Thread(target=self._reader_loop, daemon=True)
+        self._reader.start()
+        print('[hub] WS persistent connection established', flush=True)
+
+    def _mark_disconnected(self):
+        with self._lock:
+            self._connected = False
+            # Wake up all waiting callers with an error
+            for entry in self._results.values():
+                entry['error'] = 'WS connection lost — will reconnect on next request'
+                entry['event'].set()
+            self._results.clear()
+            if self._sock:
+                try: self._sock.close()
+                except: pass
+                self._sock = None
+
+    # ── Reader thread ────────────────────────────────────────────
+
+    def _reader_loop(self):
+        """Runs in background, dispatches incoming WS messages to waiters."""
+        while not self._stop:
+            try:
+                msg = self._read_frame_sync()
+                if msg is None:
+                    break
+                msg_id = msg.get('id')
+                if msg_id is None:
+                    continue  # ping, event, or other non-result message
+                with self._lock:
+                    entry = self._results.get(msg_id)
+                if entry is None:
+                    continue  # no one waiting for this id
+                if msg.get('success') is False:
+                    err = (msg.get('error') or {}).get('message', 'WS command failed')
+                    entry['error'] = err
+                else:
+                    entry['data'] = msg.get('result')
+                entry['event'].set()
+            except Exception as e:
+                if not self._stop:
+                    print(f'[hub] WS reader error: {e}', flush=True)
+                break
+        self._mark_disconnected()
+
+    # ── Low-level WS I/O ─────────────────────────────────────────
+
+    def _ws_send(self, text):
+        data   = text.encode('utf-8')
+        length = len(data)
+        mask   = bytes(random.getrandbits(8) for _ in range(4))
+        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
+        if length <= 125:
+            header = bytes([0x81, 0x80 | length]) + mask
+        elif length <= 65535:
+            header = bytes([0x81, 0xFE]) + struct.pack('>H', length) + mask
+        else:
+            header = bytes([0x81, 0xFF]) + struct.pack('>Q', length) + mask
+        with self._lock:
+            self._sock.sendall(header + masked)
+
+    def _read_exact(self, n):
+        buf = b''
+        while len(buf) < n:
+            chunk = self._sock.recv(n - len(buf))
+            if not chunk:
+                raise RuntimeError('WS connection closed by server')
+            buf += chunk
+        return buf
+
+    def _read_frame_sync(self):
+        """Read one complete WS message (reassembling continuation frames)."""
+        message = b''
+        while True:
+            header  = self._read_exact(2)
+            fin     = (header[0] & 0x80) != 0
+            opcode  = header[0] & 0x0F
+            length  = header[1] & 0x7F
+            if length == 126:
+                length = struct.unpack('>H', self._read_exact(2))[0]
+            elif length == 127:
+                length = struct.unpack('>Q', self._read_exact(8))[0]
+            payload = self._read_exact(length)
+
+            if opcode == 0x9:   # ping → pong
+                self._sock.sendall(bytes([0x8A, len(payload)]) + payload)
+                continue
+            if opcode == 0x8:   # close
+                raise RuntimeError('WS close frame received')
+
+            message += payload
+            if fin:
+                break
+
+        try:
+            return json.loads(message.decode('utf-8'))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return json.loads(message.decode('latin-1'))
+
+
+# Module-level singleton — shared across all request handler threads
+HA_WS = HAWebSocket()
+
+def ws_command(cmd_type, extra=None, timeout=None):
+    """Convenience wrapper around HA_WS.command() with auto-reconnect."""
+    retries = 2
+    for attempt in range(retries):
+        try:
+            return HA_WS.command(cmd_type, extra=extra, timeout=timeout)
+        except RuntimeError as e:
+            msg = str(e)
+            if 'connection lost' in msg.lower() or 'send failed' in msg.lower():
+                if attempt < retries - 1:
+                    print(f'[hub] WS retry {attempt+1} for {cmd_type}', flush=True)
+                    time.sleep(0.3)
+                    continue
+            raise
+
 
 # ── Pre-create preview dashboard on startup ──────────────────────
 PREVIEW_DASH_ID    = 'ha-tools-hub-card-preview'
@@ -222,9 +349,18 @@ def ensure_preview_dashboard():
     except Exception as e:
         print(f'[hub] Preview dashboard setup error: {e}', flush=True)
 
+def warm_ws_connection():
+    """Pre-establish the persistent WS connection at startup."""
+    try:
+        HA_WS._ensure_connected()
+        print('[hub] WS pre-warm complete', flush=True)
+    except Exception as e:
+        print(f'[hub] WS pre-warm failed (will retry on first request): {e}', flush=True)
+
 print(f'[hub] ha-tools-hub starting on port {PORT}', flush=True)
 print(f'[hub] Token available: {"YES" if get_token() else "NO"}', flush=True)
 threading.Thread(target=ensure_preview_dashboard, daemon=True).start()
+threading.Thread(target=warm_ws_connection, daemon=True).start()
 
 
 # ── HTTP Handler ─────────────────────────────────────────────────
@@ -233,9 +369,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=APP_DIR, **kwargs)
 
     def do_GET(self):
-        # ── Security: only accept connections from the Supervisor ingress proxy ──
-        # Direct access to port 8099 from any other IP is rejected.
-        # This ensures the app is only reachable via HA's authenticated ingress layer.
         client_ip = self.client_address[0]
         _ok_ip = (client_ip in ('172.30.32.2', '127.0.0.1', '::1') or
                   client_ip.startswith('172.30.'))
@@ -263,7 +396,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             '/api/ws-command':        self.handle_ws_command,
             '/api/config-patch':      self.handle_config_patch,
             '/api/system-stats':      self.handle_system_stats,
-            '/api/delete-automation':  self.handle_delete_automation,
+            '/api/delete-automation': self.handle_delete_automation,
         }
         for endpoint, handler in dispatch.items():
             if endpoint in path:
@@ -352,17 +485,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/proxy?path=/api/... ──────────────────────────────────
-    # Generic proxy for HA Core REST API calls.
-    # Allows pages to call any HA REST endpoint via the Supervisor token
-    # without needing a user-level HAConn session.
-    # Security: only /api/ paths are allowed.
     def handle_proxy(self):
         params   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         api_path = params.get('path', [None])[0]
         if not api_path:
             self.send_json({'ok': False, 'error': 'No path specified'})
             return
-        # Security: only allow HA Core API paths, not supervisor internals
         if not api_path.startswith('/api/'):
             self.send_json({'ok': False, 'error': 'Only /api/ paths allowed'})
             return
@@ -373,11 +501,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/registry?type=entities|devices|areas|floors ─────────
-    # Proxies HA WebSocket registry commands via the Supervisor WS connection.
-    # This is the key endpoint that makes the hub work on new devices —
-    # pages can get registry data without a user-level WS token.
     def handle_registry(self):
-        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        params   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         reg_type = params.get('type', [None])[0]
 
         type_map = {
@@ -391,22 +516,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         try:
-            result = supervisor_ws_command(type_map[reg_type])
+            raw = ws_command(type_map[reg_type])
+            # Normalise to a flat list regardless of HA version response shape
+            if isinstance(raw, list):
+                result = raw
+            elif isinstance(raw, dict):
+                result = (raw.get('devices') or raw.get('entity_entries') or
+                          raw.get('entities') or raw.get('areas') or
+                          raw.get('floors') or [])
+            else:
+                result = []
             self.send_json({'ok': True, 'result': result})
         except Exception as e:
-            print(f'[hub] Registry WS error ({reg_type}): {e}', flush=True)
+            print(f'[hub] Registry error ({reg_type}): {e}', flush=True)
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/ws-command?type=<ws_type> ───────────────────────────
-    # Run any HA WebSocket command server-side via SUPERVISOR_TOKEN.
-    # Allows pages to get data without a user-level WS token.
-    # Allowlist restricts to safe read-only commands only.
     SAFE_WS_COMMANDS = {
         'config_entries/list', 'get_config', 'blueprint/list',
         'repairs/list/issues', 'lovelace/dashboards/list',
         'system_health/info', 'get_states',
         'config/area_registry/list', 'config/floor_registry/list',
         'config/device_registry/list', 'config/entity_registry/list',
+        'config/automation/list',
     }
     def handle_ws_command(self):
         params   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -418,7 +550,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': f'Command not allowed: {cmd_type}'})
             return
         try:
-            result = supervisor_ws_command(cmd_type)
+            result = ws_command(cmd_type)
             self.send_json({'ok': True, 'result': result})
         except Exception as e:
             print(f'[hub] ws-command error ({cmd_type}): {e}', flush=True)
@@ -427,7 +559,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ── /api/entity-states ───────────────────────────────────────
     def handle_entity_states(self):
         try:
-            params       = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            params        = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             domains_param = params.get('domain', [None])[0]
             domains       = set(domains_param.split(',')) if domains_param else None
             data   = supervisor_get('/core/api/states')
@@ -438,11 +570,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             for s in states:
                 attrs = s.get('attributes', {})
                 slim.append({
-                    'entity_id':   s.get('entity_id', ''),
-                    'state':       s.get('state', 'unknown'),
-                    'name':        attrs.get('friendly_name', ''),
-                    'unit':        attrs.get('unit_of_measurement', ''),
-                    'icon':        attrs.get('icon', ''),
+                    'entity_id':    s.get('entity_id', ''),
+                    'state':        s.get('state', 'unknown'),
+                    'name':         attrs.get('friendly_name', ''),
+                    'unit':         attrs.get('unit_of_measurement', ''),
+                    'icon':         attrs.get('icon', ''),
                     'device_class': attrs.get('device_class', ''),
                     'last_changed': s.get('last_changed', ''),
                     'attributes':   attrs,
@@ -511,8 +643,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': 'Only /config/ paths allowed'})
             return
         try:
-            # Atomic write: write to a temp file then rename so a failed write
-            # never corrupts the original file
             import tempfile, shutil, os as _os
             dirpath = _os.path.dirname(filepath)
             with tempfile.NamedTemporaryFile('w', dir=dirpath,
@@ -530,8 +660,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': err})
 
     # ── /api/config-patch (POST) ──────────────────────────────────
-    # Accepts JSON body: {action, path, snippet?}
-    # Snippet sent in body avoids ingress URL-encoding restrictions on %0A etc.
     def handle_config_patch_post(self):
         length = int(self.headers.get('Content-Length', 0))
         try:
@@ -539,13 +667,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             self.send_json({'ok': False, 'error': 'Invalid JSON body'})
             return
-        # Inject params so handle_config_patch can read them via self._post_body
         self._patch_body = body
         self.handle_config_patch()
 
     # ── /api/proxy (POST) ─────────────────────────────────────────
-    # Forwards POST requests to HA Core REST API.
-    # Used by Config Manager check_config and similar endpoints.
     def handle_proxy_post(self):
         import urllib.parse as _up
         length   = int(self.headers.get('Content-Length', 0))
@@ -564,7 +689,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': 'No supervisor token'})
             return
         try:
-            req_body = json.dumps(payload).encode()
+            req_body    = json.dumps(payload).encode()
             http_method = body.get('method', 'POST').upper()
             req = urllib.request.Request(
                 f'http://supervisor/core{api_path}',
@@ -576,7 +701,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             )
             req.get_method = lambda: http_method
             with urllib.request.urlopen(req, timeout=15) as resp:
-                raw = resp.read()
+                raw  = resp.read()
                 data = json.loads(raw) if raw.strip() else {}
             self.send_json({'ok': True, 'data': data})
         except urllib.error.HTTPError as e:
@@ -586,111 +711,63 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/config-patch ────────────────────────────────────────
-    # Server-side read-modify-write. Browser sends only action+path
-    # (tiny URL) — snippet is hardcoded here to avoid passing large
-    # strings through the ingress proxy.
     THEMES_BLOCK  = '\n# ---------------------------------------------------------\n# Load frontend themes from the themes folder\n# ---------------------------------------------------------\nfrontend:\n  themes: !include_dir_merge_named themes\n# ---------------------------------------------------------\n# Allow CORS (Required for HA-Tools-Hub)\n# ---------------------------------------------------------\n'
     THEMES_DETECT = 'themes: !include_dir_merge_named themes'
 
     def handle_config_patch(self):
         import urllib.parse as _up, re as _re, tempfile, shutil, os as _os
-        # Support both GET query params and POST JSON body
         if hasattr(self, '_patch_body') and self._patch_body:
             body   = self._patch_body
             self._patch_body = None
-            action = body.get('action')
-            path   = body.get('path', '/config/configuration.yaml')
-            _post_snippet = body.get('snippet')
+            action   = body.get('action', '')
+            filepath = body.get('path', '/config/configuration.yaml')
+            snippet  = body.get('snippet', self.THEMES_BLOCK)
+            detect   = body.get('detect', self.THEMES_DETECT)
         else:
-            params = _up.parse_qs(_up.urlparse(self.path).query)
-            action = params.get('action', [None])[0]
-            path   = params.get('path', ['/config/configuration.yaml'])[0]
-            _post_snippet = None
+            params   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            action   = params.get('action', [None])[0]
+            filepath = params.get('path', ['/config/configuration.yaml'])[0]
+            snippet  = self.THEMES_BLOCK
+            detect   = self.THEMES_DETECT
 
-        if not path.startswith('/config/'):
+        if not filepath.startswith('/config/'):
             self.send_json({'ok': False, 'error': 'Only /config/ paths allowed'})
             return
-        if action not in ('append', 'remove'):
+        try:
+            try:
+                content = open(filepath, encoding='utf-8').read()
+            except FileNotFoundError:
+                content = ''
+
+            if action == 'check':
+                self.send_json({'ok': True, 'found': detect in content, 'path': filepath})
+                return
+
+            if action == 'append':
+                if detect in content:
+                    self.send_json({'ok': True, 'skipped': True, 'reason': 'already present'})
+                    return
+                new_content = content.rstrip() + '\n' + snippet
+                dirpath = _os.path.dirname(filepath)
+                with tempfile.NamedTemporaryFile('w', dir=dirpath, delete=False,
+                                                 suffix='.tmp', encoding='utf-8') as tf:
+                    tf.write(new_content)
+                    tmp = tf.name
+                shutil.move(tmp, filepath)
+                self.send_json({'ok': True, 'skipped': False})
+                return
+
             self.send_json({'ok': False, 'error': f'Unknown action: {action}'})
-            return
-
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                content = f.read()
         except Exception as e:
-            self.send_json({'ok': False, 'error': f'Read: {type(e).__name__}: {e}'})
-            return
-
-        # Allow browser to supply a custom snippet via ?snippet= param
-        custom_snippet = _post_snippet
-        if custom_snippet:
-            import urllib.parse as _up2
-            snippet_block  = '\n' + _up2.unquote_plus(custom_snippet)
-            detect_key     = 'frontend:'
-        else:
-            snippet_block  = self.THEMES_BLOCK
-            detect_key     = self.THEMES_DETECT
-        already = detect_key in content
-
-        if action == 'append':
-            if already:
-                self.send_json({'ok': True, 'status': 'already_present'})
-                return
-            if not custom_snippet and 'frontend:' in content:
-                self.send_json({'ok': True, 'status': 'frontend_conflict'})
-                return
-            new_content = content.rstrip('\n') + snippet_block
-        else:
-            if not already:
-                self.send_json({'ok': True, 'status': 'not_present'})
-                return
-            lines = content.split('\n')
-            out, i = [], 0
-            while i < len(lines):
-                ln = lines[i]
-                if (ln.strip().startswith('# -') and
-                        i + 1 < len(lines) and
-                        'Load frontend themes' in lines[i + 1]):
-                    i += 8
-                    continue
-                if (ln.strip() == 'frontend:' and
-                        i + 1 < len(lines) and
-                        self.THEMES_DETECT in lines[i + 1]):
-                    i += 2
-                    continue
-                out.append(ln)
-                i += 1
-            new_content = '\n'.join(out)
-            new_content = _re.sub(r'\n{3,}', '\n\n', new_content)
-            if new_content == content:
-                self.send_json({'ok': False, 'error': 'Block not found'})
-                return
-
-        try:
-            dirpath = _os.path.dirname(path)
-            with tempfile.NamedTemporaryFile('w', dir=dirpath, delete=False,
-                                             suffix='.tmp', encoding='utf-8') as tf:
-                tf.write(new_content)
-                tmp = tf.name
-            shutil.move(tmp, path)
-            print(f'[hub] config-patch {action} OK', flush=True)
-            self.send_json({'ok': True, 'status': 'done'})
-        except Exception as e:
-            err = f'{type(e).__name__}: {e}'
-            print(f'[hub] config-patch error: {err}', flush=True)
-            self.send_json({'ok': False, 'error': err})
-
+            self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/delete-automation ───────────────────────────────────
-    # Deletes an automation by ID via HA Core REST API.
-    # Uses DELETE /api/config/automation/config/<id>
-    # Accepts: ?id=<automation_id>
     def handle_delete_automation(self):
         import urllib.parse as _up
-        params = _up.parse_qs(_up.urlparse(self.path).query)
+        params  = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         auto_id = params.get('id', [None])[0]
         if not auto_id:
-            self.send_json({'ok': False, 'error': 'Missing id parameter'})
+            self.send_json({'ok': False, 'error': 'No automation id specified'})
             return
         token = get_token()
         if not token:
@@ -704,7 +781,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             })
             req.get_method = lambda: 'DELETE'
             with urllib.request.urlopen(req, timeout=10) as resp:
-                raw = resp.read()
+                raw  = resp.read()
                 data = json.loads(raw) if raw.strip() else {'result': 'ok'}
             print(f'[hub] delete-automation: {auto_id} → ok', flush=True)
             self.send_json({'ok': True, 'data': data})
@@ -716,43 +793,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({'ok': False, 'error': str(e)})
 
     # ── /api/system-stats ────────────────────────────────────────
-    # Returns Supervisor-level hardware and process stats.
-    # Mirrors what HA Admin Tools probe-system fetches — same endpoints,
-    # same field names. Used by health-score.html as fallback when no
-    # System Monitor HA entities are present.
-    #
-    # Fields returned:
-    #   cpu_percent        — Supervisor process CPU %
-    #   memory_percent     — Supervisor process memory %
-    #   memory_usage/limit — Supervisor process memory bytes
-    #   core_cpu_percent   — HA Core process CPU %
-    #   core_memory_percent— HA Core process memory %
-    #   core_memory_usage/limit — HA Core memory bytes
-    #   disk_percent       — Host disk used %  (from /host/info, values in GiB)
-    #   disk_used/total_gib— Host disk GiB
-    #   host_cpu_percent   — Host-level CPU % (if available)
-    #   host_memory_percent— Host-level memory % (if available)
     def handle_system_stats(self):
         out = {'ok': True, 'source': 'supervisor'}
 
-        # ── Host hardware (/host/info) ────────────────────────────
-        # Disk is in GiB (Supervisor applies kb2gib()).
-        # boot_timestamp is microseconds since epoch.
         try:
             host = supervisor_get('/host/info', timeout=6)
             host = host.get('data', host) if isinstance(host, dict) else {}
             disk_total = host.get('disk_total', 0) or 0
             disk_used  = host.get('disk_used',  0) or 0
-            out['disk_percent']   = round(disk_used / disk_total * 100, 1) if disk_total else None
-            out['disk_used_gib']  = round(disk_used,  1)
-            out['disk_total_gib'] = round(disk_total, 1)
-            # host_cpu/memory only present on some Supervisor versions
+            out['disk_percent']        = round(disk_used / disk_total * 100, 1) if disk_total else None
+            out['disk_used_gib']       = round(disk_used,  1)
+            out['disk_total_gib']      = round(disk_total, 1)
             out['host_cpu_percent']    = host.get('cpu_percent')
             out['host_memory_percent'] = host.get('memory_percent')
         except Exception as e:
             out['disk_error'] = str(e)
 
-        # ── Supervisor process stats (/supervisor/stats) ──────────
         try:
             sup_raw = supervisor_get('/supervisor/stats', timeout=6)
             sup = sup_raw.get('data', sup_raw) if isinstance(sup_raw, dict) else {}
@@ -763,7 +819,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             out['supervisor_stats_error'] = str(e)
 
-        # ── HA Core process stats (/core/stats) ───────────────────
         try:
             core_raw = supervisor_get('/core/stats', timeout=6)
             core = core_raw.get('data', core_raw) if isinstance(core_raw, dict) else {}
@@ -776,16 +831,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         self.send_json(out)
 
-
     def send_response(self, code, message=None):
         super().send_response(code, message)
-        # Inject no-cache headers for HTML responses to prevent stale 304s
         if getattr(self, '_no_cache', False):
             self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
             self.send_header('Pragma', 'no-cache')
             self.send_header('Expires', '0')
             self._no_cache = False
-
 
     def send_json(self, data):
         body = json.dumps(data).encode('utf-8')
@@ -801,12 +853,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         print(f'[hub] {fmt % args}', flush=True)
 
 
-# ThreadingTCPServer handles each request in its own thread.
-# This is required for HA ingress — the proxy times out (502) if the
-# server is single-threaded and a previous request is still in flight.
+# ── Server ───────────────────────────────────────────────────────
 class ThreadedServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
-    daemon_threads = True   # threads die when main thread exits
+    daemon_threads = True
 
 print(f'[hub] Serving from {APP_DIR} (threaded)', flush=True)
 with ThreadedServer(('', PORT), Handler) as httpd:

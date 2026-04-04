@@ -1,0 +1,30 @@
+# ================================================================
+#  HA Tools Hub — config.yaml
+#  The main production addon. Card builder, dashboard management,
+#  registration, and social features.
+#  Port 7706 | slug: ha_tools_hub
+# ================================================================
+name: "HA Tools Hub"
+description: "Build, preview, and manage your Home Assistant dashboards and cards."
+version: "1.0.0"
+slug: "ha_tools_hub"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: manual
+ingress: true
+ingress_port: 7706
+panel_icon: mdi:tools
+panel_title: "HA Tools Hub"
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+auth_api: true
+map:
+  - config:ro
+  - addons:rw

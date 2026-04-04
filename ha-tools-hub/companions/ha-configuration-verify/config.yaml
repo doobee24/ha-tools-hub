@@ -1,0 +1,28 @@
+# ================================================================
+#  HA Configuration Verify — config.yaml
+#  Standalone configuration.yaml explorer for HA Tools Hub.
+#  Resolves all !include directives and renders an interactive tree.
+# ================================================================
+name: "HA Configuration Verify"
+description: "HA Tools Hub — configuration.yaml explorer with full !include resolution."
+version: "1.0.0"
+slug: "ha_configuration_verify"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: manual
+ingress: true
+ingress_port: 8098
+panel_icon: mdi:file-code-outline
+panel_title: "Config Verify"
+hassio_api: true
+hassio_role: manager
+homeassistant_api: false
+auth_api: false
+map:
+  - config:ro    # read-only access to /config/configuration.yaml and all !include files

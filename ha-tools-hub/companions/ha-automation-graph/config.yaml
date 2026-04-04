@@ -1,0 +1,26 @@
+# ================================================================
+#  HA Automation Graph — config.yaml
+#  Automation dependency graph and entity usage mapping.
+# ================================================================
+name: "HA Automation Graph"
+description: "HA Tools Hub — Automation dependency graph and entity usage mapping."
+version: "1.0.0"
+slug: "ha_automation_graph"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: manual
+ingress: true
+ingress_port: 7704
+panel_icon: mdi:graph-outline
+panel_title: "Automation Graph"
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+map:
+  - config:ro

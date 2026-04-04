@@ -1,0 +1,27 @@
+# ================================================================
+#  HA Service Schema — config.yaml
+#  Full HA service call schema browser for HA Tools Hub.
+#  Fetches every domain, service, field, and selector via WS API.
+#  Generates ready-to-use example calls for every service.
+# ================================================================
+name: "HA Service Schema"
+description: "HA Tools Hub — full service call schema browser with example call generation."
+version: "1.0.0"
+slug: "ha_service_schema"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: manual
+ingress: true
+ingress_port: 7703
+panel_icon: mdi:code-json
+panel_title: "Service Schema"
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+auth_api: false

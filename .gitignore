@@ -1,0 +1,41 @@
+# Secrets — never committed
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Backups (large binary archives)
+backup/
+addons backup/
+
+# Old working copy
+ha-tools-hub(Pre Upgrade Working)/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Archives
+*.zip
+*.gz
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Node (if ever needed)
+node_modules/
+
+# GUI runtime state
+gui/server_config.json

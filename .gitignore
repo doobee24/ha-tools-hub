@@ -39,3 +39,9 @@ node_modules/
 
 # GUI runtime state
 gui/server_config.json
+
+# Companion addon configs — kept local only so HA supervisor does not
+# surface companions in the Add-on Store before the main addon installs them.
+# The config.yaml files exist in the working tree for local development/build
+# but must not be pushed to GitHub.
+ha-tools-hub/companions/*/config.yaml

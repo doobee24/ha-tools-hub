@@ -212,6 +212,12 @@ def _deploy_to_local(config_slug: str) -> bool:
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(str(src), str(dst))
+        # config.yaml is stored as config.yaml.template in the repo so that
+        # HA supervisor does not surface companion addons in the store directly.
+        # Rename it to config.yaml in the installed destination.
+        template = dst / "config.yaml.template"
+        if template.exists():
+            template.rename(dst / "config.yaml")
         return True
     except Exception as e:
         _log(f"Copy failed: {e}")
@@ -233,9 +239,9 @@ def _companion_status(slug: str) -> dict:
             "ingress_url":     d.get("ingress_url", ""),
             "ingress_enabled": bool(d.get("ingress", False)),
         }
-    # Not installed — read version from bundled config.yaml
+    # Not installed — read version from bundled config.yaml.template
     version = "?"
-    cfg_path = pathlib.Path(_COMPANIONS_DIR) / _slug_to_dir(slug) / "config.yaml"
+    cfg_path = pathlib.Path(_COMPANIONS_DIR) / _slug_to_dir(slug) / "config.yaml.template"
     if cfg_path.exists():
         for line in cfg_path.read_text().splitlines():
             if line.startswith("version:"):
